@@ -742,34 +742,23 @@ void StFcsPulseAna::SetFitPars(TF1* func)
   if( func==0 ){
     func = mDbPulse->createPulse(mXRangeMin,mXRangeMax,2+npeaks*3);
   }
-  if( npeaks>33 ){return;}//Since parameter array has 101 this is (101-2)/3 max peaks
-  double para[101] = {0};
-  para[0] = npeaks;
-  para[1] = Baseline();
-  func->SetParName(0,"NPeaks");
-  func->SetParName(1,"Ped");
+  //if( npeaks>33 ){return;}//Since parameter array has 101 this is (101-2)/3 max peaks
+  //double para[101] = {0};
+  //para[0] = npeaks;
+  //para[1] = Baseline();
   for( Int_t i=0; i<npeaks; ++i ){
     int j = 1+i*3+1;
-    char name[10];
-    sprintf(name,"P%d_A",i);
-    func->SetParName(j,name);
-    para[j++] = GetPeak(i).mPeakY;
-    sprintf(name,"P%d_M",i);
-    func->SetParName(j,name);
-    para[j++] = GetPeak(i).mPeakX;
-    sprintf(name,"P%d_S",i);
-    func->SetParName(j,name);
-    para[j] = mDbPulse->GSigma();
+    func->SetParameter(j, GetPeak(i).mPeakY);
+    func->SetParameter(j+1, GetPeak(i).mPeakX);
+    func->SetParameter(j+2, mDbPulse->GSigma());
+
+    func->SetParLimits(j,0.0,50000.0);                   //limit peak not to go negative
+    func->SetParLimits(j+1,GetPeak(i).mPeakX-2.0,GetPeak(i).mPeakX+2.0); //limit peak position to +- 2TB
+    func->SetParLimits(j+2,0.5,10.0);                    //limit sigma to go too narrow or wide
   }
-  func->SetParameters(para);
+  //func->SetParameters(para);
   func->FixParameter(0,npeaks);
   func->FixParameter(1,Baseline());
-  for(int i=0; i<npeaks; i++){
-    int j=1+i*3+1;
-    func->SetParLimits(j++,0.0,50000.0);       //limit peak not to go negative
-    func->SetParLimits(j,para[j]-2.0,para[j]+2.0); //limit peak position to +- 2TB
-    func->SetParLimits(++j,0.5,10.0);              //limit sigma to go too narrow or wide
-  }
 }
 
 StFcsPulseAna* StFcsPulseAna::DrawCopy(Option_t* opt, const char* name_postfix, TGraph* graph) const

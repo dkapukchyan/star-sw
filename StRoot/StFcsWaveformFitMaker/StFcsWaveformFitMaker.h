@@ -172,9 +172,10 @@ public:
     void drawCh(UInt_t detid, UInt_t ch) const;
 
  protected:
-    TClonesArray mChWaveData;  //Contains all graph data
+    TClonesArray mChWaveData;  //!< Contains all graph data
     void drawFit(TGraphAsymmErrors* g, TF1* func);
-    StFcsPulseAna* mPulseFit;
+    StFcsPulseAna* mPulseFit = 0;
+    TF1* mFitFunc = 0;         //!< Internal TF1 used for fitting. Maxes at 7 peaks
 
     /**@brief Variable to use when testing StFcsWaveformFitMaker algorithms
 
@@ -237,6 +238,7 @@ public:
     TH1F* mH1_PeakTimingPuls = 0;               //Histogram to test timing of PulseFit()
     TH2F* mH2_PeakTimingCompare = 0;            //Histogram to test timing between gausFit() and PulseFit()
 
+  void resetFuncParLimits();   //!< Resets par limits for parameters larger than 2 so ROOT doesn't complain about lower/upper bounds. This happens if peak number increases then decreases and the extra parameters get set to zero.
     void SetupDavidFitterMay2022(Double_t ped=0);    //! This special function is used to set all the parameters for #StFcsPulseAna based on cosmic and Run 22 data. It is intended to be used only for Run 22 data
     int PeakCompare(const PeakWindow& pwin1, const PeakWindow& pwin2 ); //Compare if two peaks overlap and return a bit vector of tests passed/failed for comparing pwin1 to pwin2. 0 means all tests passed and pwin1 does not overlap with pwin2
     int NPeaksPre2Post1(int& trigidx, Double_t& xmin, Double_t& xmax) const;//xmin and xmax will be the range of the pre-crossing -2 and post-crossing +1 peaks. trigidx is needed to pick up the triggered crossing in the new number of peaks
@@ -267,7 +269,7 @@ public:
     //gausFit
     int mMinAdc=5;                       //! minimum adc to be a peak
     int mTail=2;                         //! pulse tail shape (0=none, 1=summer2020) 
-    int mMaxPeak=5;                      //! max # of peak for trying to fit
+    int mMaxPeak=7;                      //! max # of peak for trying to fit
 
     //Drawing fits
     TCanvas* mCanvas=0; 
