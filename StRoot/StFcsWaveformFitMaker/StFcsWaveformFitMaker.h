@@ -157,6 +157,9 @@ public:
     void writeFile(std::string filename);
     void setFitDrawOn(int v=1) {mFitDrawOn=v;}  //=1 to keep for a event, =2 for a page
     void setFitFilter(char* filter) {mFilter=filter; mFitDrawOn=2;}
+  //TF1* setupFitFunc(int npeaks=1, double ped=0);
+    TF1* getFitFunc(int npeaks=2); //Get internal TF1 or create new if more than 6 peaks
+    void setupFitFunc(TF1* func, int npeaks );
 
     //Draw from David
     int centerTB()const{return mCenterTB;}
@@ -175,7 +178,7 @@ public:
     TClonesArray mChWaveData;  //!< Contains all graph data
     void drawFit(TGraphAsymmErrors* g, TF1* func);
     StFcsPulseAna* mPulseFit = 0;
-    TF1* mFitFunc = 0;         //!< Internal TF1 used for fitting. Maxes at 7 peaks
+    TF1* mFitFunc[5];         //!< Internal TF1 used for fitting. Maxes at 7 peaks
 
     /**@brief Variable to use when testing StFcsWaveformFitMaker algorithms
 
@@ -238,7 +241,7 @@ public:
     TH1F* mH1_PeakTimingPuls = 0;               //Histogram to test timing of PulseFit()
     TH2F* mH2_PeakTimingCompare = 0;            //Histogram to test timing between gausFit() and PulseFit()
 
-  void resetFuncParLimits();   //!< Resets par limits for parameters larger than 2 so ROOT doesn't complain about lower/upper bounds. This happens if peak number increases then decreases and the extra parameters get set to zero.
+  //!< Resets par limits for parameters larger than 2 so ROOT doesn't complain about lower/upper bounds. This happens if peak number increases then decreases and the extra parameters get set to zero.
     void SetupDavidFitterMay2022(Double_t ped=0);    //! This special function is used to set all the parameters for #StFcsPulseAna based on cosmic and Run 22 data. It is intended to be used only for Run 22 data
     int PeakCompare(const PeakWindow& pwin1, const PeakWindow& pwin2 ); //Compare if two peaks overlap and return a bit vector of tests passed/failed for comparing pwin1 to pwin2. 0 means all tests passed and pwin1 does not overlap with pwin2
     int NPeaksPre2Post1(int& trigidx, Double_t& xmin, Double_t& xmax) const;//xmin and xmax will be the range of the pre-crossing -2 and post-crossing +1 peaks. trigidx is needed to pick up the triggered crossing in the new number of peaks

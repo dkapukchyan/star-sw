@@ -92,6 +92,8 @@ StFcsWaveformFitMaker::StFcsWaveformFitMaker(const char* name) : StMaker(name) {
     mChWaveData.SetClass("TGraphAsymmErrors"); //Initialize with only one graph at first
 
     mOutFile = 0;
+
+    for( int i=0; i<5; ++i ){ mFitFunc[i]=0; }
     
     mEnergySelect[0]=13; //default PulseFit2 for Ecal
     mEnergySelect[1]=13; //default PulseFit2 for Hcal
@@ -128,7 +130,7 @@ StFcsWaveformFitMaker::StFcsWaveformFitMaker(const char* name) : StMaker(name) {
 StFcsWaveformFitMaker::~StFcsWaveformFitMaker() {
   mChWaveData.Delete();//Completely clear all graphs (Put in Finish??)
   delete mPulseFit;
-  delete mFitFunc;
+  for( int i=0; i<5; ++i ){ delete mFitFunc[i]; }
   for( UShort_t i=0; i<7; ++i ){
     if( i<3 ){
       if( mH2_Dep0DepMod[i]!=0 ){delete mH2_Dep0DepMod[i];}
@@ -461,30 +463,7 @@ int StFcsWaveformFitMaker::Make() {
 
     //Loop over all hits and run waveform analysis of the choice
     float res[8];
-    //TF1* func=0;
-    if( mFitFunc==0 && mEnergySelect[0]!=0 ){
-      if( mDbPulse==0 ){ LOG_ERROR << "No StFcsDbPulse object" << endm; }
-      else{
-	mFitFunc = mDbPulse->createPulse(mMinTB,mMaxTB,2+mMaxPeak*3);
-	mFitFunc->SetParName(0,"NPeaks");
-	mFitFunc->SetParameter(0,1);//default 1 peak
-	mFitFunc->SetParName(1,"Ped");
-	mFitFunc->SetParameter(1,0);//default no pedestal
-	for( Int_t i=0; i<mMaxPeak; ++i ){
-	  int j = 1+i*3+1;
-	  char name[50];
-	  sprintf(name,"P%d_A",i);
-	  mFitFunc->SetParName(j,name);
-	  mFitFunc->SetParameter(j++,1);//Some default value
-	  sprintf(name,"P%d_M",i);
-	  mFitFunc->SetParName(j,name);
-	  mFitFunc->SetParameter(j++,mCenterTB);//default is all peaks at triggered crossing since npeak=1 as default
-	  sprintf(name,"P%d_S",i);
-	  mFitFunc->SetParName(j,name);
-	  mFitFunc->SetParameter(j,mDbPulse->GSigma());//default sigma from StFcsDbPulse
-	}
-      }
-    }
+    TF1* func=0;
     for(int det=0; det<kFcsNDet; det++) {      
 	StSPtrVecFcsHit& hits = mFcsCollection->hits(det);
 	int ehp = det/2;
@@ -515,7 +494,7 @@ int StFcsWaveformFitMaker::Make() {
 	  
 	  //run waveform analysis of the choice and store as AdcSum	  
 	  memset(res,0,sizeof(res));
-	  float integral = analyzeWaveform(mEnergySelect[ehp],hits[i],res,mFitFunc,ped);
+	  float integral = analyzeWaveform(mEnergySelect[ehp],hits[i],res,func,ped);
 	  hits[i]->setAdcSum(integral);	    
 	  hits[i]->setFitPeak(res[2]);	    
 	  hits[i]->setFitSigma(res[3]);	    
@@ -535,11 +514,11 @@ int StFcsWaveformFitMaker::Make() {
 	  }
 	  if( mTest==5 ){
 	    auto startg = std::chrono::high_resolution_clock::now();
-	    integral = analyzeWaveform(10,hits[i],res,mFitFunc,ped);
+	    integral = analyzeWaveform(10,hits[i],res,func,ped);
 	    auto stopg = std::chrono::high_resolution_clock::now();
 	    long long usecg = chrono::duration_cast<chrono::microseconds>(stopg-startg).count();
 	    auto startp = std::chrono::high_resolution_clock::now();
-	    integral = analyzeWaveform(12,hits[i],res,mFitFunc,ped);
+	    integral = analyzeWaveform(12,hits[i],res,func,ped);
 	    auto stopp = std::chrono::high_resolution_clock::now();
 	    long long usecp = chrono::duration_cast<chrono::microseconds>(stopp-startp).count();
 	    mH1_PeakTimingGaus->Fill(float(usecg)/1000.0);
@@ -645,8 +624,7 @@ TGraphAsymmErrors* StFcsWaveformFitMaker::makeTGraphAsymmErrors(StFcsHit* hit){
 }
 
 float StFcsWaveformFitMaker::analyzeWaveform(int select, TGraphAsymmErrors* g, float* res, TF1*& func, float ped){
-    if(func!=mFitFunc){ delete func; func=0; } //In case you use another function other than mFitFunc then clean it up
-    else{ resetFuncParLimits(); }
+  //if(func!=mFitFunc){ delete func; func=0; } //In case you use another function other than mFitFunc then clean it up
     float integral=0.0;
     switch(select){
     case  1: integral = sum8(g, res); break;
@@ -955,7 +933,8 @@ float StFcsWaveformFitMaker::gausFit(TGraphAsymmErrors* g, float* res, TF1*& fun
     
     if(npeak>0 && npeak<mMaxPeak){
       //func = new TF1("waveform",mDbPulse,&StFcsDbPulse::multiPulseShape,mMinTB,mMaxTB,2+npeak*3);//For reference
-      if( func!=mFitFunc ){ func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeak*3); }
+      //if( func!=mFitFunc ){ func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeak*3); }
+      func = getFitFunc(npeak);
       func->SetLineColor(6);
       func->SetParameters(para);
       func->FixParameter(0,npeak);
@@ -1237,32 +1216,24 @@ float StFcsWaveformFitMaker::PulseFit1(TGraphAsymmErrors* gae, float* res, TF1*&
 
   if( mTest==4 ){
     if( compidx==npeaks ){ res[0] = 0; return res[0]; }
-    if( func!=mFitFunc ){ func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3); }
-    else{
-      //The purpose of this test is to fit all peaks so if more peaks found and using internal function then delete and reassign
-      if( npeaks>=mMaxPeak ){
-	delete func;
-	func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3);
-	mFitFunc = func;
-      }
-    }
-    mPulseFit->SetFitPars(func);
-    TFitResultPtr result = gae->Fit(func,"BNRQ");
+    TF1* testfunc = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3);
+    mPulseFit->SetFitPars(testfunc);
+    TFitResultPtr result = gae->Fit(testfunc,"BNRQ");
     for( int i=0; i<npeaks; ++i ){
-      mH2_HeightvsSigma->Fill( func->GetParameter(1+i*3+3),func->GetParameter(1+i*3+1) );
+      mH2_HeightvsSigma->Fill( testfunc->GetParameter(1+i*3+3),testfunc->GetParameter(1+i*3+1) );
     }
     res[5] = npeaks;
-    res[1] = func->GetParameter(compidx*3 + 2);
-    res[2] = func->GetParameter(compidx*3 + 3);
-    res[3] = func->GetParameter(compidx*3 + 4);
-    res[4] = func->GetChisquare()/func->GetNDF();
+    res[1] = testfunc->GetParameter(compidx*3 + 2);
+    res[2] = testfunc->GetParameter(compidx*3 + 3);
+    res[3] = testfunc->GetParameter(compidx*3 + 4);
+    res[4] = testfunc->GetChisquare()/func->GetNDF();
     res[0] = res[1]*res[3]*StFcsDbPulse::sqrt2pi();
     mH2_HeightvsSigmaTrig->Fill(res[3],res[1]);
     mH1_ChiNdf->Fill(res[4]);
     mH2_HeightvsChiNdf->Fill(res[4],res[1]);
     mH2_MeanvsChiNdf->Fill(res[4],res[2]);
     mH2_SigmavsChiNdf->Fill(res[4],res[3]);
-
+    delete testfunc;
     return res[0];
   }
 
@@ -1316,7 +1287,8 @@ float StFcsWaveformFitMaker::PulseFit1(TGraphAsymmErrors* gae, float* res, TF1*&
     if( numoverlaps>0 && npeaks<mMaxPeak ){
       //res[0] = mPulseFit->FitSignal(mMinTb,mMaxTb);
       auto start=std::chrono::high_resolution_clock::now();//for timing studies can be commented out as long as not testing
-      if( func != mFitFunc ){ func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3); }
+      //if( func!=mFitFunc ){ func = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3); }
+      func = getFitFunc(npeaks);
       mPulseFit->SetFitPars(func);
       //mPulseFit->SetSignal(func);
       TFitResultPtr result = gae->Fit(func,"BNRQ");
@@ -1441,8 +1413,11 @@ float StFcsWaveformFitMaker::PulseFit2(TGraphAsymmErrors* gae, float* res, TF1*&
       //res[0] = mPulseFit->FitSignal(mMinTb,mMaxTb);
       auto start=std::chrono::high_resolution_clock::now();//for timing studies can be commented out as long as not testing
       //only fit inside the range of valid peaks
-      if( func!=mFitFunc ){ func = mDbPulse->createPulse(xmin,xmax,2+npeaks*3); }
-      else{ func->SetRange(xmin,xmax); }
+      func = getFitFunc(npeaks);
+      //std::cout << "|npeaks:"<<npeaks << "|func:"<<func << std::endl;
+      //if( func!=mFitFunc ){ func = mDbPulse->createPulse(xmin,xmax,2+npeaks*3); }
+      //else{ func->SetRange(xmin,xmax); }
+      func->SetRange(xmin,xmax);
       mPulseFit->SetFitPars(func);
       //mPulseFit->SetSignal(func);
       TFitResultPtr result = gae->Fit(func,"BNRQ");
@@ -1588,19 +1563,44 @@ int StFcsWaveformFitMaker::PadNum4x4(int det, int col, int row)
   return 4*(padrow-1)+padcol;
 }
 
-void StFcsWaveformFitMaker::resetFuncParLimits()
+TF1* StFcsWaveformFitMaker::getFitFunc(int npeaks)
 {
-  if( mFitFunc!=0 ){
-    for( Int_t i=0; i<mMaxPeak; ++i ){
-      int j = 1+i*3+1;
-      mFitFunc->FixParameter(j,0);
-      mFitFunc->FixParameter(j+1,0);
-      mFitFunc->FixParameter(j+2,0);
-      
-      //mFitFunc->SetParLimits(j,-1,1);
-      //mFitFunc->SetParLimits(j+1,-1,1);
-      //mFitFunc->SetParLimits(j+2,-1,1);
-    }  
+  if( npeaks<2 ){ return 0; }
+  if( npeaks<7 ){ //I only keep functions for up to 6 peaks
+    if( mFitFunc[npeaks-2]==0 ){
+      mFitFunc[npeaks-2] = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3);
+      setupFitFunc(mFitFunc[npeaks-2], npeaks);
+    }
+    return mFitFunc[npeaks-2];
+  }
+  else{
+    if( npeaks>30 ){ return 0; }
+    TF1* temp = mDbPulse->createPulse(mMinTB,mMaxTB,2+npeaks*3);
+    setupFitFunc(temp,npeaks);
+    return temp;
+  }
+}
+
+void StFcsWaveformFitMaker::setupFitFunc(TF1* func, int npeaks )
+{
+  if( func==0 ){return;}
+  if( npeaks<1 ){return;}
+  func->SetParName(0,"NPeaks");
+  func->FixParameter(0,npeaks);
+  func->SetParName(1,"Ped");
+  func->FixParameter(1,0);
+  char name[100];
+  for( Int_t i=0; i<npeaks; ++i ){
+    int j = 1+i*3+1;
+    sprintf(name,"P%d_A",i);
+    func->SetParName(j,name);
+    func->SetParameter(j++,1);//Some default value
+    sprintf(name,"P%d_M",i);
+    func->SetParName(j,name);
+    func->SetParameter(j++,mCenterTB);//default is all peak at triggered crossing
+    sprintf(name,"P%d_S",i);
+    func->SetParName(j,name);
+    func->SetParameter(j,mDbPulse->GSigma());//default sigma from StFcsDbPulse
   }
 }
 
