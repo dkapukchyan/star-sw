@@ -5,37 +5,17 @@ ClassImp(StFcsPulseSim);
 StFcsPulseSim::StFcsPulseSim(std::string name)
 {
   mName = name;
-  mRND = 0;
-  mDbPulse = 0;
-  //InitVars();
-}
-/*
-StFcsPulseSim::StFcsPulseSim(std::string name, ULong_t seed)
-{
-  mName = name;
-  //InitVars(seed);
-}
-*/
-StFcsPulseSim::~StFcsPulseSim()
-{
-  delete mRND;
-}
-
-void StFcsPulseSim::InitVars(ULong_t seed)
-{
   mDEBUG=false;
+  
   memset(ddata,0,sizeof(ddata));
   memset(idata,0,sizeof(idata));
   memset(timebin,0,sizeof(timebin));
-
-  mRND = new TRandom2(seed);
-
-  //mDbPulse = static_cast<StFcsDbPulse*>(StMaker::GetDataSet("fcsPulse"));//Needs to inherit from StMaker to work??
-  if( mDbPulse==0 ){std::cout << "WARNING:No FcsDbPulse data found" << std::endl;}
-  else{mDbPulse->setTail(2);}//Default for 2020
+  
+  mRND = new TRandom2();
+  mDbPulse = 0;
   
   //Input control variables 
-  mGSigmaSigma = 0;  // distibution of signal sigma
+      mGSigmaSigma = 0;  // distibution of signal sigma
   mPed            = 0;   // pedestal
   mPedSig         = 0.8; // pedestal sigma [adc counts]
   //mBeamLengthSig  = 10/mDbPulse->nsecPerTB();   // [timebin]
@@ -44,10 +24,21 @@ void StFcsPulseSim::InitVars(ULong_t seed)
   mPulseMin       = 100;
   mPulseMax       = 4000;
   //MaxMode        = 9;
-  ZS             = int(mPedSig*3);
-
+  mZS             = int(mPedSig*3);
+  
   mMinTb = 0;
+}
 
+StFcsPulseSim::~StFcsPulseSim()
+{
+  delete mRND;
+}
+
+void StFcsPulseSim::InitVars(ULong_t seed)
+{
+  //mDbPulse = static_cast<StFcsDbPulse*>(StMaker::GetDataSet("fcsPulse"));//Needs to inherit from StMaker to work??
+  if( mDbPulse==0 ){std::cout << "WARNING:No FcsDbPulse data found" << std::endl;}
+  else{mDbPulse->setTail(2);}//Default for 2020
 }
 
 /*
@@ -165,7 +156,7 @@ void StFcsPulseSim::addNoiseDigitize()
     timebin[tb]=mMinTb+tb;
     ddata[tb] += mRND->Gaus(0,mPedSig);
     int adc = int(ddata[tb]);
-    if(adc<=ZS) adc=0;
+    if(adc<=mZS) adc=0;
     if(adc>4000) adc=4000;
     idata[tb]=adc;
     if(mDEBUG){
@@ -185,11 +176,12 @@ TGraphAsymmErrors* StFcsPulseSim::pulseSim(int mode, double pulseHeight )
   switch(mode){
   case 0: //single pulse
     pulseTime = mRND->Gaus(mTBTrg,mDbPulse->BeamLengthSig());
-    std::cout << "|TBTrg:"<<mTBTrg<<"|pulseTime:" << pulseTime << "|nsecTB:"<<mDbPulse->nsecPerTB() << std::endl;
+    std::cout << "|mode:"<<mode << "|TBTrg:"<<mTBTrg<<"|pulseTime:" << pulseTime << "|nsecTB:"<<mDbPulse->nsecPerTB() << std::endl;
     addPulse(pulseTime,pulseHeight);
     break;
   case 1: //pulse in pre=1 and triggered xing
     pulseTime = mRND->Gaus(mTBTrg,mDbPulse->BeamLengthSig());
+    std::cout << "|mode:"<<mode << "|TBTrg:"<<mTBTrg<<"|pulseTime:" << pulseTime << "|nsecTB:"<<mDbPulse->nsecPerTB() << std::endl;
     addPulse(pulseTime,pulseHeight);
     pulseTime = mRND->Gaus(mTBTrg-mDbPulse->TBPerRC(),mDbPulse->BeamLengthSig());
     addPulse(pulseTime);
@@ -233,7 +225,7 @@ TGraphAsymmErrors* StFcsPulseSim::pulseSim(int mode, double pulseHeight )
     addPulse(pulseTime,mRND->Uniform(mPulseMin,mPulseMax/2.0));
     break;
   default: 
-    std::cout << "Specify mode"<<std::endl;
+    std::cout << "Invalid mode"<<std::endl;
     return (TGraphAsymmErrors*)0;
   }//switch(mode)
 
