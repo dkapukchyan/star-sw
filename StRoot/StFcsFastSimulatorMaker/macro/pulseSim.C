@@ -1,5 +1,5 @@
 /*
-  Macro that uses "FcsPulseSim" to create a pulse in all the modes available.
+  Macro that uses "StFcsPulseSim" to create a pulse in all the modes available.
   
   @[March 29, 2023](David Kapukchyan) > First instance.
 */
@@ -12,9 +12,9 @@ int pulseSim(const char* savename="testPulse.png", int seed=1)
   gSystem->Load("StFcsDbMaker");
   gSystem->Load("StFcsFastSimulatorMaker");
   
-  
   StFcsDbPulse* dbpulse = new StFcsDbPulse();
   dbpulse->setTail(2);
+  dbpulse->Print();
   StFcsPulseSim* pulsesim = new StFcsPulseSim();
   pulsesim->setDbPulse(dbpulse); //Needs a StFcsDbPulse object to paramaterize the pulse shape
   pulsesim->setSeed(seed);
@@ -24,8 +24,10 @@ int pulseSim(const char* savename="testPulse.png", int seed=1)
   c1->Divide(npadx,npady);
 
   for(int imode=0; imode<StFcsPulseSim::MaxMode; imode++){
-    TGraph* G_Temp = pulsesim->pulseSim(imode,100);
+    TGraph* G_Temp = pulsesim->pulseSim(imode);
     c1->cd(imode+1);
+    G_Temp->SetMarkerStyle(4);
+    G_Temp->SetMarkerSize(0.5);
     G_Temp->Draw("APL");
     G_Temp->SetBit(kCanDelete);
   }

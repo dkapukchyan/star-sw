@@ -40,33 +40,42 @@ int StFcsDbPulse::Init()
 void StFcsDbPulse::setTail(int tail)
 {
   mTail = tail;
-  if( tail == 0 ){return;}
-  if( tail == 1 )
-    {
-      //Data from Gerard 2020 summer
-      mGSigma    = 24.5/nsecPerTB();
-      mA1        = 1.0/0.154/mGSigma;
-      mA2        = 0.2/0.154/mGSigma;
-      mXoff1     = (70 - 129)/nsecPerTB();
-      mXoff2     = (220 - 129)/nsecPerTB();
-      mTau1      = 200.0/nsecPerTB();
-      mTau2      = 40.0/nsecPerTB();
-      mP1        = 1.0;
-      mP2        = 1.0;
-    }
-  else if( tail == 2 )
-    {
-      //Data from WAH with real detector/LED system 2021 Jan
-      mGSigma    = 2.347;
-      mA1        = 2543.0/854.0/mGSigma;
-      mA2        = 0.0;
-      mXoff1     = 211.3-215.7;
-      mXoff2     = 0.0;
-      mTau1      = 4.375;
-      mTau2      = 0.0;
-      mP1        = 1.0;
-      mP2        = 0.0;
-    }
+  if( tail == 0 ){
+    //Data from old pulseSim macro
+    mGSigma    = 24.5;
+    mA1        = 1.0/sqrtpi()/0.155/129;
+    mA2        = 0.2/sqrtpi()/0.155/129;
+    mXoff1     = (70 - 129);
+    mXoff2     = (220 - 129);
+    mTau1      = 200.0;
+    mTau2      = 40.0;
+    mP1        = 1.0;
+    mP2        = 1.0;
+  }
+  if( tail == 1 ){
+    //Data from Gerard 2020 summer
+    mGSigma    = 24.5/nsecPerTB();
+    mA1        = 1.0/0.154/mGSigma;
+    mA2        = 0.2/0.154/mGSigma;
+    mXoff1     = (70 - 129)/nsecPerTB();
+    mXoff2     = (220 - 129)/nsecPerTB();
+    mTau1      = 200.0/nsecPerTB();
+    mTau2      = 40.0/nsecPerTB();
+    mP1        = 1.0;
+    mP2        = 1.0;
+  }
+  else if( tail == 2 ){
+    //Data from WAH with real detector/LED system 2021 Jan
+    mGSigma    = 2.347;
+    mA1        = 2543.0/854.0/mGSigma;
+    mA2        = 0.0;
+    mXoff1     = 211.3-215.7;
+    mXoff2     = 0.0;
+    mTau1      = 4.375;
+    mTau2      = 0.0;
+    mP1        = 1.0;
+    mP2        = 0.0;
+  }
   else{ LOG_WARN << "StFcsDbPulse::setTail - Invalid Tail value " << tail << endm; }
 }
 

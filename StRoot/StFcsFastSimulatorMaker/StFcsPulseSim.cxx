@@ -14,14 +14,14 @@ StFcsPulseSim::StFcsPulseSim(std::string name)
   mRND = new TRandom2();
   mDbPulse = 0;
   
-  //Input control variables 
-      mGSigmaSigma = 0;  // distibution of signal sigma
+  //Input control variables
+  mGSigmaSigma    = 2;  // distibution of signal sigma
   mPed            = 0;   // pedestal
   mPedSig         = 0.8; // pedestal sigma [adc counts]
   //mBeamLengthSig  = 10/mDbPulse->nsecPerTB();   // [timebin]
   //TBMax          = 50;
   mTBTrg          = 25;
-  mPulseMin       = 100;
+  mPulseMin       = 10;
   mPulseMax       = 4000;
   //MaxMode        = 9;
   mZS             = int(mPedSig*3);
@@ -176,12 +176,12 @@ TGraphAsymmErrors* StFcsPulseSim::pulseSim(int mode, double pulseHeight )
   switch(mode){
   case 0: //single pulse
     pulseTime = mRND->Gaus(mTBTrg,mDbPulse->BeamLengthSig());
-    std::cout << "|mode:"<<mode << "|TBTrg:"<<mTBTrg<<"|pulseTime:" << pulseTime << "|nsecTB:"<<mDbPulse->nsecPerTB() << std::endl;
+    //std::cout<<"|mode:"<<mode<<"|TBTrg:"<<mTBTrg<<"|pulseTime:"<<pulseTime<<"|nsecTB:"<<mDbPulse->nsecPerTB()<<std::endl;
     addPulse(pulseTime,pulseHeight);
     break;
   case 1: //pulse in pre=1 and triggered xing
     pulseTime = mRND->Gaus(mTBTrg,mDbPulse->BeamLengthSig());
-    std::cout << "|mode:"<<mode << "|TBTrg:"<<mTBTrg<<"|pulseTime:" << pulseTime << "|nsecTB:"<<mDbPulse->nsecPerTB() << std::endl;
+    //std::cout<<"|mode:"<<mode<<"|TBTrg:"<<mTBTrg<<"|pulseTime:"<<pulseTime<<"|nsecTB:"<<mDbPulse->nsecPerTB()<<std::endl;
     addPulse(pulseTime,pulseHeight);
     pulseTime = mRND->Gaus(mTBTrg-mDbPulse->TBPerRC(),mDbPulse->BeamLengthSig());
     addPulse(pulseTime);
