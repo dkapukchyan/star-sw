@@ -1,5 +1,7 @@
 /*
   The purpose of this StMaker is to understand the shower shape function used by StFcsPointMaker to develop improvements for it
+
+  @[April 14, 2023](David Kapukchyan) > Added a energy cut to both clusters and points
   
   @[April 3, 2023](David Kapukchyan) > First instance
  */
@@ -31,6 +33,7 @@ class StFcsShowerAnaMaker : public StMaker
   virtual Int_t Finish();
 
   void setFileName(const char* name){ mFileName = name; }    //!< set file name that #Finish() will use to write to a file
+  void setEnCut( double value )  { mEnCut = value; }
 
   //static void ReadHists(const char* filename); //!< Load from file all the histograms??
   //void WriteHists(const char* filename, const char* mode="RECREATE");      //!< Write all histograms to a file
@@ -53,6 +56,9 @@ class StFcsShowerAnaMaker : public StMaker
   void InitHists();     //!< Create histograms from this class. If reading create=false. If writing create=true
   void WriteHists();    //!< Write all histograms to file
   void CleanHists();    //!< Delete all histograms
+
+private:
+  double mEnCut = -1;   //!< energy to cut on for both clusters and points
   
   ClassDef(StFcsShowerAnaMaker,1);
 };

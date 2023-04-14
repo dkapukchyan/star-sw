@@ -113,23 +113,27 @@ Int_t StFcsShowerAnaMaker::Make()
     int nc = mFcsColl->numberOfClusters(det);
     for( int iclus=0; iclus<nc; ++iclus ){
       StFcsCluster* cluster = clusters[iclus];
-      mH1F_ClusSigMax->Fill(cluster->sigmaMax());
-      mH1F_ClusSigMin->Fill(cluster->sigmaMin());
-      mH2F_ClusSigMaxEn->Fill(cluster->energy(),cluster->sigmaMax());
-      mH2F_ClusSigMinEn->Fill(cluster->energy(),cluster->sigmaMin());
+      if( cluster->energy() > mEnCut ){
+	mH1F_ClusSigMax->Fill(cluster->sigmaMax());
+	mH1F_ClusSigMin->Fill(cluster->sigmaMin());
+	mH2F_ClusSigMaxEn->Fill(cluster->energy(),cluster->sigmaMax());
+	mH2F_ClusSigMinEn->Fill(cluster->energy(),cluster->sigmaMin());
+      }
     }
 
     StSPtrVecFcsPoint& points = mFcsColl->points(det);
     int np = mFcsColl->numberOfPoints(det);
     for( int ipoint=0; ipoint<np; ++ipoint ){
-      StFcsPoint* point=points[ipoint];      
-      float xfull = point->x();
-      float xwhole = floor(xfull);
-      mH1F_PointXLocal->Fill( xfull-xwhole ); //Only store fractional part
-      float yfull = point->y();
-      float ywhole = floor(yfull);
-      mH1F_PointYLocal->Fill( yfull-ywhole ); //Only store fractional part
-    } 
+      StFcsPoint* point=points[ipoint];
+      if( point->energy() > mEnCut ){
+	float xfull = point->x();
+	float xwhole = floor(xfull);
+	mH1F_PointXLocal->Fill( xfull-xwhole ); //Only store fractional part
+	float yfull = point->y();
+	float ywhole = floor(yfull);
+	mH1F_PointYLocal->Fill( yfull-ywhole ); //Only store fractional part
+      }
+    }
   }
   return kStOk;
 }
