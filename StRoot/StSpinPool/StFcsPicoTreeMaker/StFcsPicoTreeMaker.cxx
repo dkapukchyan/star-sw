@@ -52,15 +52,14 @@ Int_t StFcsPicoTreeMaker::Init()
     LOG_ERROR << "StFcsPicoTreeMaker::InitRun Failed to get StFcsDb" << endm;
     return kStFatal;
   }
-  if( !mDataTree ){ mDataTree = new StFcsPicoTree("StFcsPicoTree",""); }
+  if( !mDataTree ){ mDataTree = new StFcsPicoTree("FcsPicoTree",""); }  //Don't use exact class name to avoid confusion
   return kStOk;
 }
 
 Int_t StFcsPicoTreeMaker::Finish()
 {
-  if (mFileName.Length() == 0) return kStOk;
+  if( mFileName.Length()==0 ){ return kStOk; }
   mFile = new TFile(mFileName.Data(), "RECREATE");
-  
   if( mDataTree ){ mDataTree->Write(); }
   return kStOk;
 }
@@ -79,15 +78,17 @@ Int_t StFcsPicoTreeMaker::Make()
   }
   
   if( !mDoHits && !mDoClus && !mDoPoints ){ LOG_WARN << "StFcsPicoTreeMaker::Make() All tree data turned off skipping Make()" << endm; return kStOk; }
-  
+
+  int totalhits = 0;   //Running counter for all hits for all detectors
+  int totalclus = 0;   //Running counter for all clusters for all detectors
+  int totalpoints = 0; //Running counter for all points for all detectors
   for( int det=0; det<kFcsNDet; det++ ){
     
     StSPtrVecFcsHit& hits = mFcsColl->hits(det);
     int nh = mFcsColl->numberOfHits(det);
-    
     for( int ihit=0; ihit<nh && mDoHits; ++ihit ){
       StFcsHit* hit=hits[ihit];
-      StFcsPicoHit* picohit = mDataTree->ConstructedHit(ihit);
+      StFcsPicoHit* picohit = mDataTree->ConstructedHit(totalhits++);
       picohit->mDetId  = hit->detectorId();
       picohit->mChId   = hit->id();
       picohit->mAdcSum = hit->adcSum();
@@ -102,6 +103,7 @@ Int_t StFcsPicoTreeMaker::Make()
       else if(det==kFcsPresNorthDetId || det==kFcsPresSouthDetId){//EPD as Pres
 	picohit->mZstar = 375.0; //Taken from StFcsEventDisplay for zepd this is in cm
 	}
+      //std::cout << "|i:"<<ihit<<"|th:"<<totalhits<<"("<<picohit->mXstar<<","<<picohit->mYstar<<","<<picohit->mEnergy<<")"<<std::endl;
     }
     
     StSPtrVecFcsCluster& clusters = mFcsColl->clusters(det);
@@ -109,7 +111,7 @@ Int_t StFcsPicoTreeMaker::Make()
     for( int iclus=0; iclus<nc && mDoClus; ++iclus ){
       StFcsCluster* cluster = clusters[iclus];
       
-      StFcsPicoCluster* picoclus = mDataTree->ConstructedCluster(iclus);
+      StFcsPicoCluster* picoclus = mDataTree->ConstructedCluster(totalclus++);
       picoclus->mId             = cluster->id();
       picoclus->mDetId          = cluster->detectorId();
       picoclus->mCategory       = cluster->category();
@@ -137,7 +139,7 @@ Int_t StFcsPicoTreeMaker::Make()
     for( int ipoint=0; ipoint<np && mDoPoints; ++ipoint ){
       StFcsPoint* point=points[ipoint];
       
-      StFcsPicoPoint* picopoint = mDataTree->ConstructedPoint(ipoint);      
+      StFcsPicoPoint* picopoint = mDataTree->ConstructedPoint(totalpoints++);
       picopoint->mNS                    = point->detectorId();
       picopoint->mEnergy                = point->energy();
       picopoint->mXlocal                = point->x();
