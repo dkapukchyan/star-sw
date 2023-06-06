@@ -698,6 +698,67 @@ double StFcsDb::getProjectedDistance(StFcsPoint* ecal,  StFcsCluster* hcal, doub
     return sqrt(dX*dX + dY*dY);
 };
 
+StThreeVectorD StFcsDb::projectToEcal(double azimuth, double polar, double zvertex) const
+{
+  int det = 0;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  return projectToDet(det,azimuth,polar,zvertex);
+}
+
+StThreeVectorD StFcsDb::projectToHcal(double azimuth, double polar, double zvertex) const
+{
+  int det = 2;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  return projectToDet(det,azimuth,polar,zvertex);
+}
+
+StThreeVectorD StFcsDb::projectToEcalShowerMax(double azimuth, double polar, double zvertex) const
+{
+  int det = 0;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  return projectToShowerMax(det,azimuth,polar,zvertex);
+}
+
+StThreeVectorD StFcsDb::projectToHcalShowerMax(double azimuth, double polar, double zvertex) const
+{
+  int det = 2;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  return projectToShowerMax(det,azimuth,polar,zvertex);
+}
+
+StThreeVectorD StFcsDb::projectToDet(int det, double azimuth, double polar, double zvertex) const
+{
+  double detangle = getDetectorAngle(det)*M_PI/180.0;
+  StThreeVectorD xyzoff = getDetectorOffset(det);
+  //With zvertex how is direction of line determined? i.e. is the eta of the particle from simulation independent of the z vertex?
+  if( det%2==0 ){ detangle *= -1.0; } //North side use negative angle
+  double planenormal[3] = {sin(detangle),0,cos(detangle)};//This is the normal to the ecal plane
+  double linedir[3] = {cos(polar)*sin(azimuth),sin(polar)*sin(azimuth),cos(azimuth)};//This is the direction of a line formed for a given azimuth and polar angle in xyx coordinates where line starts at origin
+  //Solution of intersection of line and plane where line starts at origin and plane has some normal and has a point at the detector offset, "t" is the free parameter in the parametric equation of the line.
+  double tintersection =
+    (planenormal[0]*xyzoff.x()+planenormal[1]*xyzoff.y()+planenormal[2]*xyzoff.z()) /
+    (planenormal[0]*linedir[0]+planenormal[1]*linedir[1]+planenormal[2]*linedir[2]);
+    
+    return StThreeVectorD(linedir[0]*tintersection,linedir[1]*tintersection,linedir[2]*tintersection);
+}
+
+StThreeVectorD StFcsDb::projectToShowerMax(int det, double azimuth, double polar, double zvertex) const
+{
+  double detangle = getDetectorAngle(det)*M_PI/180.0;
+  StThreeVectorD xyzoff = getDetectorOffset(det);
+  double zshower = getShowerMaxZ(det);
+  double xoff  = xyzoff.x() + zshower*sin(detangle);
+  double zoff  = xyzoff.z() + zshower*cos(detangle);
+  if( det%2==0 ){ detangle *= -1.0; } //North side use negative angle
+  double planenormal[3] = {sin(detangle),0,cos(detangle)};//This is the normal to the ecal plane
+  double linedir[3] = {cos(polar)*sin(azimuth),sin(polar)*sin(azimuth),cos(azimuth)};//This is the direction of a line formed for a given azimuth and polar angle in xyx coordinates where line starts at origin
+  double tintersection =
+    (planenormal[0]*xoff+planenormal[1]*xyzoff.y()+planenormal[2]*zoff) /
+    (planenormal[0]*linedir[0]+planenormal[1]*linedir[1]+planenormal[2]*linedir[2]);
+    
+    return StThreeVectorD(linedir[0]*tintersection,linedir[1]*tintersection,linedir[2]*tintersection);
+}
+
 //! get coordinates of center of the cell STAR frame from StFcsHit
 StThreeVectorD StFcsDb::getStarXYZ(const StFcsHit* hit, float FcsZ) const{ 
     return getStarXYZ(hit->detectorId(),hit->id(),FcsZ);
