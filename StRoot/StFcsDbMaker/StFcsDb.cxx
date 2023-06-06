@@ -700,29 +700,29 @@ double StFcsDb::getProjectedDistance(StFcsPoint* ecal,  StFcsCluster* hcal, doub
 
 StThreeVectorD StFcsDb::projectToEcal(double azimuth, double polar, double zvertex) const
 {
-  int det = 0;
-  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  int det = 1;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 0; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
   return projectToDet(det,azimuth,polar,zvertex);
 }
 
 StThreeVectorD StFcsDb::projectToHcal(double azimuth, double polar, double zvertex) const
 {
-  int det = 2;
-  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  int det = 3;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 2; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
   return projectToDet(det,azimuth,polar,zvertex);
 }
 
 StThreeVectorD StFcsDb::projectToEcalShowerMax(double azimuth, double polar, double zvertex) const
 {
-  int det = 0;
-  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  int det = 1;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 0; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
   return projectToShowerMax(det,azimuth,polar,zvertex);
 }
 
 StThreeVectorD StFcsDb::projectToHcalShowerMax(double azimuth, double polar, double zvertex) const
 {
-  int det = 2;
-  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 1; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
+  int det = 3;
+  if( M_PI/2.0<polar && polar<(3*M_PI)/2.0 ){ det = 2; } //If polar angle is larger than pi/2 and less than 3pi/2 then it is on north side
   return projectToShowerMax(det,azimuth,polar,zvertex);
 }
 
