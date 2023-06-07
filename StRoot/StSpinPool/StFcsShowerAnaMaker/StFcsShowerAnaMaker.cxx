@@ -157,13 +157,13 @@ Int_t StFcsShowerAnaMaker::Make()
 	  //const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  //std::cout << "|parenttrk|Id:"<<parenttrk->id << "|Pid:"<<parenttrk->ge_pid << "|E:"<<parenttrk->e << "|eta:"<<parenttrk->eta << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
-	  double phix = acos(primtrk->p[0]/primtrk->pt);
-	  double phiy = asin(primtrk->p[1]/primtrk->pt);
-	  double phi = 0;
-	  if( primtrk->p[0]>0 && primtrk->p[1]>0 ){ phi=phix; }            //first quadrant angles match
-	  if( primtrk->p[0]<0 && primtrk->p[1]>0 ){ phi=phix; }            //second quadrant take arccos
-	  if( primtrk->p[0]<0 && primtrk->p[1]<0 ){ phi=phix+3.1415/2.0; } //third quadrant take arccos+90
-	  if( primtrk->p[0]>0 && primtrk->p[1]<0 ){ phi=phiy; }            //fourth quadrant take arcsin
+	  //double phix = acos(primtrk->p[0]/primtrk->pt);
+	  //double phiy = asin(primtrk->p[1]/primtrk->pt);
+	  double phi = atan2(primtrk->p[1],primtrk->p[0]);
+	  //if( primtrk->p[0]>0 && primtrk->p[1]>0 ){ phi=phix; }            //first quadrant angles match
+	  //if( primtrk->p[0]<0 && primtrk->p[1]>0 ){ phi=phix; }            //second quadrant take arccos
+	  //if( primtrk->p[0]<0 && primtrk->p[1]<0 ){ phi=phix+3.1415/2.0; } //third quadrant take arccos+90
+	  //if( primtrk->p[0]>0 && primtrk->p[1]<0 ){ phi=phiy; }            //fourth quadrant take arcsin
 	  double theta = 2.0*atan(exp(-1.0*primtrk->eta));
 	  StThreeVectorD projxyz = mFcsDb->projectToEcal(theta,phi);
 	  StThreeVectorD projshowerxyz1 = mFcsDb->projectToEcalShowerMax(theta,phi);
