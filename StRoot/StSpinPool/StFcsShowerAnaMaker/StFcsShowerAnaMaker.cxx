@@ -157,24 +157,16 @@ Int_t StFcsShowerAnaMaker::Make()
 	  //const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  //std::cout << "|parenttrk|Id:"<<parenttrk->id << "|Pid:"<<parenttrk->ge_pid << "|E:"<<parenttrk->e << "|eta:"<<parenttrk->eta << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
-	  //double phix = acos(primtrk->p[0]/primtrk->pt);
-	  //double phiy = asin(primtrk->p[1]/primtrk->pt);
 	  double phi = atan2(primtrk->p[1],primtrk->p[0]);
-	  //if( primtrk->p[0]>0 && primtrk->p[1]>0 ){ phi=phix; }            //first quadrant angles match
-	  //if( primtrk->p[0]<0 && primtrk->p[1]>0 ){ phi=phix; }            //second quadrant take arccos
-	  //if( primtrk->p[0]<0 && primtrk->p[1]<0 ){ phi=phix+3.1415/2.0; } //third quadrant take arccos+90
-	  //if( primtrk->p[0]>0 && primtrk->p[1]<0 ){ phi=phiy; }            //fourth quadrant take arcsin
 	  double theta = 2.0*atan(exp(-1.0*primtrk->eta));
-	  StThreeVectorD projxyz = mFcsDb->projectToEcal(theta,phi);
-	  StThreeVectorD projshowerxyz1 = mFcsDb->projectToEcalShowerMax(theta,phi);
-	  StThreeVectorD projshowerxyz2 = mFcsDb->projectToShowerMax(primtrk->p[0]<0?0:1,theta,phi);
+	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk);
+	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk);
 	  std::cout << "|primtrk|Id:"<<primtrk->id << "|Pid:"<<primtrk->ge_pid << "|E:"<<primtrk->e
 		    << "|px:"<<primtrk->p[0] << "|py:"<<primtrk->p[1] << "|pz:"<<primtrk->p[2] << "|pt:"<<primtrk->pt << "|ptot:"<<primtrk->ptot
 		    << "|eta:"<<primtrk->eta << "|theta:"<<theta << "|phi:"<<phi
 		    << "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
-		    << "|proj:("<<projxyz.x() <<","<<projxyz.y()<<","<<projxyz.z() <<")"
-		    << "|projS1:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
-		    << "|projS2:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
+		    << "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
+		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
 		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	}
       }
