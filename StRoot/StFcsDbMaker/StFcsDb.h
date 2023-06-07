@@ -274,12 +274,12 @@ public:
   const g2t_track_st* getPrimaryG2tTrack(StFcsHit* h,     g2t_track_st* g2ttrk, float& fraction, int& ntrk, unsigned int order=0);
   const g2t_track_st* getPrimaryG2tTrack(StFcsCluster* c, g2t_track_st* g2ttrk, float& fraction, int& ntrk, unsigned int order=0);
 
-  StThreeVectorD projectToEcal(double azimuth, double polar, double zvertex=0) const;           //!< See #ProjectToDet() 0<=Azimuth<=Pi, 0<=Polar<=2Pi
-  StThreeVectorD projectToEcalShowerMax(double azimuth, double polar, double zvertex=0) const;  //!< See #ProjectToDet() 0<=Azimuth<=Pi, 0<=Polar<=2Pi
-  StThreeVectorD projectToHcal(double azimuth, double polar, double zvertex=0) const;           //!< See #ProjectToDet() 0<=Azimuth<=Pi, 0<=Polar<=2Pi
-  StThreeVectorD projectToHcalShowerMax(double azimuth, double polar, double zvertex=0) const;  //!< See #ProjectToDet() 0<=Azimuth<=Pi, 0<=Polar<=2Pi
-  StThreeVectorD projectToDet(int det,double azimuth, double polar, double zvertex=0) const;    //! Get the STAR XYZ that corresponds to the intersection of the FCS front plane and a line given by the direction of some azimuthal angle and polar angle. Note that if you choose the wrong detector for a given polar angle you will get the wrong projection so please use #ProjectToEcal() and #ProjectToHcal() to take into account which polar angle goes to which detector. If zvertex!=0 (need to ask whether azimuth is angle with new vertex or global STAR?)
-  StThreeVectorD projectToShowerMax(int det,double azimuth, double polar, double zvertex=0) const; //! Get the STAR XYZ that corresponds to the intersection of the FCS shower max Z and a line given by the direction of some azimuthal angle and polar angle. Note that if you choose the wrong detector for a given polar angle you will get the wrong projection so please use #ProjectToEcalShowerMax() and #ProjectToHcalShowerMax() to take into account which polar angle goes to which detector. If zvertex!=0 (need to ask whether azimuth is angle with new vertex or global STAR?)
+  StThreeVectorD projectTrackToEcal(const g2t_track_st* g2ttrk) const;
+  StThreeVectorD projectTrackToHcal(const g2t_track_st* g2ttrk) const;
+  StThreeVectorD projectTrackToEcalSMax(const g2t_track_st* g2ttrk) const; //!< SMax = Shower Max Z
+  StThreeVectorD projectTrackToHcalSMax(const g2t_track_st* g2ttrk) const; //!< SMax = Shower Max Z
+  StThreeVectorD projectToDet(int det,double azimuth, double polar, double xvertex=0, double yvertex=0, double zvertex=0) const;    //! Get the STAR XYZ that corresponds to the intersection of the FCS front plane and a line given by the direction of some azimuthal angle and polar angle. Note that if you choose the wrong detector for a given polar angle you will get the wrong projection so please use #projectTrackToEcal() and #projectTrackToHcal() to take into account which polar angle goes to which detector. If zvertex!=0 (need to ask whether azimuth is angle with new vertex or global STAR?)
+  StThreeVectorD projectToShowerMax(int det,double azimuth, double polar, double xvertex=0, double yvertex=0, double zvertex=0) const; //! Get the STAR XYZ that corresponds to the intersection of the FCS shower max Z and a line given by the direction of some azimuthal angle and polar angle. Note that if you choose the wrong detector for a given polar angle you will get the wrong projection so please use #projectTrackToEcalShowerMax() and #projectTrackToHcalShowerMax() to take into account which polar angle goes to which detector. If zvertex!=0 (need to ask whether azimuth is angle with new vertex or global STAR?)
 
  private:
   int   mDbAccess=1;                     //! enable(1) or disabe(0) DB access
