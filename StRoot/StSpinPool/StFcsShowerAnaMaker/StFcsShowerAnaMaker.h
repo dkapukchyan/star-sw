@@ -18,8 +18,36 @@
 //STAR headers
 #include "StMaker.h"
 
+//Custom Headers
+#include "StFcsPicoTree.h"
+#include "ClonesArrTree.h"
+
+
 class StFcsDb;
 class StFcsCollection;
+
+class StPicoG2tTrack : public TObject
+{
+public:
+  StPicoG2tTrack();
+  ~StPicoG2tTrack();
+
+  long id = 0;
+  long ge_pid  = 0;
+  double mPx = 0;
+  double mPy = 0;
+  double mPz = 0;
+  double mEta = 0;
+  double phi()  { return atan2(mPy,mPx); }
+  double pt()   { return sqrt( mPx*mPx + mPy*mPy ); }
+  double ptot() { return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
+  double theta(){ return 2.0*atan(exp(-1.0*mEta)); }
+  double mXProj = 0;
+  double mYProj = 0;
+  double mZProj = 0;
+
+  ClassDef(StPicoG2tTrack,1);
+};
 
 class StFcsShowerAnaMaker : public StMaker
 {
@@ -59,6 +87,8 @@ class StFcsShowerAnaMaker : public StMaker
 
 private:
   double mEnCut = -1;   //!< energy to cut on for both clusters and points
+
+  Rtools::ClonesArrTree* mDataTree = 0; //! Tree to hold information
   
   ClassDef(StFcsShowerAnaMaker,1);
 };
