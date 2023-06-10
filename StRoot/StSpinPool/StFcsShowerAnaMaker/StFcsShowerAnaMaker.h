@@ -37,6 +37,7 @@ public:
   double mPx = 0;
   double mPy = 0;
   double mPz = 0;
+  double mE  = 0;
   double mEta = 0;
   double phi()  { return atan2(mPy,mPx); }
   double pt()   { return sqrt( mPx*mPx + mPy*mPy ); }

@@ -15,6 +15,15 @@
 
 //#include "/star/u/dkap7827/Tools2/Tools/MyTools/inc/Ctools.h"
 //#include "/star/u/dkap7827/Tools2/Tools/MyTools/inc/Rtools.h"
+ClassImp(StPicoG2tTrack)
+
+StPicoG2tTrack::StPicoG2tTrack()
+{}
+
+StPicoG2tTrack::~StPicoG2tTrack()
+{}
+
+ClassImp(StFcsShowerAnaMaker)
 
 StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
 {
@@ -38,7 +47,7 @@ Int_t StFcsShowerAnaMaker::Init()
   if( mDataTree==0 ){
     mDataTree = new Rtools::ClonesArrTree("ShowerAnaTree","");
     mDataTree->AddArr("FcsHit",    "StFcsPicoHit");
-    mDataTree->AddArr("FcsCluster","StFcsPicoClus");
+    mDataTree->AddArr("FcsCluster","StFcsPicoCluster");
     mDataTree->AddArr("FcsPoint",  "StFcsPicoPoint");
     mDataTree->AddArr("G2tPrim",   "StPicoG2tTrack");
   }
@@ -128,12 +137,15 @@ Int_t StFcsShowerAnaMaker::Make()
   TClonesArray* mClusArr = mDataTree->GetClassArr("StFcsPicoCluster");
   TClonesArray* mPointArr = mDataTree->GetClassArr("StFcsPicoPoint");
   TClonesArray* mG2tPrimArr = mDataTree->GetClassArr("StPicoG2tTrack");
+  //std::cout << "|HitsArr:"<<mHitsArr << "|ClusArr:"<<mClusArr << "|PointArr:"<<mPointArr << "|G2tArr:"<<mG2tPrimArr << std::endl;
   for( int det=0; det<kFcsNDet; det++ ){
     StSPtrVecFcsHit& hits = mFcsColl->hits(det);
     int nh = mFcsColl->numberOfHits(det);
+    //std::cout << "|det:"<<det << "|nh:"<<nh << std::endl;
     for( int ihit=0; ihit<nh; ++ihit ){
       StFcsHit* hit=hits[ihit];
       StFcsPicoHit* picohit = (StFcsPicoHit*)mHitsArr->ConstructedAt(totalhits++);
+      //std::cout << "|det:"<<det<<"|ihit:"<<ihit << "|hit:"<<hit << "|picohit:"<<picohit << std::endl;
       picohit->mDetId  = hit->detectorId();
       picohit->mChId   = hit->id();
       picohit->mAdcSum = hit->adcSum();
@@ -153,9 +165,9 @@ Int_t StFcsShowerAnaMaker::Make()
 
     StSPtrVecFcsCluster& clusters = mFcsColl->clusters(det);
     int nc = mFcsColl->numberOfClusters(det);
+    //std::cout << "|det:"<<det << "|nc:"<<nc << std::endl;
     for( int iclus=0; iclus<nc; ++iclus ){
       StFcsCluster* cluster = clusters[iclus];
-      
       StFcsPicoCluster* picoclus = (StFcsPicoCluster*)mClusArr->ConstructedAt(totalclus++);
       picoclus->mId             = cluster->id();
       picoclus->mDetId          = cluster->detectorId();
@@ -188,8 +200,10 @@ Int_t StFcsShowerAnaMaker::Make()
     
     StSPtrVecFcsPoint& points = mFcsColl->points(det);
     int np = mFcsColl->numberOfPoints(det);
+    //std::cout << "|det:"<<det << "|np:"<<np << std::endl;
     for( int ipoint=0; ipoint<np; ++ipoint ){
       StFcsPoint* point=points[ipoint];
+      //std::cout << "|det:"<<det<<"|ipoint:"<<ipoint << "|point:"<<point << std::endl;
       if( point->energy() > mEnCut ){
 	float xfull = point->x();
 	float xwhole = floor(xfull);
@@ -211,7 +225,7 @@ Int_t StFcsShowerAnaMaker::Make()
 	  }
 	}
 	if( g2ttrk ){
-	  StFcsPicoPoint* picopoint = (StFcsPicoPoint*)mPointArr->ConstructedAt(totalpoints++);
+	  StFcsPicoPoint* picopoint = (StFcsPicoPoint*)mPointArr->ConstructedAt(totalpoints);
 	  picopoint->mNS                    = point->detectorId();
 	  picopoint->mEnergy                = point->energy();
 	  picopoint->mXlocal                = point->x();
@@ -235,17 +249,20 @@ Int_t StFcsShowerAnaMaker::Make()
 	  //const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  //std::cout << "|parenttrk|Id:"<<parenttrk->id << "|Pid:"<<parenttrk->ge_pid << "|E:"<<parenttrk->e << "|eta:"<<parenttrk->eta << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
-	  StPicoG2tTrack* picotrk = (StPicoG2tTrack*)mG2tPrimArr->ConstructedAt(totalpoints);
-	  StThreeVectorD projshowerxyz = mFcsDb->projectTrackToEcalSMax(primtrk);
+	  StPicoG2tTrack* picotrk = (StPicoG2tTrack*)mG2tPrimArr->ConstructedAt(totalpoints++);
+	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk);
+	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk);
+	  std::cout << "|picotrk:"<<picotrk << "|primtrk:"<<primtrk << std::endl;
 	  picotrk->id = primtrk->id;
 	  picotrk->ge_pid = primtrk->ge_pid;
 	  picotrk->mPx = primtrk->p[0];
 	  picotrk->mPy = primtrk->p[1];
 	  picotrk->mPz = primtrk->p[2];
+	  picotrk->mE  = primtrk->e;
 	  picotrk->mEta = primtrk->eta;
-	  picotrk->mXProj = projshowerxyz.x();
-	  picotrk->mYProj = projshowerxyz.y();
-	  picotrk->mZProj = projshowerxyz.z();
+	  picotrk->mXProj = projshowerxyz2.x();
+	  picotrk->mYProj = projshowerxyz2.y();
+	  picotrk->mZProj = projshowerxyz2.z();
 	  /*
 	  double phi = atan2(primtrk->p[1],primtrk->p[0]);
 	  double theta = 2.0*atan(exp(-1.0*primtrk->eta));
@@ -259,6 +276,13 @@ Int_t StFcsShowerAnaMaker::Make()
 		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
 		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  */
+	  std::cout << "|primtrk|Id:"<<picotrk->id << "|Pid:"<<picotrk->ge_pid << "|E:"<<picotrk->mE
+		    << "|px:"<<picotrk->mPx << "|py:"<<picotrk->mPy << "|pz:"<<picotrk->mPz << "|pt:"<<picotrk->pt() << "|ptot:"<<picotrk->ptot()
+		    << "|eta:"<<picotrk->mEta << "|theta:"<<picotrk->theta() << "|phi:"<<picotrk->phi()
+		    << "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
+		    << "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
+		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
+		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	}
       }
     }
