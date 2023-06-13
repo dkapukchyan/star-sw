@@ -15,14 +15,6 @@
 
 //#include "/star/u/dkap7827/Tools2/Tools/MyTools/inc/Ctools.h"
 //#include "/star/u/dkap7827/Tools2/Tools/MyTools/inc/Rtools.h"
-ClassImp(StPicoG2tTrack)
-
-StPicoG2tTrack::StPicoG2tTrack()
-{}
-
-StPicoG2tTrack::~StPicoG2tTrack()
-{}
-
 ClassImp(StFcsShowerAnaMaker)
 
 StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
