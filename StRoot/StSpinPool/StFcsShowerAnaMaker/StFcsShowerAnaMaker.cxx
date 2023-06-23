@@ -6,6 +6,7 @@
 #include "StEventTypes.h"
 #include "StMuDSTMaker/COMMON/StMuTypes.hh"
 #include "StThreeVectorF.hh"
+#include "tables/St_g2t_vertex_Table.h"
 
 #include "StFcsDbMaker/StFcsDb.h"
 #include "StFcsDbMaker/StFcsDbMaker.h"
@@ -206,7 +207,10 @@ Int_t StFcsShowerAnaMaker::Make()
 
 	StFcsCluster* pointclus = point->cluster();
 	g2t_track_st* g2ttrk = 0;
+	g2t_vertex_st* g2tvert = 0;
 	St_g2t_track* trackTable = static_cast<St_g2t_track*>(GetDataSet("g2t_track"));
+	St_g2t_vertex* vertexTable = static_cast<St_g2t_vertex*>(GetDataSet("g2t_vertex"));
+	double speedperc = 0;
 	if( !trackTable ){ std::cout<< "g2t_track Table not found" << std::endl; continue; }
 	else{
 	  const int nTrk = trackTable->GetNRows();
@@ -216,7 +220,16 @@ Int_t StFcsShowerAnaMaker::Make()
 	    if( !g2ttrk) { std::cout << " g2t_track GetTable failed" << std::endl; continue; }
 	  }
 	}
-	if( g2ttrk ){
+	if( !vertexTable ){ std::cout<< "g2t_vertex Table not found" << std::endl; continue; }
+	else{
+	  const int nVertex = vertexTable->GetNRows();
+	  std::cout << "g2t_vertex table has "<< nVertex << " vertices" << std::endl;
+	  if( nVertex>0 ){
+	    g2tvert = vertexTable->GetTable();
+	    if( !g2tvert) { std::cout << " g2t_vertex GetTable failed" << std::endl; continue; }
+	  }
+	}
+	if( g2ttrk && g2tvert ){
 	  StFcsPicoPoint* picopoint = (StFcsPicoPoint*)mPointArr->ConstructedAt(totalpoints);
 	  picopoint->mNS                    = point->detectorId();
 	  picopoint->mEnergy                = point->energy();
@@ -240,11 +253,12 @@ Int_t StFcsShowerAnaMaker::Make()
 	  int ntrk=0;
 	  //const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  //std::cout << "|parenttrk|Id:"<<parenttrk->id << "|Pid:"<<parenttrk->ge_pid << "|E:"<<parenttrk->e << "|eta:"<<parenttrk->eta << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
-	  const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
+	  //const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
+	  const g2t_track_st* primtrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  StPicoG2tTrack* picotrk = (StPicoG2tTrack*)mG2tPrimArr->ConstructedAt(totalpoints++);
 	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk);
 	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk);
-	  std::cout << "|picotrk:"<<picotrk << "|primtrk:"<<primtrk << std::endl;
+	  //std::cout << "|picotrk:"<<picotrk << "|primtrk:"<<primtrk << std::endl;
 	  picotrk->id = primtrk->id;
 	  picotrk->ge_pid = primtrk->ge_pid;
 	  picotrk->mPx = primtrk->p[0];
@@ -255,26 +269,65 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picotrk->mXProj = projshowerxyz2.x();
 	  picotrk->mYProj = projshowerxyz2.y();
 	  picotrk->mZProj = projshowerxyz2.z();
-	  /*
-	  double phi = atan2(primtrk->p[1],primtrk->p[0]);
-	  double theta = 2.0*atan(exp(-1.0*primtrk->eta));
-	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk);
-	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk);
+	  
+	  //double phi = atan2(primtrk->p[1],primtrk->p[0]);
+	  //double theta = 2.0*atan(exp(-1.0*primtrk->eta));
+	  //double mass = sqrt(primtrk->e*primtrk->e - primtrk->ptot*primtrk->ptot);
 	  std::cout << "|primtrk|Id:"<<primtrk->id << "|Pid:"<<primtrk->ge_pid << "|E:"<<primtrk->e
 		    << "|px:"<<primtrk->p[0] << "|py:"<<primtrk->p[1] << "|pz:"<<primtrk->p[2] << "|pt:"<<primtrk->pt << "|ptot:"<<primtrk->ptot
-		    << "|eta:"<<primtrk->eta << "|theta:"<<theta << "|phi:"<<phi
+		    << "|eta:"<<primtrk->eta //<< "|theta:"<<theta << "|phi:"<<phi << "|mass:"<< mass
+	    //<< "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
+	    //<< "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
+	    //<< "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
+		    << "|start_vertex:"<<primtrk->start_vertex_p << "|stop_vertex:"<<primtrk->stop_vertex_p
+		    << "|frac:"<<frac << "|ntrk:"<<ntrk
+		    << std::endl;
+	  /*
+	  std::cout << "|primtrk|Id:"<<picotrk->id << "|Pid:"<<picotrk->ge_pid << "|E:"<<picotrk->mE
+		    << "|px:"<<picotrk->mPx << "|py:"<<picotrk->mPy << "|pz:"<<picotrk->mPz
+		    << "|pt:"<<picotrk->pt()<<"|g2t:"<<primtrk->pt << "|ptot:"<<picotrk->ptot() << "|g2t:"<<primtrk->ptot
+		    << "|eta:"<<picotrk->mEta <<"|g2t:"<<primtrk->eta << "|theta:"<<picotrk->theta() << "|phi:"<<picotrk->phi()
 		    << "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
 		    << "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
 		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
 		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  */
-	  std::cout << "|primtrk|Id:"<<picotrk->id << "|Pid:"<<picotrk->ge_pid << "|E:"<<picotrk->mE
-		    << "|px:"<<picotrk->mPx << "|py:"<<picotrk->mPy << "|pz:"<<picotrk->mPz << "|pt:"<<picotrk->pt() << "|ptot:"<<picotrk->ptot()
-		    << "|eta:"<<picotrk->mEta << "|theta:"<<picotrk->theta() << "|phi:"<<picotrk->phi()
-		    << "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
-		    << "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
-		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
-		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
+	  int totalntrk = ntrk;
+	  for( int itrk=0; itrk<totalntrk; ++itrk ){
+	    const g2t_track_st* sectrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk,itrk);
+	    if( sectrk==0 ){ continue; }
+	    double phi = atan2(sectrk->p[1],sectrk->p[0]);
+	    double theta = 2.0*atan(exp(-1.0*sectrk->eta));
+	    double mass = sqrt(sectrk->e*sectrk->e - sectrk->ptot*sectrk->ptot);
+	    double diff = speedperc  - sectrk->ptot/sectrk->e;
+	    std::cout << " + |sectrk:"<<itrk<<"|Id:"<<sectrk->id << "|Pid:"<<sectrk->ge_pid << "|E:"<<sectrk->e
+		      << "|px:"<<sectrk->p[0] << "|py:"<<sectrk->p[1] << "|pz:"<<sectrk->p[2] << "|pt:"<<sectrk->pt << "|ptot:"<<sectrk->ptot
+		      << "|eta:" << sectrk->eta << "|theta:"<<theta << "|phi:"<<phi << "|mass:"<< mass << "|beta:"<<sectrk->ptot/sectrk->e
+		      << "|diff:"<< diff
+		      << "|start_vertex:"<<sectrk->start_vertex_p << "|stop_vertex:"<<sectrk->stop_vertex_p
+		      << "|frac:"<<frac << "|ntrk:"<<ntrk
+		      << std::endl;
+	  }
+	  for( int i=0; i<vertexTable->GetNRows(); ++i ){
+	    double xdiff = g2tvert[i].ge_x[0] - g2tvert[0].ge_x[0];
+	    double ydiff = g2tvert[i].ge_x[1] - g2tvert[0].ge_x[1];
+	    double zdiff = g2tvert[i].ge_x[2] - g2tvert[0].ge_x[2];
+	    //double dist = sqrt( g2tvert[i].ge_x[0]*g2tvert[i].ge_x[0] + g2tvert[i].ge_x[1]*g2tvert[i].ge_x[1] + g2tvert[i].ge_x[2]*g2tvert[i].ge_x[2]  );
+	    double dist = sqrt( xdiff*xdiff + ydiff*ydiff + zdiff*zdiff );
+	    double speed = (dist/g2tvert[i].ge_tof) / 100.0; //convert to meters/sec
+	    speedperc = speed/299792458.0;
+	    double masspi0 = 0.1349768;
+	    //double masspi0 = 0.135031;
+	    double MyE = masspi0 * sqrt( (1.0)/(1.0-speedperc*speedperc) );
+	    double MyP = sqrt( MyE*MyE - masspi0*masspi0 );
+	    double MyM = sqrt( MyE*MyE - MyP*MyP );
+	    std::cout << "|g2tvert|i:"<<i << "|dp:"<<(g2tvert[i].daughter_p)+1 << "|eg_label:"<<g2tvert[i].eg_label << "|eg_proc:" << g2tvert[i].eg_proc
+		      << "|event_p:"<<g2tvert[i].event_p << "|id:"<< g2tvert[i].id << "|is_itrmd:"<<g2tvert[i].is_itrmd << "|parent_p:"<<g2tvert[i].parent_p
+		      << "|eg_tof:"<<g2tvert[i].eg_tof << "|eg_x:"<<g2tvert[i].eg_x[0] <<","<< g2tvert[i].eg_x[1]<<","<<g2tvert[i].eg_x[2]
+		      << "|ge_tof:"<<g2tvert[i].ge_tof << "|ge_x:"<<g2tvert[i].ge_x[0]<<","<<g2tvert[i].ge_x[1]<<","<<g2tvert[i].ge_x[2]
+		      << "|ge_vz:"<<speedperc << "|ge_MyE:"<< MyE << "|ge_MyP:"<< MyP << "|ge_MyM:"<< MyM
+		      << std::endl;
+	  }
 	}
       }
     }

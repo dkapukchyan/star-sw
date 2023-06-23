@@ -89,16 +89,18 @@ public:
   StPicoG2tTrack() {}
 
   long id = 0;
-  long ge_pid  = 0;
+  long ge_pid = 0;
   double mPx = 0;
   double mPy = 0;
   double mPz = 0;
   double mE  = 0;
   double mEta = 0;
+  double eta()  { if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
   double phi()  { return atan2(mPy,mPx); }
   double pt()   { return sqrt( mPx*mPx + mPy*mPy ); }
   double ptot() { return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
-  double theta(){ return 2.0*atan(exp(-1.0*mEta)); }
+  double theta(){ return 2.0*atan(exp(-1.0*eta())); }
+  double mass() { return sqrt(mE*mE - ptot()*ptot()); }
   double mXProj = 0;
   double mYProj = 0;
   double mZProj = 0;
