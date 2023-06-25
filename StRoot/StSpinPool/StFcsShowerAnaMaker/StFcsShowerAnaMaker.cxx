@@ -256,8 +256,8 @@ Int_t StFcsShowerAnaMaker::Make()
 	  //const g2t_track_st* primtrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  const g2t_track_st* primtrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  StPicoG2tTrack* picotrk = (StPicoG2tTrack*)mG2tPrimArr->ConstructedAt(totalpoints++);
-	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk);
-	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk);
+	  StThreeVectorD projshowerxyz1 = mFcsDb->projectTrackToEcal(primtrk,g2tvert);
+	  StThreeVectorD projshowerxyz2 = mFcsDb->projectTrackToEcalSMax(primtrk,g2tvert);
 	  //std::cout << "|picotrk:"<<picotrk << "|primtrk:"<<primtrk << std::endl;
 	  picotrk->id = primtrk->id;
 	  picotrk->ge_pid = primtrk->ge_pid;
@@ -276,9 +276,9 @@ Int_t StFcsShowerAnaMaker::Make()
 	  std::cout << "|primtrk|Id:"<<primtrk->id << "|Pid:"<<primtrk->ge_pid << "|E:"<<primtrk->e
 		    << "|px:"<<primtrk->p[0] << "|py:"<<primtrk->p[1] << "|pz:"<<primtrk->p[2] << "|pt:"<<primtrk->pt << "|ptot:"<<primtrk->ptot
 		    << "|eta:"<<primtrk->eta //<< "|theta:"<<theta << "|phi:"<<phi << "|mass:"<< mass
-	    //<< "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
-	    //<< "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
-	    //<< "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
+		    << "|point:("<<pointxyz.x() <<","<<pointxyz.y()<<","<<pointxyz.z() <<")"
+		    << "|projE:("<<projshowerxyz1.x() <<","<<projshowerxyz1.y()<<","<<projshowerxyz1.z() <<")"
+		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
 		    << "|start_vertex:"<<primtrk->start_vertex_p << "|stop_vertex:"<<primtrk->stop_vertex_p
 		    << "|frac:"<<frac << "|ntrk:"<<ntrk
 		    << std::endl;
