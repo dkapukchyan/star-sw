@@ -51,6 +51,9 @@ class StFcsShowerAnaMaker : public StMaker
   TH1F* mH1F_PointXLocal = 0;    //!< Histogram of point local x value but only the decimal value is stored. Local means that deltax=1 is equivalent to 1 cell, e.g. x=3.4 means 3 towers away from beam pipe plus 40% extra into that tower
   TH1F* mH1F_PointYLocal = 0;    //!< Histogram of point local y value but only the decimal value is stored. Local means that deltay=1 is equivalent to 1 cell, e.g. y=2.6 means 2 towers from bottom plus 60% extra into that tower
 
+  TH2F* mH2F_PointXProjX = 0;    //! Histogram of reconstructed point x-value vs. track projected x-value
+  TH2F* mH2F_PointYProjY = 0;   //! Histogram of reconstructed point y-value vs. track projected y-value
+
   TH1F* mH1F_ClusSigMax = 0;  //!< Histogram of cluster sigma max
   TH1F* mH1F_ClusSigMin = 0;  //!< Histogram of cluster sigma min
 
