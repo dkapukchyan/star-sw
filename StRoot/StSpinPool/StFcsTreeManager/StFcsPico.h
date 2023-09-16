@@ -1,5 +1,7 @@
 /*
   The purpose of this header is to represent the basic "pico" level information about FCS information from simulation and data. The other reason to keep all these classes separate is so that you can load this library into ROOT without any other STAR libraries.
+
+  @[September 6, 2023](David Kapukchyan) > Changed "mLorentz" variables in StFcsPicoPoint to be just px, py, pz,and E. Also, changed "mLorentz" variables in StFcsPicoCluster to just px, py, pz, e since these weren't being set any way. NB:For both StFcsPicoCluster and StFcsPicoPoint *mEnergy* is the energy directly from the StFcsCluster and StFcsPoint object, mE is the one from the "fourmomentum()"
   
   @[June 13, 2023](David Kapukchyan) > Copied from StFcsPicoTree.h and only left the relevant "pico" classes
  */
@@ -49,12 +51,12 @@ public:
   Float_t mChi2Ndf2Phoron=0;
 
   //Lorentz 4 momentum of cluster
-  Double_t mLorentzX = 0;
-  Double_t mLorentzY = 0;
-  Double_t mLorentzZ = 0;
-  Double_t mLorentzE = 0;
+  Double_t mPx = 0;
+  Double_t mPy = 0;
+  Double_t mPz = 0;
+  Double_t mE  = 0;
 
-  ClassDef(StFcsPicoCluster,1);
+  ClassDef(StFcsPicoCluster,2);
 };
 
 //A dummy clas to hold just the basic FCS point information
@@ -74,12 +76,12 @@ public:
   Double_t mZstar = 0;
 
   //Lorentz 4 momentum of point
-  Double_t mLorentzX = 0;
-  Double_t mLorentzY = 0;
-  Double_t mLorentzZ = 0;
-  Double_t mLorentzE = 0;  
+  Double_t mPx = 0;
+  Double_t mPy = 0;
+  Double_t mPz = 0;
+  Double_t mE  = 0;
 
-  ClassDef(StFcsPicoPoint,1);
+  ClassDef(StFcsPicoPoint,2);
 };
 
 //A dummy  class to hold just the basic G2t track information

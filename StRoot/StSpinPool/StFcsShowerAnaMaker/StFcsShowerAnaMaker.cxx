@@ -187,10 +187,10 @@ Int_t StFcsShowerAnaMaker::Make()
       picoclus->mChi2Ndf2Phoron = cluster->chi2Ndf2Photon();
       //Lorentz 4 momentum of cluster
       StLorentzVectorD clusp = cluster->fourMomentum();
-      picoclus->mLorentzX = clusp.x();
-      picoclus->mLorentzY = clusp.y();
-      picoclus->mLorentzZ = clusp.z();
-      picoclus->mLorentzE = clusp.e();
+      picoclus->mPx = clusp.px();
+      picoclus->mPy = clusp.py();
+      picoclus->mPz = clusp.pz();
+      picoclus->mE  = clusp.e();
       
       if( cluster->energy() > mEnCut ){
 	mH1F_ClusSigMax->Fill(cluster->sigmaMax());
@@ -253,10 +253,10 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picopoint->mZstar = pointxyz.z();
 	  //Lorentz 4 momentum of point
 	  StLorentzVectorD pointp = point->fourMomentum();
-	  picopoint->mLorentzX = pointp.x();
-	  picopoint->mLorentzY = pointp.y();
-	  picopoint->mLorentzZ = pointp.z();
-	  picopoint->mLorentzE = pointp.e();
+	  picopoint->mPx = pointp.px();
+	  picopoint->mPy = pointp.py();
+	  picopoint->mPz = pointp.pz();
+	  picopoint->mE  = pointp.e();
 
 	  float frac=0;
 	  int ntrk=0;
