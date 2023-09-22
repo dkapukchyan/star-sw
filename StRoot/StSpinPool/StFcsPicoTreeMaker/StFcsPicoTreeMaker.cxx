@@ -140,10 +140,11 @@ Int_t StFcsPicoTreeMaker::Make()
       StFcsPoint* point=points[ipoint];
       
       StFcsPicoPoint* picopoint = mDataTree->ConstructedPoint(totalpoints++);
-      picopoint->mNS                    = point->detectorId();
+      picopoint->mDetId                 = point->detectorId();
       picopoint->mEnergy                = point->energy();
       picopoint->mXlocal                = point->x();
       picopoint->mYlocal                = point->y();
+      picopoint->mParentClusterId       = point->parentClusterId();
       picopoint->mNParentClusterPhotons = point->nParentClusterPhotons();
       //STAR xyx
       StThreeVectorF pointxyz = point->xyz();
