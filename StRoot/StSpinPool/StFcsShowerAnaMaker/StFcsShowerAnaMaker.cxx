@@ -127,12 +127,12 @@ Int_t StFcsShowerAnaMaker::Make()
   int totalclus = 0;   //Running counter for all clusters for all detectors
   int totalpoints = 0; //Running counter for all points for all detectors
   
-  TClonesArray* mHitsArr = mDataTree->GetClassArr("StFcsPicoHit");
-  TClonesArray* mClusArr = mDataTree->GetClassArr("StFcsPicoCluster");
-  TClonesArray* mPointArr = mDataTree->GetClassArr("StFcsPicoPoint");
+  TClonesArray* mHitsArr = mDataTree->GetBranchArr("FcsHit");
+  TClonesArray* mClusArr = mDataTree->GetBranchArr("FcsCluster");
+  TClonesArray* mPointArr = mDataTree->GetBranchArr("FcsPoint");
   TClonesArray* mG2tPrimArr = mDataTree->GetBranchArr("G2tPrim");
   TClonesArray* mG2tParArr = mDataTree->GetBranchArr("G2tParent");
-  //std::cout << "|HitsArr:"<<mHitsArr << "|ClusArr:"<<mClusArr << "|PointArr:"<<mPointArr << "|G2tArr:"<<mG2tPrimArr << std::endl;
+  //std::cout << "|HitsArr:"<<mHitsArr << "|ClusArr:"<<mClusArr << "|PointArr:"<<mPointArr << "|G2tPrimArr:"<<mG2tPrimArr << "|G2tParArr:"<<mG2tParArr << std::endl;
   for( int det=0; det<kFcsNDet; det++ ){
     StSPtrVecFcsHit& hits = mFcsColl->hits(det);
     int nh = mFcsColl->numberOfHits(det);
