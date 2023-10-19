@@ -6,6 +6,8 @@
   @[September 6, 2023](David Kapukchyan) > Changed "mLorentz" variables in StFcsPicoPoint to be just px, py, pz,and E. Also, changed "mLorentz" variables in StFcsPicoCluster to just px, py, pz, e since these weren't being set any way. NB:For both StFcsPicoCluster and StFcsPicoPoint *mEnergy* is the energy directly from the StFcsCluster and StFcsPoint object, mE is the one from the "fourmomentum()"
 
   @[September 18, 2023](David Kapukchyan) > Changed 'mNS' in *StFcsPicoPoint* to 'mDetId' along with where it is used. I also experimented with trying to create a function that will auto fill the data when given a *StFcsHit*, *StFcsCluster*, or *StFcsPoint* but realized that this will require the use of STAR headers and libraries and will break the simplicity of this data structure; simplicity of which is the goal of these classes. I did however leave them in since I may move these methods to a different class later. Also added a source file for this header where those functions were implemented
+
+  @[October 10, 2023](David Kapukchyan) > Added a variable to StFcsPicoPoint that can be used to store the parent cluster index that corresponds to a TClonesArray of StFcsPicoClusters. Since cluster id is detector dependent, it will not always lead to the correct index.
   
  */
 
@@ -86,8 +88,9 @@ public:
   Float_t mEnergy = 0;
   Float_t mXlocal=0;
   Float_t mYlocal=0;
-  Int_t mParentClusterId = 0;
-  Int_t mNParentClusterPhotons=0;
+  Int_t mParentClusterId = -1;     //Counting does start from 0, but different detector ids can still have id=0
+  Int_t mNParentClusterPhotons=-1;
+  Int_t mClusterIndex = -1; //This can be used to associate a point with its corresponding cluster in a TClonesArray of clusters
 
   //STAR xyx
   Double_t mXstar = 0;
@@ -100,7 +103,7 @@ public:
   Double_t mPz = 0;
   Double_t mE  = 0;
 
-  ClassDef(StFcsPicoPoint,3);
+  ClassDef(StFcsPicoPoint,4);
 };
 
 //A dummy  class to hold just the basic G2t track information

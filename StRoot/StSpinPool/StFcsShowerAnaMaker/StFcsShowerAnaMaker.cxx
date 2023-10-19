@@ -75,25 +75,36 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
 
   nloaded += Rtools::LoadH1(arr,file,mH1F_PointXLocal,"H1F_PointXLocal","",100,0,1);
   nloaded += Rtools::LoadH1(arr,file,mH1F_PointYLocal,"H1F_PointYLocal","",100,0,1);
+  nloaded += Rtools::LoadH2(arr,file,mH2F_PointLocalyVx,"H2F_PointLocalyVx",";Point Local X;Point Local Y", 100,0,1, 100,0,1);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMax,"H1F_ClusSigMax","",200,0,2);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMin,"H1F_ClusSigMin","",200,0,2);
   nloaded += Rtools::LoadH2(arr,file,mH2F_PointXProjX,"H2F_PointXProjX","",200,-100,100,200,-100,100);
-  nloaded += Rtools::LoadH2(arr,file,mH2F_PointYProjY,"H2F_PointYProjY","",200,-100,100,200,-100,100);  
+  nloaded += Rtools::LoadH2(arr,file,mH2F_PointYProjY,"H2F_PointYProjY","",200,-100,100,200,-100,100);
   nloaded += Rtools::LoadH2(arr,file,mH2F_ClusSigMaxEn,"H2F_ClusSigMaxEn","",100,0,100,200,0,2);
   nloaded += Rtools::LoadH2(arr,file,mH2F_ClusSigMinEn,"H2F_ClusSigMinEn","",100,0,100,200,0,2);
   
   nloaded += Rtools::LoadH1(arr,file,mH1F_primid,"H1F_primid",";GEANT ID", 11,-0.5,10.5);
   nloaded += Rtools::LoadH1(arr,file,mH1F_parentid,"H1F_parentid",";GEANT ID", 11,-0.5,10.5);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_NParClusPhotons,"H1F_NParClusPhotons",";Number of parent cluster photons", 5,-0.5,4.5);
   nloaded += Rtools::LoadH2(arr,file,mH2F_npoiVnclus,"H2F_npoiVnclus",";NClusters;NPoints", 7,-0.5,6.5, 7,-0.5,6.5);
   nloaded += Rtools::LoadH2(arr,file,mH2F_cluseVlore,"H2F_cluseVlore",";Cluster Lorentz E;Cluster E", 100,0,50, 100,0,50);
   nloaded += Rtools::LoadH2(arr,file,mH2F_trkeVpoie,"H2F_trkeVpoie",";point E;trk E", 300,0,30, 300,0,30);
-  nloaded += Rtools::LoadH1(arr,file,mH1F_invmasspoi,"H1F_invmasspoi",";inv mass point (GeV)", 100,0,1);
-  nloaded += Rtools::LoadH1(arr,file,mH1F_invmasstrk,"H1F_invmasstrk",";inv mass g2trk (GeV)", 100,0,1);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_invmasspoi,"H1F_invmasspoi",";inv mass point (GeV)", 100,0,0.5);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_invmasstrk,"H1F_invmasstrk",";inv mass g2trk (GeV)", 100,-0.5,0.5);
   nloaded += Rtools::LoadH1(arr,file,mH1F_dpoitrk,"H1F_dpoitrk",";r (cm)", 100,0,10);
   nloaded += Rtools::LoadH2(arr,file,mH2F_massVdgg,"H2F_massVdgg",";d_{gg} point (cm);inv masss point (GeV)", 100,0,50, 100,0,1);
   nloaded += Rtools::LoadH2(arr,file,mH2F_trkmassVdgg,"H2F_trkmassVdgg",";d_{gg} point (cm);inv masss track (GeV)", 100,0,50, 100,0,1);
+  
+  nloaded += Rtools::LoadH2(arr,file,mH2F_parprojyVprojx,"H2F_parprojyVprojx",";proj x cm;proj y cm", 50,-100,100, 50,-100,100 );
+  nloaded += Rtools::LoadH1(arr,file,mH1F_NPrimTrks,"H1F_NPrimTrks",";Number of Primary Tracks", 5,-0.5,4.5);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_NParTrks,"H1F_NParTrks",";Number of Parent Tracks", 5,-0.5,4.5);
 
-  std::cout << "|nloaded:"<<nloaded << std::endl;
+  if( file==0 ){
+    mHC2F_PointLocalyVx = new Rtools::HistColl2F("PointLocalyVx_PhiEta",";Point Local X;Point Local Y",100,0,1, 100,0,1);
+    mHC2F_PointLocalyVx->Create(8*6); //8 bins in phi, 6 in eta
+  }
+  else{ mHC2F_PointLocalyVx = new Rtools::HistColl2F(file,"PointLocalyVx_PhiEta",";Point Local X;Point Local Y"); }
+  //std::cout << "|nloaded:"<<nloaded << std::endl;
   //If number of new histograms == array size then all histograms are new so return true i.e. it is true that all histograms were "made"
   if( nloaded == arr->GetEntriesFast() ){ return true; }
   else{ return false; }  //i.e. It is not true that all histograms were made
@@ -103,11 +114,13 @@ void StFcsShowerAnaMaker::CleanHists()
 {
   for( UInt_t i=0; i<mHistsArr->GetEntriesFast(); ++i ){ delete mHistsArr->At(i); }
   mHistsArr->Clear();
+  delete mHC2F_PointLocalyVx;
 }
 
 void StFcsShowerAnaMaker::WriteHists()
 {
   for( UInt_t i=0; i<mHistsArr->GetEntriesFast(); ++i ){ mHistsArr->At(i)->Write(); }
+  mHC2F_PointLocalyVx->Write();
 }
 
 Int_t StFcsShowerAnaMaker::Make()
@@ -203,10 +216,21 @@ Int_t StFcsShowerAnaMaker::Make()
       if( point->energy() > mEnCut ){
 	float xfull = point->x();
 	float xwhole = floor(xfull);
-	mH1F_PointXLocal->Fill( xfull-xwhole ); //Only store fractional part
+	float xpart = xfull-xwhole;
+	mH1F_PointXLocal->Fill( xpart ); //Only store fractional part
 	float yfull = point->y();
 	float ywhole = floor(yfull);
-	mH1F_PointYLocal->Fill( yfull-ywhole ); //Only store fractional part
+	float ypart = yfull-ywhole;
+	mH1F_PointYLocal->Fill( ypart ); //Only store fractional part
+	mH2F_PointLocalyVx->Fill(xpart,ypart);
+	StThreeVectorF pointxyz = point->xyz();
+	int phi_index = pointxyz.phi() / (3.1415/4.0); //int conversion will floor to correct value and we have 8 phi bins
+	if( pointxyz.phi() < 0 ){ phi_index = 7 + phi_index; }//Since we have 8 bins and are counting from zero
+	int psuedorap_index = floor((pointxyz.pseudoRapidity() - 2.4)/0.3); //Bin width in psuedorapidity is 0.3
+	if( psuedorap_index < 0 ){ psuedorap_index = 0; }
+	if( psuedorap_index > 4.2 ){ psuedorap_index = 5; } //Since we have 6 psuedorapidity bins
+	int index = 8*psuedorap_index + phi_index; //Since we have 8 phi indicies
+	mHC2F_PointLocalyVx->At(index)->Fill(xpart,ypart);
 
 	StFcsCluster* pointclus = point->cluster();
 	g2t_track_st* g2ttrk = 0;
@@ -240,8 +264,9 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picopoint->mYlocal                = point->y();
 	  picopoint->mParentClusterId       = point->parentClusterId();
 	  picopoint->mNParentClusterPhotons = point->nParentClusterPhotons();
+	  picopoint->mClusterIndex          = mClusArr->GetEntriesFast() - nc + point->parentClusterId(); //The correct index to use is old cluster size (current size - number of clusters added(nc)) + parentclusterid
 	  //STAR xyx
-	  StThreeVectorF pointxyz = point->xyz();
+	  //StThreeVectorF pointxyz = point->xyz();
 	  //std::cout << "|ipoint:"<<ipoint << "|E:"<<point->energy() << "|x:"<<pointxyz.x() << "|y:"<<pointxyz.y() << "|z:"<<pointxyz.z() << std::endl;
 	  picopoint->mXstar = pointxyz.x();
 	  picopoint->mYstar = pointxyz.y();
@@ -252,6 +277,8 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picopoint->mPy = pointp.py();
 	  picopoint->mPz = pointp.pz();
 	  picopoint->mE  = pointp.e();
+
+	  mH1F_NParClusPhotons->Fill(picopoint->mNParentClusterPhotons);
 
 	  float frac=0;
 	  int ntrk=0;
@@ -275,14 +302,6 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picotrk->mZProj = projshowerxyz2.z();
 
 	  mH1F_primid->Fill(primtrk->ge_pid);
-	  mH2F_PointXProjX->Fill(pointxyz.x(), projshowerxyz2.x());
-	  mH2F_PointYProjY->Fill(pointxyz.y(), projshowerxyz2.y());
-	  mH2F_trkeVpoie->Fill( point->energy(), primtrk->e );
-
-	  mH2F_trkeVpoie->Fill( picopoint->mEnergy, picotrk->mE );
-	  double xdiff = picopoint->mXstar - picotrk->mXProj;
-	  double ydiff = picopoint->mYstar - picotrk->mYProj;
-	  mH1F_dpoitrk->Fill( sqrt(xdiff*xdiff + ydiff*ydiff) );
 
 	  const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
 	  StPicoG2tTrack* picoparent = (StPicoG2tTrack*)mG2tParArr->ConstructedAt(totalpoints++);
@@ -300,6 +319,13 @@ Int_t StFcsShowerAnaMaker::Make()
 	  picoparent->mZProj = projparentxyz.z();
 
 	  mH1F_parentid->Fill(parenttrk->ge_pid);
+	  mH2F_PointXProjX->Fill(pointxyz.x(), projparentxyz.x());
+	  mH2F_PointYProjY->Fill(pointxyz.y(), projparentxyz.y());
+	  mH2F_trkeVpoie->Fill( point->energy(), parenttrk->e );
+	  double xdiff = picopoint->mXstar - picoparent->mXProj;
+	  double ydiff = picopoint->mYstar - picoparent->mYProj;
+	  mH1F_dpoitrk->Fill( sqrt(xdiff*xdiff + ydiff*ydiff) );
+	  mH2F_parprojyVprojx->Fill( picoparent->mXProj, picoparent->mYProj );
 
 	  //double phi = atan2(primtrk->p[1],primtrk->p[0]);
 	  //double theta = 2.0*atan(exp(-1.0*primtrk->eta));
@@ -366,38 +392,59 @@ Int_t StFcsShowerAnaMaker::Make()
 	}
       }
     }
+    
     if( mPointArr->GetEntriesFast()>=2 ){
-      TLorentzVector p1; //Lorentz vector of 1 point
-      TLorentzVector p2; //Lorentz vector of other point
+      TLorentzVector lv_p0;   //Lorentz vector of 1 point
+      TLorentzVector lv_p1;   //Lorentz vector of other point
+      TLorentzVector lv_trk0; //Lorentz vector of 1 g2t track
+      TLorentzVector lv_trk1; //Lorentz vector of other g2t track
+      
       StFcsPicoPoint* poi0 = (StFcsPicoPoint*)mPointArr->At(0);
-      p1.SetPxPyPzE( poi0->mPx, poi0->mPy, poi0->mPz, poi0->mE );
+      lv_p0.SetPx(poi0->mPx);
+      lv_p0.SetPy(poi0->mPy);
+      lv_p0.SetPz(poi0->mPz);
+      lv_p0.SetE(poi0->mE);
       StFcsPicoPoint* poi1 = (StFcsPicoPoint*)mPointArr->At(1);
-      p2.SetPxPyPzE( poi1->mPx, poi1->mPy, poi1->mPz, poi1->mE );
-      TLorentzVector inv = p1+p2;
+      lv_p1.SetPx(poi1->mPx);
+      lv_p1.SetPy(poi1->mPy);
+      lv_p1.SetPz(poi1->mPz);
+      lv_p1.SetE(poi1->mE);
+      //}
+      //if( partrks->GetEntriesFast()>=2 ){
+      StPicoG2tTrack* trk0 = (StPicoG2tTrack*)mG2tParArr->At(0);
+      lv_trk0.SetPx(trk0->mPx);
+      lv_trk0.SetPy(trk0->mPy);
+      lv_trk0.SetPz(trk0->mPz);
+      lv_trk0.SetE (trk0->mE);
+      StPicoG2tTrack* trk1 = (StPicoG2tTrack*)mG2tParArr->At(1);
+      lv_trk1.SetPx(trk1->mPx);
+      lv_trk1.SetPy(trk1->mPy);
+      lv_trk1.SetPz(trk1->mPz);
+      lv_trk1.SetE (trk1->mE);
+      //point invariant mass
+      TLorentzVector poiinv = lv_p0+lv_p1;
       double xdiff = poi0->mXstar - poi1->mXstar;
       double ydiff = poi0->mYstar - poi1->mYstar;
       double zdiff = poi0->mZstar - poi1->mZstar;
       double dgg = sqrt( xdiff*xdiff + ydiff*ydiff + zdiff*zdiff );
-      mH1F_invmasspoi->Fill(inv.M());
-      mH2F_massVdgg->Fill(dgg,inv.M());
-    }
-    if( mG2tPrimArr->GetEntriesFast()>=2 ){
-      TLorentzVector p1; //Lorentz vector of 1 g2t track
-      TLorentzVector p2; //Lorentz vector of other g2t track
-      StPicoG2tTrack* trk0 = (StPicoG2tTrack*)mG2tPrimArr->At(0);
-      p1.SetPxPyPzE( trk0->mPx, trk0->mPy, trk0->mPz, trk0->mE );
-      StPicoG2tTrack* trk1 = (StPicoG2tTrack*)mG2tPrimArr->At(1);
-      p2.SetPxPyPzE( trk1->mPx, trk1->mPy, trk1->mPz, trk1->mE );
-      TLorentzVector inv = p1+p2;
-      double xdiff = trk0->mXProj - trk1->mXProj;
-      double ydiff = trk0->mYProj - trk1->mYProj;
-      //double zdiff = trk0->mZProj - trk1->mZProj;
-      double dgg = sqrt( xdiff*xdiff + ydiff*ydiff );
-      mH1F_invmasstrk->Fill(inv.M());
-      mH2F_trkmassVdgg->Fill(dgg,inv.M());
+      mH1F_invmasspoi->Fill(poiinv.M());
+      mH2F_massVdgg->Fill(dgg,poiinv.M());
+      //Only compute invariant mass for tracks that are not the same particle
+      if( trk0->id != trk1->id) {
+	//track invariant mass
+	TLorentzVector trkinv = lv_trk0+lv_trk1;
+	double xdiff = trk0->mXProj - trk1->mXProj;
+	double ydiff = trk0->mYProj - trk1->mYProj;
+	double zdiff = trk0->mZProj - trk1->mZProj;
+	double dgg = sqrt( xdiff*xdiff + ydiff*ydiff + zdiff*zdiff );
+	mH1F_invmasstrk->Fill(trkinv.M());
+	mH2F_trkmassVdgg->Fill(dgg,trkinv.M());
+      }
     }
   }
 
+  mH1F_NPrimTrks->Fill(mG2tPrimArr->GetEntriesFast());
+  mH1F_NParTrks->Fill(mG2tParArr->GetEntriesFast());
   mH2F_npoiVnclus->Fill(totalclus,totalpoints);
 
   mDataTree->Fill();
