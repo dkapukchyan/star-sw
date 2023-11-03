@@ -18,6 +18,14 @@
 //#include "/star/u/dkap7827/Tools2/Tools/MyTools/inc/Rtools.h"
 ClassImp(StFcsShowerAnaMaker)
 
+Double_t StFcsShowerAnaMaker::DistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2)
+{
+  Double_t xdiff = vec1.x()-vec2.x();
+  Double_t ydiff = vec1.y()-vec2.y();
+  Double_t zdiff = vec1.z()-vec2.z();
+  return sqrt(xdiff*xdiff+ydiff*ydiff+zdiff*zdiff);
+}
+
 StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
 {
 }
@@ -78,8 +86,8 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
   nloaded += Rtools::LoadH2(arr,file,mH2F_PointLocalyVx,"H2F_PointLocalyVx",";Point Local X;Point Local Y", 100,0,1, 100,0,1);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMax,"H1F_ClusSigMax","",200,0,2);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMin,"H1F_ClusSigMin","",200,0,2);
-  nloaded += Rtools::LoadH2(arr,file,mH2F_PointXProjX,"H2F_PointXProjX","",200,-100,100,200,-100,100);
-  nloaded += Rtools::LoadH2(arr,file,mH2F_PointYProjY,"H2F_PointYProjY","",200,-100,100,200,-100,100);
+  nloaded += Rtools::LoadH2(arr,file,mH2F_PointXProjX,"H2F_PointXProjX","",160,-160,160, 160,-160,160);
+  nloaded += Rtools::LoadH2(arr,file,mH2F_PointYProjY,"H2F_PointYProjY","",160,-160,160, 160,-160,160);
   nloaded += Rtools::LoadH2(arr,file,mH2F_ClusSigMaxEn,"H2F_ClusSigMaxEn","",100,0,100,200,0,2);
   nloaded += Rtools::LoadH2(arr,file,mH2F_ClusSigMinEn,"H2F_ClusSigMinEn","",100,0,100,200,0,2);
   
@@ -95,9 +103,15 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
   nloaded += Rtools::LoadH2(arr,file,mH2F_massVdgg,"H2F_massVdgg",";d_{gg} point (cm);inv masss point (GeV)", 100,0,50, 100,0,1);
   nloaded += Rtools::LoadH2(arr,file,mH2F_trkmassVdgg,"H2F_trkmassVdgg",";d_{gg} point (cm);inv masss track (GeV)", 100,0,50, 100,0,1);
   
-  nloaded += Rtools::LoadH2(arr,file,mH2F_parprojyVprojx,"H2F_parprojyVprojx",";proj x cm;proj y cm", 50,-100,100, 50,-100,100 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_parprojyVprojx,"H2F_parprojyVprojx",";proj x cm;proj y cm", 160,-160,160, 160,-160,160 );
   nloaded += Rtools::LoadH1(arr,file,mH1F_NPrimTrks,"H1F_NPrimTrks",";Number of Primary Tracks", 5,-0.5,4.5);
   nloaded += Rtools::LoadH1(arr,file,mH1F_NParTrks,"H1F_NParTrks",";Number of Parent Tracks", 5,-0.5,4.5);
+
+  nloaded += Rtools::LoadH2(arr,file,mH2F_hiteVtrkdist,"H2F_hiteVtrkdist",";track distance (cm);hit energy (GeV)", 50,0,50, 100,0,10 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_TrkhitfracVdist,"H2F_TrkhitfracVdist",";track distance (cm);fraction of energy (GeV)", 50,0,50, 100,0,50 );
+
+  nloaded += Rtools::LoadH2(arr,file,mH2F_clusmeanyVx,"H2F_clusmeanyVx",";Cluster Mean X (cm);Cluster Mean Y (cm)", 160,-160,160, 160,-160,160);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_ClusMeanDTrk,"H1F_ClusMeanDTrk",";Cluster Mean Distnace to Track(cm);", 50,0,50);
 
   if( file==0 ){
     mHC2F_PointLocalyVx = new Rtools::HistColl2F("PointLocalyVx_PhiEta",";Point Local X;Point Local Y",100,0,1, 100,0,1);
@@ -280,6 +294,9 @@ Int_t StFcsShowerAnaMaker::Make()
 
 	  mH1F_NParClusPhotons->Fill(picopoint->mNParentClusterPhotons);
 
+	  StThreeVectorD clusmean = mFcsDb->getStarXYZ( det, pointclus->x(), pointclus->y() ); //Z is shower max z by default
+	  mH2F_clusmeanyVx->Fill(clusmean.x(),clusmean.y());
+
 	  float frac=0;
 	  int ntrk=0;
 	  //const g2t_track_st* parenttrk = mFcsDb->getParentG2tTrack(pointclus,g2ttrk,frac,ntrk);
@@ -327,6 +344,20 @@ Int_t StFcsShowerAnaMaker::Make()
 	  mH1F_dpoitrk->Fill( sqrt(xdiff*xdiff + ydiff*ydiff) );
 	  mH2F_parprojyVprojx->Fill( picoparent->mXProj, picoparent->mYProj );
 
+	  Double_t dist = DistStThreeVecD(clusmean,projparentxyz);
+	  mH1F_ClusMeanDTrk->Fill(dist);
+
+	  StPtrVecFcsHit& clushits = pointclus->hits();
+	  for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
+	    StFcsHit* hit = clushits[ihit];
+	    const g2t_track_st* hitparenttrk = mFcsDb->getParentG2tTrack(hit,g2ttrk,frac,ntrk);
+	    StThreeVectorD projhitparentxyz = mFcsDb->projectTrackToEcalSMax(hitparenttrk,g2tvert);
+	    StThreeVectorD hitxyz = mFcsDb->getStarXYZ(hit);
+	    Double_t hitdist = DistStThreeVecD(hitxyz,projhitparentxyz);
+	    mH2F_hiteVtrkdist->Fill(hitdist,hit->energy());
+	    mH2F_TrkhitfracVdist->Fill(hitdist,frac);
+	  }
+	  
 	  //double phi = atan2(primtrk->p[1],primtrk->p[0]);
 	  //double theta = 2.0*atan(exp(-1.0*primtrk->eta));
 	  //double mass = sqrt(primtrk->e*primtrk->e - primtrk->ptot*primtrk->ptot);

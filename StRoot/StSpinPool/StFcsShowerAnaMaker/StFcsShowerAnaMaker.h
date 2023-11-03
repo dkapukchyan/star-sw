@@ -21,6 +21,7 @@
 #include "TH2F.h"
 
 //STAR headers
+#include "StThreeVectorD.hh"
 #include "StMaker.h"
 
 //Custom Headers
@@ -49,6 +50,8 @@ class StFcsShowerAnaMaker : public StMaker
   //void WriteHists(const char* filename, const char* mode="RECREATE");      //!< Write all histograms to a file
 
   bool LoadHistograms(TObjArray* arr, TFile* file=0);
+
+  static Double_t DistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);
   
  protected:
   StFcsDb* mFcsDb = 0;               //!< FCS db object
@@ -64,11 +67,17 @@ class StFcsShowerAnaMaker : public StMaker
   TH1* mH2F_PointXProjX = 0;    //! Histogram of reconstructed point x-value vs. track projected x-value
   TH1* mH2F_PointYProjY = 0;    //! Histogram of reconstructed point y-value vs. track projected y-value
 
+  TH1* mH2F_hiteVtrkdist = 0;   //!< Histogram of hit energy vs. distance from parent track
+  TH1* mH2F_TrkhitfracVdist = 0;//!< Histogram of fraction of track energy in a hit vs. distance to parent track
+
   TH1* mH1F_ClusSigMax = 0;     //!< Histogram of cluster sigma max
   TH1* mH1F_ClusSigMin = 0;     //!< Histogram of cluster sigma min
-
   TH1* mH2F_ClusSigMaxEn = 0;   //!< Histogram of cluster sigma max vs. cluster energy
   TH1* mH2F_ClusSigMinEn = 0;   //!< Histogram of cluster sigma min vs. cluster energy
+  TH1* mH2F_clusmeanyVx = 0;    //!< Histogram of cluster mean y vs. x using STAR XYZ coordinates
+  TH1* mH1F_ClusMeanDTrk = 0;   //!< Histogram of distance between cluster mean and parent track projected onto Fcs Shower Max Z
+  //TH1* mH1F_ClusMeanXTrkX = 0;  //!< Histogram of cluster x mean from STAR XYZ coordinates minus parent track X
+  //TH1* mH1F_ClusMeanYTrkY = 0;  //!< Histogram of cluster y mean from STAR XYZ coordinates minus parent track Y
 
   TH1* mH1F_primid = 0;         //!< Histogram of primary track geant id
   TH1* mH1F_parentid = 0;       //!< Histogram of parent track geant id
