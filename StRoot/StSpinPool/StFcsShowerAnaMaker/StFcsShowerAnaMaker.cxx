@@ -26,6 +26,22 @@ Double_t StFcsShowerAnaMaker::DistStThreeVecD(StThreeVectorD &vec1, StThreeVecto
   return sqrt(xdiff*xdiff+ydiff*ydiff+zdiff*zdiff);
 }
 
+Double_t StFcsShowerAnaMaker::TaxiDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2)
+{
+  Double_t xdiff = fabs(vec1.x()-vec2.x());
+  Double_t ydiff = fabs(vec1.y()-vec2.y());
+  Double_t zdiff = fabs(vec1.z()-vec2.z());
+  return xdiff+ydiff+zdiff;
+}
+
+Double_t StFcsShowerAnaMaker::ChebDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2)
+{
+  Double_t xdiff = fabs(vec1.x()-vec2.x());
+  Double_t ydiff = fabs(vec1.y()-vec2.y());
+  Double_t zdiff = fabs(vec1.z()-vec2.z());
+  return std::max({xdiff,ydiff,zdiff});
+}
+
 StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
 {
 }
@@ -107,11 +123,13 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
   nloaded += Rtools::LoadH1(arr,file,mH1F_NPrimTrks,"H1F_NPrimTrks",";Number of Primary Tracks", 5,-0.5,4.5);
   nloaded += Rtools::LoadH1(arr,file,mH1F_NParTrks,"H1F_NParTrks",";Number of Parent Tracks", 5,-0.5,4.5);
 
-  nloaded += Rtools::LoadH2(arr,file,mH2F_hiteVtrkdist,"H2F_hiteVtrkdist",";track distance (cm);hit energy (GeV)", 50,0,50, 100,0,10 );
-  nloaded += Rtools::LoadH2(arr,file,mH2F_TrkhitfracVdist,"H2F_TrkhitfracVdist",";track distance (cm);fraction of energy (GeV)", 50,0,50, 100,0,50 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_hiteVtrkdist,"H2F_hiteVtrkdist",";track distance (cm);hit energy (GeV)", 100,0,100, 500,0,50 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_hiteVtrktaxid,"H2F_hiteVtrktaxid",";track Taxicab distance (cm);hit energy (GeV)", 100,0,100, 500,0,50 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_hiteVtrkchebd,"H2F_hiteVtrkchebd",";track Chebyshev distance (cm);hit energy (GeV)", 100,0,100, 500,0,50 );
+  nloaded += Rtools::LoadH2(arr,file,mH2F_TrkhitfracVdist,"H2F_TrkhitfracVdist",";track distance (cm);fraction of energy (GeV)", 50,0,100, 100,0,1 );
 
   nloaded += Rtools::LoadH2(arr,file,mH2F_clusmeanyVx,"H2F_clusmeanyVx",";Cluster Mean X (cm);Cluster Mean Y (cm)", 160,-160,160, 160,-160,160);
-  nloaded += Rtools::LoadH1(arr,file,mH1F_ClusMeanDTrk,"H1F_ClusMeanDTrk",";Cluster Mean Distnace to Track(cm);", 50,0,50);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_ClusMeanDTrk,"H1F_ClusMeanDTrk",";Cluster Mean Distance to Track(cm);", 100,0,50);
 
   if( file==0 ){
     mHC2F_PointLocalyVx = new Rtools::HistColl2F("PointLocalyVx_PhiEta",";Point Local X;Point Local Y",100,0,1, 100,0,1);
@@ -294,7 +312,8 @@ Int_t StFcsShowerAnaMaker::Make()
 
 	  mH1F_NParClusPhotons->Fill(picopoint->mNParentClusterPhotons);
 
-	  StThreeVectorD clusmean = mFcsDb->getStarXYZ( det, pointclus->x(), pointclus->y() ); //Z is shower max z by default
+	  StThreeVectorD clusmean = mFcsDb->getStarXYZfromColumnRow( det, pointclus->x(), pointclus->y() ); //Z is shower max z by default
+	  //std::cout << "|ClusMean(X,Y,Z):("<<clusmean.x()<<","<<clusmean.y() << ","<< clusmean.z() << ")" << std::endl;
 	  mH2F_clusmeanyVx->Fill(clusmean.x(),clusmean.y());
 
 	  float frac=0;
@@ -354,7 +373,11 @@ Int_t StFcsShowerAnaMaker::Make()
 	    StThreeVectorD projhitparentxyz = mFcsDb->projectTrackToEcalSMax(hitparenttrk,g2tvert);
 	    StThreeVectorD hitxyz = mFcsDb->getStarXYZ(hit);
 	    Double_t hitdist = DistStThreeVecD(hitxyz,projhitparentxyz);
+	    //std::cout << "|ihit:"<<ihit<<"|Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << std::endl;
+	    //std::cout << "      |Track(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << std::endl;
 	    mH2F_hiteVtrkdist->Fill(hitdist,hit->energy());
+	    mH2F_hiteVtrktaxid->Fill( TaxiDistStThreeVecD(hitxyz,projhitparentxyz), hit->energy() );
+	    mH2F_hiteVtrkchebd->Fill( ChebDistStThreeVecD(hitxyz,projhitparentxyz), hit->energy() );
 	    mH2F_TrkhitfracVdist->Fill(hitdist,frac);
 	  }
 	  

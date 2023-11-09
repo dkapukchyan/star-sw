@@ -8,10 +8,15 @@
   @[September 18, 2023](David Kapukchyan) > Added some more histograms and started using the #LoadH1() and #LoadH2() functions in *Rtools* to create/load histograms. This way I can just copy the histograms and the #LoadHistograms() function to easily make plots in another macro. Also added the analysis histograms from 'anaShowerAna.cc' to here.
 
   @[October 10, 2023](David Kapukchyan) > Added the mClusterIndex variable into the stored StFcsPicoPoint. Added some more histograms from Fcs2019/FcsSim2023/anaShowerAna.cc. Also fixed is that invariant mass histograms, among a few others now use the parent track and not primary track to fill the appropriate histograms
+
+  @[November 8, 2023](David Kapukchyan) > Fixed how I get the cluster mean position in StarXYZ. Added Taxicab and Chebeyshev distance functions. Also added histograms that will store hit energy vs. those distance functions. Also changed the range on some histograms to more accurately capture their true meaning.
  */
 
 #ifndef StFcsShowerAnaMaker_H
 #define StFcsShowerAnaMaker_H
+
+//C/C++ headers
+#include <algorithm>
 
 //ROOT headers
 #include "TFile.h"
@@ -52,6 +57,8 @@ class StFcsShowerAnaMaker : public StMaker
   bool LoadHistograms(TObjArray* arr, TFile* file=0);
 
   static Double_t DistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);
+  static Double_t TaxiDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);  //!< Taxicab (Manhattan) distance of two StThreeVectors D=Sum_i^n|vec1_i-vec2_i|
+  static Double_t ChebDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);  //!< Chebyshev distance of two StThreeVectors D=max(vec1-vec2)
   
  protected:
   StFcsDb* mFcsDb = 0;               //!< FCS db object
@@ -68,6 +75,8 @@ class StFcsShowerAnaMaker : public StMaker
   TH1* mH2F_PointYProjY = 0;    //! Histogram of reconstructed point y-value vs. track projected y-value
 
   TH1* mH2F_hiteVtrkdist = 0;   //!< Histogram of hit energy vs. distance from parent track
+  TH1* mH2F_hiteVtrktaxid = 0;  //!< Histogram of hit energy vs. Taxicab distance from parent track
+  TH1* mH2F_hiteVtrkchebd = 0;  //!< Histogram of hit energy vs. Chebyshev distance from parent track
   TH1* mH2F_TrkhitfracVdist = 0;//!< Histogram of fraction of track energy in a hit vs. distance to parent track
 
   TH1* mH1F_ClusSigMax = 0;     //!< Histogram of cluster sigma max
@@ -76,6 +85,7 @@ class StFcsShowerAnaMaker : public StMaker
   TH1* mH2F_ClusSigMinEn = 0;   //!< Histogram of cluster sigma min vs. cluster energy
   TH1* mH2F_clusmeanyVx = 0;    //!< Histogram of cluster mean y vs. x using STAR XYZ coordinates
   TH1* mH1F_ClusMeanDTrk = 0;   //!< Histogram of distance between cluster mean and parent track projected onto Fcs Shower Max Z
+  //TH1* mH2F_cluseVclusmeantrkd = 0;   //!< Histogram of distance between cluster mean and parent track projected onto Fcs Shower Max Z
   //TH1* mH1F_ClusMeanXTrkX = 0;  //!< Histogram of cluster x mean from STAR XYZ coordinates minus parent track X
   //TH1* mH1F_ClusMeanYTrkY = 0;  //!< Histogram of cluster y mean from STAR XYZ coordinates minus parent track Y
 
