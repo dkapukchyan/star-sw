@@ -42,6 +42,43 @@ Double_t StFcsShowerAnaMaker::ChebDistStThreeVecD(StThreeVectorD &vec1, StThreeV
   return std::max({xdiff,ydiff,zdiff});
 }
 
+
+StThreeVectorD StFcsShowerAnaMaker::starXYZtoLocal(int det, const StThreeVectorD &xyz, double showermaxz)
+{
+  if( showermaxz<0 ){ showermaxz =  mFcsDb->getShowerMaxZ(det); }  //when negative use default showermax
+  if( xyz.x()<0 ){ if( det%2!=0 ){ std::cout << "Warning wrong detector id" << std::endl; } }
+  if( xyz.x()>0 ){ if( det%2!=1 ){ std::cout << "Warning wrong detector id" << std::endl; } }
+  double detangle = mFcsDb->getDetectorAngle(det)*M_PI/180.0;
+  if( det%2==1 ){ detangle *= -1.0; } //South side use negative angle for rotation, not sure why but it works
+  StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det,showermaxz);
+  //Set y value to be topmost part of detector. This is important in checking the bounds of the returned vector
+  xyzoff.setY( xyzoff.y() - (mFcsDb->getYWidth(det)/2.0) + (double(mFcsDb->nRow(det)) / 2.0 * mFcsDb->getYWidth(det)) );
+  StThreeVectorD localxyz = xyz - xyzoff;
+  localxyz.rotateY(detangle);
+  //This change of coordinates is to the inside edge near the beam pipe. So the new origin is the top most inside edge of the detector, with positive x-axis facing south and positive y-axis going up
+  if( det%2==1 ){
+    //For south side more x-positive is good, negative is outside FCS
+    if( localxyz.x()<0 || localxyz.y()>0 ){ localxyz.set(0,0,0); } //x is negative hence outside the coverage of the South detectors
+    else{ localxyz.setY(-localxyz.y()); } //make y positive since the local coordinate (0,0,0) is top inner edge of detector
+  }
+  else{
+    //For north side more x-negative is good, positive is outside FCS
+    if( localxyz.x()>0 || localxyz.y()>0 ){ localxyz.set(0,0,0); } //x is positive hence outside the coveratge of the North detectors
+    else{ localxyz.setX(-localxyz.x()); localxyz.setY(-localxyz.y()); } //make x,y positive to compensate for odd (0,0,0) position
+  }
+  return localxyz;
+}
+
+void StFcsShowerAnaMaker::starXYZtoColRow(int det, const StThreeVectorD &xyz, Int_t &col, Int_t &row, double showermaxz)
+{
+  StThreeVectorD localxyz = starXYZtoLocal(det,xyz,showermaxz);
+  //Use ceiling since column, row counting starts at 1 not 0
+  col = ceil(localxyz.x()/mFcsDb->getXWidth(det));
+  row = ceil(localxyz.y()/mFcsDb->getYWidth(det));
+  if( col>mFcsDb->nColumn(det) ){ col=0; }
+  if( row>mFcsDb->nRow(det) ){ row=0; }
+}
+
 StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
 {
 }
@@ -237,6 +274,15 @@ Int_t StFcsShowerAnaMaker::Make()
 	mH2F_ClusSigMaxEn->Fill(cluster->energy(),cluster->sigmaMax());
 	mH2F_ClusSigMinEn->Fill(cluster->energy(),cluster->sigmaMin());
       }
+      if( GetDebug()==3 ){
+	UInt_t nhits = cluster->nTowers();
+	StPtrVecFcsHit& clushits = cluster->hits();
+	std::cout << "|clusid:"<<cluster->id() << "|nTowers:"<<nhits << "|size:"<<clushits.size() << std::endl;
+	for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
+	  StFcsHit* hit = clushits[ihit];
+	  std::cout << " + |detid:"<<hit->detectorId() << "|id:"<<hit->id() << std::endl;
+	}
+      }
     }
     
     StSPtrVecFcsPoint& points = mFcsColl->points(det);
@@ -273,7 +319,7 @@ Int_t StFcsShowerAnaMaker::Make()
 	if( !trackTable ){ std::cout<< "g2t_track Table not found" << std::endl; continue; }
 	else{
 	  const int nTrk = trackTable->GetNRows();
-	  if( GetDebug()>0 ){ std::cout << "g2t_track table has "<< nTrk << " tracks" << std::endl; }
+	  if( GetDebug()>0 && GetDebug()<3 ){ std::cout << "g2t_track table has "<< nTrk << " tracks" << std::endl; }
 	  if( nTrk>0 ){
 	    g2ttrk = trackTable->GetTable();
 	    if( !g2ttrk ) { std::cout << " g2t_track GetTable failed" << std::endl; continue; }
@@ -282,7 +328,7 @@ Int_t StFcsShowerAnaMaker::Make()
 	if( !vertexTable ){ std::cout<< "g2t_vertex Table not found" << std::endl; continue; }
 	else{
 	  const int nVertex = vertexTable->GetNRows();
-	  if( GetDebug()>0 ){ std::cout << "g2t_vertex table has "<< nVertex << " vertices" << std::endl; }
+	  if( GetDebug()>0 && GetDebug()<3 ){ std::cout << "g2t_vertex table has "<< nVertex << " vertices" << std::endl; }
 	  if( nVertex>0 ){
 	    g2tvert = vertexTable->GetTable();
 	    if( !g2tvert) { std::cout << " g2t_vertex GetTable failed" << std::endl; continue; }
@@ -367,24 +413,62 @@ Int_t StFcsShowerAnaMaker::Make()
 	  mH1F_ClusMeanDTrk->Fill(dist);
 
 	  StPtrVecFcsHit& clushits = pointclus->hits();
+	  //if( clushits.size() != pointclus->nTowers() ){ std::cout << "|nTowers:"<<pointclus->nTowers() << "|HitSize:"<<clushits.size() << std::endl; }
+	  bool longdist = false;
 	  for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
 	    StFcsHit* hit = clushits[ihit];
-	    const g2t_track_st* hitparenttrk = mFcsDb->getParentG2tTrack(hit,g2ttrk,frac,ntrk);
+	    int hitcol = mFcsDb->getColumnNumber(hit->detectorId(),hit->id());
+	    int hitrow = mFcsDb->getRowNumber(hit->detectorId(),hit->id());
+	    float hitlocalx = 0;
+	    float hitlocaly = 0;
+	    mFcsDb->getLocalXYinCell(hit,hitlocalx,hitlocaly);
+	    //std::cout << "|detid:"<<hit->detectorId() << "|id:"<<hit->id() << "|p_cluster:"<<hit->cluster()<<"|pointclus:"<<pointclus << std::endl;
+	    //const g2t_track_st* hitparenttrk = mFcsDb->getParentG2tTrack(hit,g2ttrk,frac,ntrk);
+	    const g2t_track_st* hitparenttrk = mFcsDb->getPrimaryG2tTrack(hit,g2ttrk,frac,ntrk);
+	    //StThreeVectorD projhitparentxyz = mFcsDb->projectTrackToEcalSMax(hitparenttrk,g2tvert);
 	    StThreeVectorD projhitparentxyz = mFcsDb->projectTrackToEcalSMax(hitparenttrk,g2tvert);
 	    StThreeVectorD hitxyz = mFcsDb->getStarXYZ(hit);
 	    Double_t hitdist = DistStThreeVecD(hitxyz,projhitparentxyz);
-	    //std::cout << "|ihit:"<<ihit<<"|Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << std::endl;
-	    //std::cout << "      |Track(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << std::endl;
+	    if( hitdist>50 ){ longdist = true; }
+	    int trackcol = 0;
+	    int trackrow = 0;
+	    int trackdet = projhitparentxyz.x()>=0 ? 1:0;
+	    StThreeVectorD tracklocalxyz = starXYZtoLocal(trackdet,projhitparentxyz);
+	    starXYZtoColRow(trackdet,projhitparentxyz,trackcol,trackrow);
+	    int trackid = mFcsDb->getId(trackdet,trackrow,trackcol);
+	    std::cout << " + |ihit:"<<ihit << "|hitdist:"<<hitdist << "|hitparentid:"<<hitparenttrk->id << std::endl;
+	    std::cout << "    - |Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << "|det:"<<hit->detectorId() << "|col:"<<hitcol << "|row:"<<hitrow << "|id:"<<hit->id() << "|E:"<<hit->energy() << "|Local(X,Y,X):("<<hitlocalx*mFcsDb->getXWidth(det)<<","<<hitlocaly*mFcsDb->getYWidth(det)<<","<<0<<")"<< std::endl;
+	    std::cout << "    - |Trk(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << "|det:"<<trackdet << "|col:"<<trackcol <<"|row:"<<trackrow <<"|id:"<<trackid << "|E:"<<hitparenttrk->e << "|Local(X,Y,X):("<<tracklocalxyz.x()<<","<<tracklocalxyz.y()<<","<<tracklocalxyz.z()<<")"<< std::endl;//"Trk" short for Track but use 3 characters to match number of characters in "Hit"
+	    std::cout << "    - |Trk(PX,PY,PZ):("<<hitparenttrk->p[0]<<","<<hitparenttrk->p[1]<<","<<hitparenttrk->p[2] << ")"<< std::endl;
+	    
 	    mH2F_hiteVtrkdist->Fill(hitdist,hit->energy());
 	    mH2F_hiteVtrktaxid->Fill( TaxiDistStThreeVecD(hitxyz,projhitparentxyz), hit->energy() );
 	    mH2F_hiteVtrkchebd->Fill( ChebDistStThreeVecD(hitxyz,projhitparentxyz), hit->energy() );
 	    mH2F_TrkhitfracVdist->Fill(hitdist,frac);
 	  }
-	  
+	  /*
+	  if( longdist ){
+	    std::cout << "LONGDIST" << std::endl;
+	    for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
+	      StFcsHit* hit = clushits[ihit];
+	      const g2t_track_st* hitparenttrk = mFcsDb->getPrimaryG2tTrack(hit,g2ttrk,frac,ntrk);
+	      StThreeVectorD projhitparentxyz = mFcsDb->projectTrackToEcalSMax(hitparenttrk,g2tvert);
+	      StThreeVectorD hitxyz = mFcsDb->getStarXYZ(hit);
+	      Double_t hitdist = DistStThreeVecD(hitxyz,projhitparentxyz);
+	      int vertind = hitparenttrk->start_vertex_p - 1;
+	      std::cout << " + |detid:"<<hit->detectorId() << "|id:"<<hit->id() << "|hitdist:"<<hitdist << "|hitparentid:"<<hitparenttrk->id << std::endl;
+	      std::cout << "    - |ihit:"<<ihit<<"|Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << std::endl;
+	      std::cout << "    - |Track(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << std::endl;
+	      std::cout << "    - |Track["<<hitparenttrk->ge_pid<<"]"<<"(PX,PY,PZ,E):("<<hitparenttrk->p[0]<<"," <<hitparenttrk->p[1] << ","<<hitparenttrk->p[2] <<","<<hitparenttrk->e <<")"<< std::endl;
+	      std::cout << "    - |vertind:"<<vertind<< "|TrackVert(X,Y,Z):("<<g2tvert[vertind].ge_x[0] << ","<<g2tvert[vertind].ge_x[1] << ","<< g2tvert[vertind].ge_x[2] << ")" << std::endl;
+	    }
+	    std::cout << "END" << std::endl;
+	  }
+	  */
 	  //double phi = atan2(primtrk->p[1],primtrk->p[0]);
 	  //double theta = 2.0*atan(exp(-1.0*primtrk->eta));
 	  //double mass = sqrt(primtrk->e*primtrk->e - primtrk->ptot*primtrk->ptot);
-	  if( GetDebug()>1 ){
+	  if( GetDebug()==2 ){
 	    std::cout << "|primtrk|Id:"<<primtrk->id << "|Pid:"<<primtrk->ge_pid << "|E:"<<primtrk->e
 		      << "|px:"<<primtrk->p[0] << "|py:"<<primtrk->p[1] << "|pz:"<<primtrk->p[2] << "|pt:"<<primtrk->pt << "|ptot:"<<primtrk->ptot
 		      << "|eta:"<<primtrk->eta //<< "|theta:"<<theta << "|phi:"<<phi << "|mass:"<< mass
@@ -405,7 +489,7 @@ Int_t StFcsShowerAnaMaker::Make()
 		    << "|projS:("<<projshowerxyz2.x() <<","<<projshowerxyz2.y()<<","<<projshowerxyz2.z() <<")"
 		    << "|frac:"<<frac << "|ntrk:"<<ntrk << std::endl;
 	  */
-	  if( GetDebug()>1 ){
+	  if( GetDebug()==2 ){
 	    int totalntrk = ntrk;
 	    for( int itrk=0; itrk<totalntrk; ++itrk ){
 	      const g2t_track_st* sectrk = mFcsDb->getPrimaryG2tTrack(pointclus,g2ttrk,frac,ntrk,itrk);

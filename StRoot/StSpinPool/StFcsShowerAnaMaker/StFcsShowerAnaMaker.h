@@ -10,6 +10,8 @@
   @[October 10, 2023](David Kapukchyan) > Added the mClusterIndex variable into the stored StFcsPicoPoint. Added some more histograms from Fcs2019/FcsSim2023/anaShowerAna.cc. Also fixed is that invariant mass histograms, among a few others now use the parent track and not primary track to fill the appropriate histograms
 
   @[November 8, 2023](David Kapukchyan) > Fixed how I get the cluster mean position in StarXYZ. Added Taxicab and Chebeyshev distance functions. Also added histograms that will store hit energy vs. those distance functions. Also changed the range on some histograms to more accurately capture their true meaning.
+
+  @[December 5, 2023](David Kapukchyan) > Added functions to get the column and row information from STAR xyz global coordinates. Essentially a global to local conversion but integer values for the column and row information. The idea was to see if distances in column and row space are better to use than the Euclidean one.
  */
 
 #ifndef StFcsShowerAnaMaker_H
@@ -59,6 +61,8 @@ class StFcsShowerAnaMaker : public StMaker
   static Double_t DistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);
   static Double_t TaxiDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);  //!< Taxicab (Manhattan) distance of two StThreeVectors D=Sum_i^n|vec1_i-vec2_i|
   static Double_t ChebDistStThreeVecD(StThreeVectorD &vec1, StThreeVectorD &vec2);  //!< Chebyshev distance of two StThreeVectors D=max(vec1-vec2)
+  StThreeVectorD starXYZtoLocal(int det, const StThreeVectorD &xyz, double showermaxz=-1);
+  void starXYZtoColRow(int det, const StThreeVectorD &xyz, Int_t &col, Int_t &row, double showermaxz=-1);
   
  protected:
   StFcsDb* mFcsDb = 0;               //!< FCS db object
