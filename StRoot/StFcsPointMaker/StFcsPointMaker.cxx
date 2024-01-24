@@ -120,7 +120,7 @@ void StFcsPointMaker::setShowerShapeParameters(int det){
 				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused,
 				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused,
 				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused,
-				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused}
+				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused};
     }
     if(mShowerShape>0){ //get slope factor from vertex=(0,0,0) to z of 6 slices
 	StThreeVectorD off = mDb->getDetectorOffset(det);
