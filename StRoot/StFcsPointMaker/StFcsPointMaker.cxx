@@ -112,9 +112,9 @@ void StFcsPointMaker::setShowerShapeParameters(int det){
 				 width, a1L[5], a2L[5], 0.0, b1L[5]*scl, b2L[5]*scl, 0.0, unused, unused, unused};
     }
     else if( mShowerShape==4 ){
-      //Parameters From Lednev Paper scaled to cm
+      //Parameters From Lednev Paper
       double a1[3] = {0.8, 0.3, -0.1};
-      double b1[3] = {0.8, 0.2, 7.6};
+      double b1[3] = {0.8/width, 0.2/width, 7.6/width};//scaled to cell size
       mShowerShapeParameters = {width/2.0, a1[0],  a1[1],  a1[2],  b1[0]*scl, b1[1]*scl, b1[2]*scl, 1.0,    unused, unused,
 				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused,
 				unused,    unused, unused, unused, unused,    unused,    unused,    unused, unused, unused,
