@@ -85,6 +85,8 @@ StFcsShowerAnaMaker::StFcsShowerAnaMaker(const char* name):StMaker(name)
 
 StFcsShowerAnaMaker::~StFcsShowerAnaMaker()
 {
+  if( mOutFile!=0 ){ mOutFile->Close(); }
+  delete mOutFile;
   CleanHists();
   delete mHistsArr;
   delete mDataTree;
@@ -99,6 +101,8 @@ Int_t StFcsShowerAnaMaker::Init()
     LOG_ERROR << "StFcsShowerAnaMaker::InitRun Failed to get StFcsDb" << endm;
     return kStFatal;
   }
+
+  if( mFileName.Length()!=0 && mOutFile==0 ){ mOutFile = new TFile(mFileName.Data(), "RECREATE"); }
 
   mHistsArr = new TObjArray();
   if( LoadHistograms(mHistsArr) ){ std::cout << "StFcsShowerAnaMaker::InitRun Failed to make new histgorams" << std::endl; }
@@ -118,14 +122,11 @@ Int_t StFcsShowerAnaMaker::Init()
 
 Int_t StFcsShowerAnaMaker::Finish()
 {
-  if (mFileName.Length() == 0) return kStOk;
-  TFile* outfile = new TFile(mFileName.Data(), "RECREATE");
-
-  outfile->cd();
+  if( mOutFile==0 ){ return kStOk; }
+  
+  mOutFile->cd();
   WriteHists();
-  if( mDataTree ){ mDataTree->Write(); }
-  outfile->Close();
-  delete outfile;
+  if( mDataTree!=0 ){ mDataTree->Write(); }
   return kStOk;
 }
 
@@ -137,6 +138,8 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
   nloaded += Rtools::LoadH1(arr,file,mH1F_PointXLocal,"H1F_PointXLocal","",100,0,1);
   nloaded += Rtools::LoadH1(arr,file,mH1F_PointYLocal,"H1F_PointYLocal","",100,0,1);
   nloaded += Rtools::LoadH2(arr,file,mH2F_PointLocalyVx,"H2F_PointLocalyVx",";Point Local X;Point Local Y", 100,0,1, 100,0,1);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_Chi2Ndf1Photon,"H1F_Chi2Ndf1Photon","Single Photon Fit;Chi^2/NDF",100,0,100);
+  nloaded += Rtools::LoadH1(arr,file,mH1F_Chi2Ndf2Photon,"H1F_Chi2Ndf2Photon","Two Photon Fit;Chi^2/NDF",100,0,100);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMax,"H1F_ClusSigMax","",200,0,2);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusSigMin,"H1F_ClusSigMin","",200,0,2);
   nloaded += Rtools::LoadH2(arr,file,mH2F_PointXProjX,"H2F_PointXProjX","",160,-160,160, 160,-160,160);
@@ -233,6 +236,7 @@ Int_t StFcsShowerAnaMaker::Make()
 	picohit->mXstar = xyz.x();
 	picohit->mYstar = xyz.y();
 	picohit->mZstar = xyz.z();
+	mFcsDb->getLocalXYinCell(hit, picohit->mXLocal, picohit->mYLocal);
       }
       else if(det==kFcsPresNorthDetId || det==kFcsPresSouthDetId){//EPD as Pres
 	picohit->mZstar = 375.0; //Taken from StFcsEventDisplay for zepd this is in cm
@@ -259,7 +263,9 @@ Int_t StFcsShowerAnaMaker::Make()
       picoclus->mSigmaMax       = cluster->sigmaMax();
       picoclus->mTheta          = cluster->theta();
       picoclus->mChi2Ndf1Photon = cluster->chi2Ndf1Photon();
-      picoclus->mChi2Ndf2Phoron = cluster->chi2Ndf2Photon();
+      picoclus->mChi2Ndf2Photon = cluster->chi2Ndf2Photon();
+      mH1F_Chi2Ndf1Photon->Fill(cluster->chi2Ndf1Photon());
+      mH1F_Chi2Ndf2Photon->Fill(cluster->chi2Ndf2Photon());
       //Lorentz 4 momentum of cluster
       StLorentzVectorD clusp = cluster->fourMomentum();
       picoclus->mPx = clusp.px();
@@ -274,13 +280,15 @@ Int_t StFcsShowerAnaMaker::Make()
 	mH2F_ClusSigMaxEn->Fill(cluster->energy(),cluster->sigmaMax());
 	mH2F_ClusSigMinEn->Fill(cluster->energy(),cluster->sigmaMin());
       }
-      if( GetDebug()==3 ){
-	UInt_t nhits = cluster->nTowers();
-	StPtrVecFcsHit& clushits = cluster->hits();
-	std::cout << "|clusid:"<<cluster->id() << "|nTowers:"<<nhits << "|size:"<<clushits.size() << std::endl;
-	for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
-	  StFcsHit* hit = clushits[ihit];
-	  std::cout << " + |detid:"<<hit->detectorId() << "|id:"<<hit->id() << std::endl;
+      UInt_t nhits = cluster->nTowers();
+      StPtrVecFcsHit& clushits = cluster->hits();
+      if( GetDebug()==3 ){ std::cout << "|clusid:"<<cluster->id() << "|nTowers:"<<nhits << "|size:"<<clushits.size() << std::endl; }
+      for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
+	StFcsHit* hit = clushits[ihit];
+	if( GetDebug()==3 ){ std::cout << " + |detid:"<<hit->detectorId() << "|id:"<<hit->id() << std::endl; }
+	for( UInt_t phit=0; phit<mHitsArr->GetEntriesFast(); ++phit ){
+	  StFcsPicoHit* picohit = (StFcsPicoHit*)mHitsArr->ConstructedAt(phit);
+	  if( picohit->mDetId == hit->detectorId() && picohit->mChId == hit->id() ){ picohit->mClusterId = cluster->id(); }
 	}
       }
     }
@@ -436,10 +444,10 @@ Int_t StFcsShowerAnaMaker::Make()
 	    StThreeVectorD tracklocalxyz = starXYZtoLocal(trackdet,projhitparentxyz);
 	    starXYZtoColRow(trackdet,projhitparentxyz,trackcol,trackrow);
 	    int trackid = mFcsDb->getId(trackdet,trackrow,trackcol);
-	    std::cout << " + |ihit:"<<ihit << "|hitdist:"<<hitdist << "|hitparentid:"<<hitparenttrk->id << std::endl;
-	    std::cout << "    - |Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << "|det:"<<hit->detectorId() << "|col:"<<hitcol << "|row:"<<hitrow << "|id:"<<hit->id() << "|E:"<<hit->energy() << "|Local(X,Y,X):("<<hitlocalx*mFcsDb->getXWidth(det)<<","<<hitlocaly*mFcsDb->getYWidth(det)<<","<<0<<")"<< std::endl;
-	    std::cout << "    - |Trk(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << "|det:"<<trackdet << "|col:"<<trackcol <<"|row:"<<trackrow <<"|id:"<<trackid << "|E:"<<hitparenttrk->e << "|Local(X,Y,X):("<<tracklocalxyz.x()<<","<<tracklocalxyz.y()<<","<<tracklocalxyz.z()<<")"<< std::endl;//"Trk" short for Track but use 3 characters to match number of characters in "Hit"
-	    std::cout << "    - |Trk(PX,PY,PZ):("<<hitparenttrk->p[0]<<","<<hitparenttrk->p[1]<<","<<hitparenttrk->p[2] << ")"<< std::endl;
+	    //std::cout << " + |ihit:"<<ihit << "|hitdist:"<<hitdist << "|hitparentid:"<<hitparenttrk->id << std::endl;
+	    //std::cout << "    - |Hit(X,Y,Z):("<<hitxyz.x()<<","<<hitxyz.y() << ","<< hitxyz.z() << ")" << "|det:"<<hit->detectorId() << "|col:"<<hitcol << "|row:"<<hitrow << "|id:"<<hit->id() << "|E:"<<hit->energy() << "|Local(X,Y,X):("<<hitlocalx*mFcsDb->getXWidth(det)<<","<<hitlocaly*mFcsDb->getYWidth(det)<<","<<0<<")"<< std::endl;
+	    //std::cout << "    - |Trk(X,Y,Z):("<<projhitparentxyz.x()<<","<<projhitparentxyz.y() << ","<< projhitparentxyz.z() << ")" << "|det:"<<trackdet << "|col:"<<trackcol <<"|row:"<<trackrow <<"|id:"<<trackid << "|E:"<<hitparenttrk->e << "|Local(X,Y,X):("<<tracklocalxyz.x()<<","<<tracklocalxyz.y()<<","<<tracklocalxyz.z()<<")"<< std::endl;//"Trk" short for Track but use 3 characters to match number of characters in "Hit"
+	    //std::cout << "    - |Trk(PX,PY,PZ):("<<hitparenttrk->p[0]<<","<<hitparenttrk->p[1]<<","<<hitparenttrk->p[2] << ")"<< std::endl;
 	    
 	    mH2F_hiteVtrkdist->Fill(hitdist,hit->energy());
 	    mH2F_hiteVtrktaxid->Fill( TaxiDistStThreeVecD(hitxyz,projhitparentxyz), hit->energy() );

@@ -8,7 +8,12 @@
   @[September 18, 2023](David Kapukchyan) > Changed 'mNS' in *StFcsPicoPoint* to 'mDetId' along with where it is used. I also experimented with trying to create a function that will auto fill the data when given a *StFcsHit*, *StFcsCluster*, or *StFcsPoint* but realized that this will require the use of STAR headers and libraries and will break the simplicity of this data structure; simplicity of which is the goal of these classes. I did however leave them in since I may move these methods to a different class later. Also added a source file for this header where those functions were implemented
 
   @[October 10, 2023](David Kapukchyan) > Added a variable to StFcsPicoPoint that can be used to store the parent cluster index that corresponds to a TClonesArray of StFcsPicoClusters. Since cluster id is detector dependent, it will not always lead to the correct index.
+
+  @[January 26, 2024](David Kapukchyan) > Added 'mClusterId' to *StFcsPicoHit* to keep track of cluster associated to a hit. This is not the most efficient way to do this since now you have to loop over all hits to find which ones are associated to a specific cluster and this will result in extra loops. Since this information will be used mostly in testing it is good enough for now.
   
+  @[January 27, 2024](David Kapukchyan) > Added 'mXLocal' and 'mYLocal' to *StFcsPicoHit* to keep the x,y of the hit in local coordinates too since this is what is used for the point maker and I needed it for testing the shower shape.
+
+  @[February 6, 2024](David Kapukchyan) > Fixed mChi2Ndf2Phoron to mChi2Ndf2Photon
  */
 
 #ifndef StFcsPico_H
@@ -37,13 +42,18 @@ public:
   UShort_t mChId = 0;
   UInt_t mAdcSum = 0;
   Float_t mEnergy = 0;
+  Int_t mClusterId = -1;  //Store cluster Id this hit belongs to, each hit can only be a part of a single cluster
+
+  //Local coordinates
+  Float_t mXLocal = 0; //(Column space)
+  Float_t mYLocal = 0; //(Row space)
 
   //STAR coordinates
   Float_t mXstar = 0;
   Float_t mYstar = 0;
   Float_t mZstar = 0;
   
-  ClassDef(StFcsPicoHit,1);
+  ClassDef(StFcsPicoHit,2);
 };
 
 //A dummy class to hold just basic FCS cluster information
@@ -60,13 +70,13 @@ public:
   Int_t mNNeighbor=0;
   Int_t mNPoints=0;
   Float_t mEnergy = 0;
-  Float_t mX=0;         //This is local x
-  Float_t mY=0;         //This is local y
+  Float_t mX=0;         //This is local x (Column space)
+  Float_t mY=0;         //This is local y (Row space)
   Float_t mSigmaMin=0;
   Float_t mSigmaMax=0;
   Float_t mTheta=0;
   Float_t mChi2Ndf1Photon=0;
-  Float_t mChi2Ndf2Phoron=0;
+  Float_t mChi2Ndf2Photon=0;
 
   //Lorentz 4 momentum of cluster
   Double_t mPx = 0;
