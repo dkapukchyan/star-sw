@@ -16,6 +16,8 @@
   @[February 1, 2024](David Kapukchyan) > Added mFile to help with reading ROOT files
 
   @[February 6, 2024](David Kapukchyan) > Added Chi2/NDF histograms and fixed mChi2Ndf2Phoron to mChi2Ndf2Photon
+
+  @[February 20, 2024](David Kapukchyan) > Added histograms #mH3F_Showers and #mH2F_NhitsPerClus to understand shower shape. Added #mTestFile that will write the hit and cluster information as plain text to a file. This was needed to debug why cluster and hit information were not matching between the MuDST and #mDataTree. Fixed the bug that was causing this issue by forcing #StFcsPicoHit::mClusterId to be -1 after initializing.
  */
 
 #ifndef StFcsShowerAnaMaker_H
@@ -114,7 +116,10 @@ class StFcsShowerAnaMaker : public StMaker
   TH1* mH2F_parprojyVprojx = 0; //!< Histogram of parent tracks' x,y projected onto FCS planes
   TH1* mH1F_NPrimTrks = 0;      //!< Histogram of number of primary tracks/event
   TH1* mH1F_NParTrks = 0;       //!< Histogram of number of parent tracks/event
-  
+
+  TH1* mH3F_Showers = 0;        //!< Histogram of hit local x,y,energy where the x,y is shifted by the cluster center and the energy is normalized by the total cluster energy. Only ecal clusters.
+  TH1* mH2F_NhitsPerClus = 0;   //!< 2D Histogram of number of hits per cluster vs. detector id
+
   Rtools::HistColl2F* mHC2F_PointLocalyVx = 0; //!< 2D Histogram collection of PointLocalXvY for different eta and phi bins of reconstructed points. 8 bins in Phi (pi/4 width), and 6 bins in eta (width 0.3) starting with 2.4
 
   //void InitHists();     //!< Create histograms from this class. If reading create=false. If writing create=true
@@ -128,6 +133,7 @@ private:
   TObjArray* mHistsArr = 0;             //! Array to hold histograms
 
   TFile* mOutFile = 0;
+  //std::ofstream* mTestFile = 0;
   
   ClassDef(StFcsShowerAnaMaker,2);
 };

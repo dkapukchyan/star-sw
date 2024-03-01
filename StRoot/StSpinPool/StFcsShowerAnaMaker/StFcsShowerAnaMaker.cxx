@@ -87,6 +87,7 @@ StFcsShowerAnaMaker::~StFcsShowerAnaMaker()
 {
   if( mOutFile!=0 ){ mOutFile->Close(); }
   delete mOutFile;
+  //delete mTestFile;
   CleanHists();
   delete mHistsArr;
   delete mDataTree;
@@ -103,6 +104,13 @@ Int_t StFcsShowerAnaMaker::Init()
   }
 
   if( mFileName.Length()!=0 && mOutFile==0 ){ mOutFile = new TFile(mFileName.Data(), "RECREATE"); }
+  /*if( mFileName.Length()!=0 ){
+    mTestFile = new ofstream();
+    TString fname(mFileName);
+    fname.ReplaceAll(".root",".out");
+    mTestFile->open(fname.Data());
+    if( !(mTestFile->is_open()) ){ std::cout <<"file '"<< fname << "' not open" << std::endl; }
+    }*/
 
   mHistsArr = new TObjArray();
   if( LoadHistograms(mHistsArr) ){ std::cout << "StFcsShowerAnaMaker::InitRun Failed to make new histgorams" << std::endl; }
@@ -171,6 +179,9 @@ bool StFcsShowerAnaMaker::LoadHistograms(TObjArray* arr, TFile* file)
   nloaded += Rtools::LoadH2(arr,file,mH2F_clusmeanyVx,"H2F_clusmeanyVx",";Cluster Mean X (cm);Cluster Mean Y (cm)", 160,-160,160, 160,-160,160);
   nloaded += Rtools::LoadH1(arr,file,mH1F_ClusMeanDTrk,"H1F_ClusMeanDTrk",";Cluster Mean Distance to Track(cm);", 100,0,50);
 
+  nloaded += Rtools::LoadH3(arr,file,mH3F_Showers,"H3F_Showers",";HitLocalX;HitLocalY;HitEn", 100,-10,10, 100,-10,10, 100,0,1);
+  nloaded += Rtools::LoadH2(arr,file,mH2F_NhitsPerClus,"H2F_NhitsPerClus",";NhitsPerClus", 6,0,6, 50,0,50);
+
   if( file==0 ){
     mHC2F_PointLocalyVx = new Rtools::HistColl2F("PointLocalyVx_PhiEta",";Point Local X;Point Local Y",100,0,1, 100,0,1);
     mHC2F_PointLocalyVx->Create(8*6); //8 bins in phi, 6 in eta
@@ -230,6 +241,7 @@ Int_t StFcsShowerAnaMaker::Make()
       picohit->mChId   = hit->id();
       picohit->mAdcSum = hit->adcSum();
       picohit->mEnergy = hit->energy();
+      picohit->mClusterId = -1; //@[February 20, 2024]>Set it explicityly to -1 since for some reason was being intialized to 0 in some cases and throwing off the cluster to hit associations
       
       if( det<=kFcsHcalSouthDetId ){ //ECAL and HCAL
 	StThreeVectorF xyz = mFcsDb->getStarXYZ(hit);
@@ -283,13 +295,24 @@ Int_t StFcsShowerAnaMaker::Make()
       UInt_t nhits = cluster->nTowers();
       StPtrVecFcsHit& clushits = cluster->hits();
       if( GetDebug()==3 ){ std::cout << "|clusid:"<<cluster->id() << "|nTowers:"<<nhits << "|size:"<<clushits.size() << std::endl; }
-      for( UInt_t ihit=0; ihit<clushits.size(); ++ihit ){
+      //(*mTestFile) << "|det:"<<det << "|Cid:"<<cluster->id() << "|Cdet:"<<cluster->detectorId() << "|Cx:"<<cluster->x() <<"|Cy:"<<cluster->y() << "|Ce:"<<cluster->energy() << "|Cnhit:"<<nhits /*<<"|Csize:"<<clushits.size()*/ << std::endl;
+      for( UInt_t ihit=0; ihit<nhits; ++ihit ){
 	StFcsHit* hit = clushits[ihit];
 	if( GetDebug()==3 ){ std::cout << " + |detid:"<<hit->detectorId() << "|id:"<<hit->id() << std::endl; }
+	StFcsPicoHit* picohit = 0;
 	for( UInt_t phit=0; phit<mHitsArr->GetEntriesFast(); ++phit ){
-	  StFcsPicoHit* picohit = (StFcsPicoHit*)mHitsArr->ConstructedAt(phit);
-	  if( picohit->mDetId == hit->detectorId() && picohit->mChId == hit->id() ){ picohit->mClusterId = cluster->id(); }
+	  picohit = (StFcsPicoHit*)mHitsArr->At(phit);
+	  if( picohit->mDetId==hit->detectorId() && picohit->mChId==hit->id() ){ picohit->mClusterId = cluster->id(); break; }
 	}
+	if( det<2 ){
+	  mH2F_NhitsPerClus->Fill(det,nhits);
+	  Float_t hlocalx = 0;
+	  Float_t hlocaly = 0;
+	  mFcsDb->getLocalXYinCell(hit, hlocalx, hlocaly);
+	  ((TH3F*)mH3F_Showers)->Fill( hlocalx-cluster->x(), hlocaly-cluster->y(), hit->energy()/cluster->energy() );
+	  //(*mTestFile) << "  * |Hdet:"<<hit->detectorId() << "|Hid:"<<hit->id() << "|Hx:"<<hlocalx << "|Hy:"<<hlocaly << "|He:"<<hit->energy() << std::endl;
+	  //(*mTestFile) << "  + |Pdet:"<<picohit->mDetId << "|Pid:"<<picohit->mChId << "|Px:"<<picohit->mXLocal <<"|Py:"<<picohit->mYLocal << "|Pe:"<<picohit->mEnergy << "|Pcid:"<<picohit->mClusterId << std::endl;
+	  }
       }
     }
     
