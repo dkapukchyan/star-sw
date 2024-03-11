@@ -3,10 +3,10 @@
   David Kapukchyan
 
   SYNOPSIS 
-  The purpose of this class is to run QA and find Pi0s in FCS data using STAR's MuDst files.
+  The purpose of this class is to generate a TTree of PI0s to use for transverse single spin asymmetry analysis.
 
   LOG
-  @[January 12, 2024] > Copied from *StFcsPi0FinderForEcal* written by Xilin Liang and adapted to work with STAR's MuDst files.
+  @[March 5, 2024] > Copied from *StMuFcsPi0TreeMaker* and modified to write pi0s to a tree
 
 */
 
