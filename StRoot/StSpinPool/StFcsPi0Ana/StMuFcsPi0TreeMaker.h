@@ -6,21 +6,24 @@
   The purpose of this class is to generate a TTree of PI0s to use for transverse single spin asymmetry analysis.
 
   LOG
-  @[March 5, 2024] > Copied from *StMuFcsPi0TreeMaker* and modified to write pi0s to a tree
+  @[March 5, 2024] > Copied from *StMuFcsPi0Maker* and modified to write pi0s to a tree
+
+  @[May 24, 2024] > Added #FcsPi0Info class to hold information about the reconstructed Pi0s. Got rid of the histograms.
 
 */
 
 
-#ifndef STMUFCSPI0MAKER_HH
-#define STMUFCSPI0MAKER_HH
+#ifndef STMUFCSPI0TREEMAKER_HH
+#define STMUFCSPI0TREEMAKER_HH
 
 //C/C++ Headers
 #include <iostream>
 
 //ROOT Headers
-#include "TCanvas.h"
+#include "TString.h"
+#include "TFile.h"
+#include "TTree.h"
 #include "TH1F.h"
-#include "TH2F.h"
 
 //STAR Headers
 #include "StEnumerations.h"
@@ -47,20 +50,70 @@
 #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
 #include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
 
+//Class to hold basic info for reconstructed pi0 candidates
+class FcsPi0Info : public TObject
+{
+  FcsPi0Info() {}
+  ~FcsPi0Info() {}
 
-class StMuFcsPi0Maker : public StMaker {
+  ULong_t mDetId = 0;   //!< Unique Pi0 identifier
+  ULong_t mRun = 0;     //!< Run number where pi0 was found
+  ULong_t mEvent = 0;   //!< STAR Event Id where pi0 was found
+  UShort_t mSpin = 0;   //!< Spin state of proton when pi0 was reconstructed
+  Double_t mPx = 0;     //!< X-Momentum
+  Double_t mPy = 0;     //!< Y-Momentum
+  Double_t mPz = 0;     //!< Z-Momentum
+  Double_t mE  = 0;     //!< Energy
+  Double_t mEta = -1;   //!< Pseudorapidity
+  Double_t eta()  { if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
+  Double_t phi()  { return atan2(mPy,mPx); }
+  Double_t pt()   { return sqrt( mPx*mPx + mPy*mPy ); }
+  Double_t ptot() { return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
+  Double_t theta(){ return 2.0*atan(exp(-1.0*eta())); }
+  Double_t mass() { return sqrt(mE*mE - ptot()*ptot()); }
+  //Need to project using momentum
+  //Double_t mStarX = 0;  //!< Global STAR x postion
+  //Double_t mStarY = 0;  //!< Global STAR y postion
+  //Double_t mStarZ = 0;  //!< Global STAR z postion
+  Double_t mAlpha = 0;  //!< Opening angle of pi0
+
+  Double_t mE1 = 0;    //!< Energy of particle 1
+  Double_t mX1 = 0;    //!< Lab frame x-position of particle 1, taking into account the beamline and z-vertex
+  Double_t mY1 = 0;    //!< Lab frame y-position of particle 1, taking into account the beamline and z-vertex
+  Double_t mZ1 = 0;    //!< Lab frame z-position of particle 1, taking into account the beamline and z-vertex
+  Double_t mE2 = 0;    //!< Energy of particle 2
+  Double_t mX2 = 0;    //!< Lab frame x-position of particle 2, taking into account the beamline and z-vertex
+  Double_t mY2 = 0;    //!< Lab frame y-position of particle 2, taking into account the beamline and z-vertex
+  Double_t mZ2 = 0;    //!< Lab frame z-position of particle 2, taking into account the beamline and z-vertex
+  //TLorentzVector LV_P1(){ TLorentzVector v; v.SetPxPyPzE(mPX1,mPY1,mPZ1,mE1); return v; }
+  //TLorentzVector LV_P2(){ TLorentzVector v; v.SetPxPyPzE(mPX2,mPY2,mPZ2,mE2); return v; }
+  Double_t zgg {return fabs(mE1-mE2)/(mE1+mE2);}    //!< Energy asymmetry of pi0
+  Double_t mDgg = 0;        //!< distance between the two particles (cm)
+  Double_t mTpcVz = -999;   //!< TPC z vertex
+  Double_t mVpdVz = -999;   //!< VPD z vertex
+  Double_t mBbcVz = -999;   //!< BBC z Vertex
+
+  ClassDef( FcsPi0Info, 1 );
+}
+
+class StMuFcsPi0TreeMaker : public StMaker {
 public:
 
-  StMuFcsPi0Maker(const Char_t* name = "MuFcsPi0Maker");
-  ~StMuFcsPi0Maker();
+  StMuFcsPi0TreeMaker(const Char_t* name = "MuFcsPi0Maker");
+  ~StMuFcsPi0TreeMaker();
+  virtual Int_t Init();
   virtual Int_t InitRun(int runnumber);
   virtual Int_t Make();
   virtual Int_t Finish();
   void setOutFileName(const char* name) { mFilename = name; }
-  //{ filename = "StFcsPi0invariantmass"+std::string(run2)+".root"; }
+  #ifndef __CINT__
+  template<typename T, typename... Args>
+  void SetTrigs(int trigid, Args... restargs){ mTargetTrig.push_back(trigid); return SetTrigs(restargs...); } //function to set trigger ids to use. Does not check for repetition so need to be a good user
+  #endif
+  void IgnoreTrig(bool value=true){ mIgnoreTrig = value; }
+  static void LoadDataFromFile(TFile* file, TTree* tree, TClonesArray* arr, TH1* hist=0);
   
-private:
-  
+protected:
   //UInt_t mEvent;  //Keeps track of number of events
   //int mTrig = -1;   //Found trigger index in vector 'mTargetTrig'
   //int mXing = 0;    //Bunch Crossing Id
@@ -72,89 +125,33 @@ private:
 
   StFcsDb* mFcsDb = 0;
   StMuFcsCollection* mMuFcsColl = 0;
-  //StFmsEventInfo* mFmsEventInfo;//Since friend functions are not inherited this pointer insures inherited classes still have access to event info
   //StSpinDbMaker* mSpinDbMkr;
-
-  //const char* mOutputName = "fmsMipQa.root";
-  //TFile* mFile=0;//July 28, 2021 use pointer in 'mFmsAna_Data'
-  //int mPrint=0;
+  StEpdGeom* mEpdGeo=0;
   
   std::vector<int> mTargetTrig;  //For Target Trigger ID
-  bool mIgnoreTrig;   //flag to check if ignoring triggers or not
-  bool mReadMuDst;    //flag to check if reading from mudst or not (This can be used to turn off populating event info)
-  bool mReadSim;     //flag to check if reading mudst from simulations
+  bool mIgnoreTrig;  //!< flag to check if ignoring triggers or not
+  //bool mReadMuDst;   //!< flag to check if reading from mudst or not (This can be used to turn off populating event info)
+  //bool mReadSim;     //!< flag to check if reading mudst from simulations
 
-  //TTree* mDataTree = 0; //An internal tree that you can use to add any desired branches.  It will get written to the output file if it exists.
-  //StFmsAna* mFmsAna_Data;//Holds data structures and file to write to
+  //Data to save
+  TString mFilename = "";
+  TFILE* mFile_Output = 0; //!< TFile to save all the data
+  TTree* mPi0Tree = 0; //An internal tree that you can use to add any desired branches.  It will get written to the output file if it exists.
+  TClonesArray* mPi0Arr = 0; //!< Array of #FcsPi0Info to store the valid pi0 events for analysis  
+  TH1* mH1F_Entries = 0;           //!< Number of events processed no cuts (i.e. "Make" calls)
   
-   TH1F* h1_num_entries = 0;                //h1_num_entries:# of entries
-   TH1F* h1_inv_mass_cluster = 0;           //h1_inv_mass_cluster:invariant mass
-   TH1F* h1_inv_mass_cluster_Vtpc = 0;           //h1_inv_mass_cluster_Vtpc:invariant mass with TPC vertex
-   TH1F* h1_inv_mass_cluster_Vbbc = 0;           //h1_inv_mass_cluster_Vbbc:invariant mass with BBC vertex
-   TH1F* h1_inv_mass_cluster_Vvpd = 0;           //h1_inv_mass_cluster_Vvpd:invariant mass with VPD vertex
-   TH1F* h1_inv_mass_cluster_Vz0tpc = 0;           //h1_inv_mass_cluster_Vz0tpc:invariant mass (vertex z = 0) with TPC vertex
-   TH1F* h1_inv_mass_cluster_Vbbctpc = 0;           //h1_inv_mass_cluster_Vbbctpc:invariant mass (BBC vertex) with TPC vertex
-   TH1F* h1_inv_mass_cluster_Vvpdtpc = 0;           //h1_inv_mass_cluster_Vvpdtpc:invariant mass (VPD vertex) with TPC vertex
-   TH1F* h1_Zgg_cluster = 0;                //h1_Zgg:Zgg
-   TH1F* h1_opening_angle_cluster = 0;      //h1_opening_angle:opening angle
-   TH1F* h1_each_cluster_energy = 0;        //h1_each_cluster_energy:each cluster energy(no cut)
-   TH1F* h1_two_cluster_energy_nocut = 0;   //h1_two_cluster_energy_nocut:2 cluster energy(no cut)
-   TH1F* h1_two_cluster_energy_allcut = 0;  //h1_two_cluster_energy_allcut:2 cluster energy(all cut)
-   TH1F* h1_dgg_cluster = 0;                //h1_dgg_cluster:2 dgg(all cut) distance bewteen two clusters at the det.
-   TH1F* h1_Zgg_nocut_cluster = 0;          //h1_Zgg_nocut_cluster:Zgg without cut
-   TH1I* h1_nCluster = 0;                   //h1_nCluster: number of clusters
-   TH1F* h1_inv_mass_cluster_nocut = 0;     //h1_inv_mass_cluster:invariant mass no cut
-   TH1I* h1_nclu_good = 0;                  //h1_nclu_good: number of good clusters
-   TH1I* h1_clu_nTowers = 0;                //h1_clu_nTowers: number of towers in cluster
+  // int mFilter = 0;
+  // int mNEvents = -1;
+  // int mNAccepted = 0;
+  // int mMaxEvents = 30000;
+  // int bins = 150;
+  // float m_low = 0;
+  // float m_up = 0.4;
+  // float E_up = 10;
+  // float E_low = 8;
+  // float E_min = 1;
 
-   TH1F* h1_inv_mass_point = 0;           //h1_inv_mass_point:invariant mass
-   TH1F* h1_Zgg_point = 0;                //h1_Zgg:Zgg
-   TH1F* h1_opening_angle_point = 0;      //h1_opening_angle:opening angle
-   TH1F* h1_each_point_energy = 0;        //h1_each_point_energy:each point energy(no cut)
-   TH1F* h1_two_point_energy_nocut = 0;   //h1_two_point_energy_nocut:2 point energy(no cut)
-   TH1F* h1_two_point_energy_allcut = 0;  //h1_two_point_energy_allcut:2 point energy(all cut)
-   TH1F* h1_dgg_point = 0;                //h1_dgg_point:2 dgg(all cut) distance bewteen two points at the det.
-   TH1F* h1_Zgg_nocut_point = 0;          //h1_Zgg_nocut_point:Zgg without cut:
-   TH1F* h1list_mass_by_Ntower[748];      //h1list_mass_by_Ntower: invariant mass sorted by highest energy tower[64]
-   TH1F* h1list_mass_by_Stower[748];      //h1list_mass_by_Stower: invariant mass sorted by highest energy tower[64]
-   TH1F* h1list_NEtower[748];             //h1list_NEtower: energy spectrum for north Ecal tower (no cut)
-   TH1F* h1list_SEtower[748];             //h1list_SEtower: energy spectrum for south Ecal tower (no cut)
-   TH1F* h1_EcalMult_E1 = 0;              //h1_EcalMult_E1: Ecal Milt (E>1)
-   TH1I* h1_nPoint = 0;                   //h1_nPoint: number of point
-   TH1I* h1_npoi_good = 0;                //h1_npoi_good: number of good points
-   TH1F* h1_inv_mass_point_nocut = 0;     //h1_inv_mass_point:invariant mass no cut
-
-   TH1D* h1_zVtpc=0;			//h1_zVtpc: TPC vertex z
-   TH1D* h1_zVbbc=0;			//h1_zVbbc: BBC vertex z
-   TH1D* h1_zVvpd=0;			//h1_zVvpd: VPD vertex z
-
-   TH2F* h2_EcalMult_vs_TofMult = 0;     //h2_EcalMult_vs_TofMult
-   TH2F* h2_cluster_position = 0;        //h2_cluster_position
-   TH2F* h2_cluster_position_cut = 0;    //h2_cluster_position_cut
-   TH2F* h2_point_position = 0;          //h2_point_position
-   TH2F* h2_cluster_invmass_vs_dgg = 0;  //h2_cluster_invmass_vs_dgg
-   TH2F* h2_cluster_invmass_vs_Zgg = 0;  //h2_cluster_invmass_vs_Zgg
-   TH2F* h2_cluster_dgg_vs_E1pE2 = 0;    //h2_cluster_dgg_vs_E1+E2
-   TH2F* h2_point_invmass_vs_dgg = 0;    //h2_cluster_invmass_vs_dgg
-   TH2F* h2_point_invmass_vs_Zgg = 0;    //h2_cluster_invmass_vs_Zgg
-   TH2F* h2_point_dgg_vs_E1pE2 = 0;      //h2_cluster_dgg_vs_E1+E2
-
-   int mDebug = 0;
-   int mFilter = 0;
-   int mNEvents = -1;
-   int mNAccepted = 0;
-   int mMaxEvents = 30000;
-   int bins = 150;
-   TString mFilename;
-   float m_low = 0;
-   float m_up = 0.4;
-   float E_up = 10;
-   float E_low = 8;
-   float E_min = 1;
-
-#ifndef SKIPDefImp
-  ClassDef(StMuFcsPi0Maker, 1);
-#endif
+  ClassDef(StMuFcsPi0TreeMaker, 1);
 };
 
 #endif
