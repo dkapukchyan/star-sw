@@ -29,11 +29,6 @@
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-//#include "StEventTypes.h" (not in header)
-//#include "StEvent/StEvent.h" (not in header)
-//#include "StEvent/StFmsCollection.h" (not in header)
-//#include "StEvent/StFmsPoint.h" (not in header)
-//#include "StEvent/StFmsPointPair.h" (not in header)
 #include "StEvent/StTriggerData.h"
 #include "StEvent/StTriggerId.h"
 #include "StMessMgr.h"

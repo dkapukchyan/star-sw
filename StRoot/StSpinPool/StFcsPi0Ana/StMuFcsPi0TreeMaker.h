@@ -32,11 +32,6 @@
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-//#include "StEventTypes.h" (not in header)
-//#include "StEvent/StEvent.h" (not in header)
-//#include "StEvent/StFmsCollection.h" (not in header)
-//#include "StEvent/StFmsPoint.h" (not in header)
-//#include "StEvent/StFmsPointPair.h" (not in header)
 #include "StEvent/StTriggerData.h"
 #include "StEvent/StTriggerId.h"
 #include "StMessMgr.h"
@@ -50,11 +45,13 @@
 #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
 #include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
 
+class StEpdGeom;
+
 //Class to hold basic info for reconstructed pi0 candidates
 class FcsPi0Info : public TObject
 {
-  FcsPi0Info() {}
-  ~FcsPi0Info() {}
+  FcsPi0Info();
+  ~FcsPi0Info();
 
   ULong_t mDetId = 0;   //!< Unique Pi0 identifier
   ULong_t mRun = 0;     //!< Run number where pi0 was found
@@ -87,14 +84,14 @@ class FcsPi0Info : public TObject
   Double_t mZ2 = 0;    //!< Lab frame z-position of particle 2, taking into account the beamline and z-vertex
   //TLorentzVector LV_P1(){ TLorentzVector v; v.SetPxPyPzE(mPX1,mPY1,mPZ1,mE1); return v; }
   //TLorentzVector LV_P2(){ TLorentzVector v; v.SetPxPyPzE(mPX2,mPY2,mPZ2,mE2); return v; }
-  Double_t zgg {return fabs(mE1-mE2)/(mE1+mE2);}    //!< Energy asymmetry of pi0
+  Double_t zgg() {return fabs(mE1-mE2)/(mE1+mE2);}    //!< Energy asymmetry of pi0
   Double_t mDgg = 0;        //!< distance between the two particles (cm)
   Double_t mTpcVz = -999;   //!< TPC z vertex
   Double_t mVpdVz = -999;   //!< VPD z vertex
   Double_t mBbcVz = -999;   //!< BBC z Vertex
 
   ClassDef( FcsPi0Info, 1 );
-}
+};
 
 class StMuFcsPi0TreeMaker : public StMaker {
 public:
@@ -135,7 +132,7 @@ protected:
 
   //Data to save
   TString mFilename = "";
-  TFILE* mFile_Output = 0; //!< TFile to save all the data
+  TFile* mFile_Output = 0; //!< TFile to save all the data
   TTree* mPi0Tree = 0; //An internal tree that you can use to add any desired branches.  It will get written to the output file if it exists.
   TClonesArray* mPi0Arr = 0; //!< Array of #FcsPi0Info to store the valid pi0 events for analysis  
   TH1* mH1F_Entries = 0;           //!< Number of events processed no cuts (i.e. "Make" calls)
