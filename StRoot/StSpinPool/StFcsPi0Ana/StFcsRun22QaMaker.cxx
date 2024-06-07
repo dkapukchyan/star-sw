@@ -53,6 +53,7 @@ StFcsRun22QaMaker::StFcsRun22QaMaker(const char* name):StMaker(name)
 StFcsRun22QaMaker::~StFcsRun22QaMaker()
 {
   delete mAllHists;
+  delete mFileOutput;
 }
 
 Short_t StFcsRun22QaMaker::getRandomSpin()
@@ -110,7 +111,7 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
     loaded += AddH2F(file,(mH2F_Hit_chi2Vid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
     histname = "H2F_Hit_npeaksVid_" + namesuffix[i];
     histtitle = "Number of fitted peaks vs. Id for " + namesuffix[i] + ";id;NPeaks";
-    loaded += AddH2F(file,(mH2F_Hit_npeaksVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
+    loaded += AddH2F(file,(mH2F_Hit_npeaksVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,15,0,15);
     histname = "H1F_Hit_Nhits_" + namesuffix[i];
     histtitle = "Hit Multiplicity for " + namesuffix[i] + ";NChs";
     loaded += AddH1F(file,(mH1F_Hit_NHits[i]),histname.Data(),histtitle.Data(),nchs,0,nchs);
@@ -138,7 +139,7 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
     loaded += AddH2F(file,(mH2F_Clu_sigmaxVsigmin[i]),histname.Data(),histtitle.Data(), 100,0,1, 100,0,1);
     histname = "H1F_Clu_theta_" + namesuffix[i];
     histtitle = "Cluster theta for " + namesuffix[i];
-    loaded += AddH1F(file,(mH1F_Clu_theta[i]),histname.Data(),histtitle.Data(), 20,0,TMath::Pi()*2.0);
+    loaded += AddH1F(file,(mH1F_Clu_theta[i]),histname.Data(),histtitle.Data(), 20,-1.0*TMath::Pi(),TMath::Pi());
     histname = "H2F_Clu_Chi2NdfPhoton_2V1_" + namesuffix[i];
     histtitle = "Cluster Chi^2/NDF for 2 photon fit vs. 1 photon fit for " + namesuffix[i] + ";1 photon Chi^2/NDF;2 photon Chi^2/NDF";
     loaded += AddH2F(file,(mH2F_Clu_Chi2NdfPhoton_2V1[i]),histname.Data(),histtitle.Data(), 100,0,100, 100,0,100);
@@ -156,11 +157,12 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
     histtitle = "Point positions for " + namesuffix[i] + ";x (cm);y (cm)";
     loaded += AddH2F(file,(mH2F_Poi_yVx[i]),histname.Data(),histtitle.Data(), ncol+1,1,ncol+1, nrow+1,1,nrow+1 );
   }
-  loaded += AddH1F(file,mH1F_Hit_ESum[0],"H1F_Hit_ESum_Ecal","Total energy sum in Ecal;Energy (GeV)", 100,0,100);
+  loaded += AddH1F(file,mH1F_Hit_ESum[0],"H1F_Hit_ESum_Ecal","Total energy sum in Ecal;Energy (GeV)", 200,0,200);
   loaded += AddH1F(file,mH1F_Hit_ESum[1],"H1F_Hit_ESum_Hcal","Total energy sum in Hcal;Energy (GeV)", 100,0,100);
   loaded += AddH1F(file,mH1F_Hit_ESum[2],"H1F_Hit_ESum_Pres","Total energy sum in Pres;Energy (GeV)", 100,0,100);
 
-  loaded += AddH1F(file,mH1F_Epd_NHits,"H1F_Epd_NHits","Number of Hits form EPD collection (West);NHits",300,0,300);
+  loaded += AddH1F(file,mH1F_Epd_NHits,"H1F_Epd_NHits","Number of Hits from EPD collection;NHits",300,0,300);
+  loaded += AddH1F(file,mH1F_Epd_NHitsWest,"H1F_Epd_NHitsWest","Number of Hits form EPD collection (West);NHits",300,0,300);
   mH2F_HitPres_depVqt[0]   = new TObjArray();
   mH2F_HitPres_depVqt[1]   = new TObjArray();
   mH2F_HitPres_peakVtac[0] = new TObjArray();
@@ -170,26 +172,29 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TDC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TDC", 100,0,100, 100,0,100);
   loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TDC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TDC", 100,0,100, 100,0,100); 
 
-  loaded += AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 50,0,TMath::Pi()/2.0);
+  loaded += AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
   loaded += AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
   loaded += AddH2F(file,mH2F_CluHigh_dggVesum,"H2F_CluHigh_dggVesum","Highest two energy clusters Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
   loaded += AddH2F(file,mH2F_CluHigh_invmassVesum,"H2F_CluHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
   loaded += AddH2F(file,mH2F_CluHigh_invmassVdgg,"H2F_CluHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
   loaded += AddH2F(file,mH2F_CluHigh_invmassVzgg,"H2F_CluHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
 
-  loaded += AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 50,0,TMath::Pi()/2.0);
+  loaded += AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total point energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
   loaded += AddH2F(file,mH2F_PoiHighEn_lowVhigh,"H2F_PoiHighEn_lowVhigh","Highest two energy points energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
   loaded += AddH2F(file,mH2F_PoiHigh_dggVesum,"H2F_PoiHigh_dggVesum","Highest two energy points Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+  loaded += AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
 
   return loaded;
 }
 
 Int_t StFcsRun22QaMaker::Init()
 {
-  UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created
+  if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
+  mFileOutput = new TFile(mFileName.Data(), "RECREATE");
+  UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
+  SetOwner(kTRUE);
   LOG_INFO << "StFcsRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
   return kStOk;
 }
@@ -291,7 +296,8 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
   TClonesArray* mMuEpdHits = mMuDst->epdHits();
   if( mMuEpdHits==0 ){ LOG_ERROR << "StFcsRun22QaMaker::FillFcsInfo - No EPD hits" << endm; return kStErr; }
   unsigned int nepdhits = mMuDst->numberOfEpdHit();
-
+  mH1F_Epd_NHits->Fill(nepdhits);
+  
   bool check_fillclu = false;
   bool check_fillpoi = false;
   
@@ -311,163 +317,172 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
   float bestpoi_hightowerenergy = -1;
   float bestpoi_lowtowerenergy  = -1;
 
-  double esum[3] = {0}; //total energy deposited from all hits in the Ecal, Hcal, and Pres respectively
-  
+  double esum[3] = {0,0,0}; //total energy deposited from all hits in the Ecal, Hcal, and Pres respectively
+
+  TClonesArray* hits = mMuFcsColl->getHitArray();
+  if( hits==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
+  TClonesArray* clusters = mMuFcsColl->getClusterArray();
+  if( clusters==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS clusters" << endm; }
+  TClonesArray* points = mMuFcsColl->getPointArray();
+  if( points==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS points" << endm; }
+
   for( UInt_t idet=0; idet<kFcsNDet; ++idet ){
-    TClonesArray* hits = mMuFcsColl->getHitArray();
-    if( hits==0 ){
-      LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No FCS hits for detectorId:"<<idet << endm;
-      continue;
-    }
-    int nh = mMuFcsColl->numberOfHits(idet);
-    mH1F_Hit_NHits[idet]->Fill(nh);
-    for( int ihit=mMuFcsColl->indexOfFirstHit(idet); ihit<nh; ++ihit ){
-      StMuFcsHit* hit = (StMuFcsHit*)hits->At(ihit);
-      unsigned short hit_ehp = hit->ehp();
-      unsigned short hit_id = hit->id();
-      float hit_energy = hit->energy();
-      float hit_adcsum = hit->adcSum();
-      float hit_tbpeak = hit->fitPeak();
-      int   hit_npeak  = hit->nPeak();
-      float hit_chi2   = hit->fitChi2();
-      unsigned int ntb = hit->nTimeBin();
-      esum[hit_ehp] += hit_energy;
-      mH2F_Hit_enVid[idet]     ->Fill(hit_id,hit_energy);
-      mH2F_Hit_fitpeakVid[idet]->Fill(hit_id,hit_tbpeak);
-      mH2F_Hit_chi2Vid[idet]   ->Fill(hit_id,hit_chi2);
-      mH2F_Hit_npeaksVid[idet] ->Fill(hit_id,hit_npeak);
-      for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
-      if( idet>=kFcsPresNorthDetId ){
-	int fcspp; int fcstt;
-	mFcsDb->getEPDfromId(idet,hit_id,fcspp,fcstt);
-	//For processing epd hits
-	int adc=0;
-	int tac=0;
-	int nhitwest=0;
-	for(unsigned int i=0; i<nepdhits; ++i ){
-	  StMuEpdHit* epdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i);  //To match similar in StMuDstMaker->epdHit(int i)
-	  int ew = epdhit->side();
-	  int epdpp = epdhit->position();
-	  int epdtt = epdhit->tile();
-	  if( 1==ew ){
-	    ++nhitwest;
-	    if( fcspp==epdpp && fcstt==epdtt ){
-	      adc = epdhit->adc();
-	      tac = epdhit->tac();
-	      if( idet>kFcsPresNorthDetId ){ break; } //Only break for PresSouth because only need to fill nhits once which is done for PresNorth
+    //std::cout << "+ |idet:"<<idet << "|maxdet:"<<kFcsNDet;
+    if( hits!=0 ){
+      unsigned int nh = mMuFcsColl->numberOfHits(idet);
+      mH1F_Hit_NHits[idet]->Fill(nh);
+      unsigned int ihit = mMuFcsColl->indexOfFirstHit(idet);
+      nh += ihit; //Need to correct for the fact that number of hits is just that and doesn't correspond to max index to loop to
+      //std::cout << "|nh:" << mMuFcsColl->numberOfHits(idet) << "|index:"<<mMuFcsColl->indexOfFirstHit(idet) << "|actualmax:"<<nh << std::endl;
+      for( ; ihit<nh; ++ihit ){
+	StMuFcsHit* hit = (StMuFcsHit*)hits->At(ihit);
+	unsigned short hit_det = hit->detectorId();
+	unsigned short hit_ehp = hit->ehp();
+	unsigned short hit_id = hit->id();
+	float hit_energy = hit->energy();
+	float hit_adcsum = hit->adcSum();
+	float hit_tbpeak = hit->fitPeak();
+	int   hit_npeak  = hit->nPeak();
+	float hit_chi2   = hit->fitChi2();
+	unsigned int ntb = hit->nTimeBin();
+	//std::cout << "   + |ihit:"<<ihit << "|idet:"<<hit_det << "|hit_id:"<<hit_id << "|hit_ehp:"<<hit_ehp << "|hit_adcsum:"<<hit_adcsum << "|hit_energy:"<<hit_energy << "|hit_ntb:"<<ntb << "|nh:"<<nh << "|th:"<<mMuFcsColl->numberOfHits() << std::endl;
+	esum[hit_ehp] += hit_energy;
+	mH2F_Hit_enVid[idet]     ->Fill(hit_id,hit_energy);
+	mH2F_Hit_fitpeakVid[idet]->Fill(hit_id,hit_tbpeak);
+	mH2F_Hit_chi2Vid[idet]   ->Fill(hit_id,hit_chi2);
+	mH2F_Hit_npeaksVid[idet] ->Fill(hit_id,hit_npeak);
+	for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
+	if( idet>=kFcsPresNorthDetId ){
+	  int fcspp; int fcstt;
+	  mFcsDb->getEPDfromId(idet,hit_id,fcspp,fcstt);
+	  //For processing epd hits
+	  int adc=0;
+	  int tac=0;
+	  int nhitwest=0;
+	  for(unsigned int i=0; i<nepdhits; ++i ){
+	    StMuEpdHit* epdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i);  //To match similar in StMuDstMaker->epdHit(int i)
+	    int ew = epdhit->side();
+	    int epdpp = epdhit->position();
+	    int epdtt = epdhit->tile();
+	    if( 1==ew ){
+	      ++nhitwest;
+	      if( fcspp==epdpp && fcstt==epdtt ){
+		adc = epdhit->adc();
+		tac = epdhit->tac();
+		if( idet>kFcsPresNorthDetId ){ break; } //Only break for PresSouth because only need to fill nhits once which is done for PresNorth
+	      }
 	    }
 	  }
+	  //Here adc, and tac is equal to adc and tac from matched epd hit
+	  if( idet==kFcsPresNorthDetId ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
+	  ((TH1*) mH2F_HitPres_depVqt[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(adc,hit_adcsum);
+	  ((TH1*) mH2F_HitPres_peakVtac[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(tac,hit_tbpeak);
 	}
-	//Here adc, and tac is equal to adc and tac from matched epd hit
-	if( idet==kFcsPresNorthDetId ){ mH1F_Epd_NHits->Fill(nhitwest); }
-	((TH1*) mH2F_HitPres_depVqt[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(adc,hit_adcsum);
-	((TH1*) mH2F_HitPres_peakVtac[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(tac,hit_tbpeak);
-      }
-    }//fcs hits
-
-    TClonesArray* clusters = mMuFcsColl->getClusterArray();
-    if( clusters==0 ){
-      LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS clusters for detectorId:"<<idet << endm;
-      continue;
+      }//fcs hits
     }
-    int nc = mMuFcsColl->numberOfClusters(idet);
-    mH1F_NClusters[idet]->Fill(nc);
-    for( int iclus=mMuFcsColl->indexOfFirstCluster(idet); iclus<nc; ++iclus){
-      StMuFcsCluster* clu = (StMuFcsCluster*)clusters->At(iclus);
-      float iclu_x = clu->x();
-      float iclu_y = clu->y();
-      float iclu_energy = clu->energy();
-      mH1F_Clu_NTowers[idet]->Fill(clu->nTowers());
-      mH1F_Clu_NNei[idet]->Fill(clu->nNeighbor());
-      mH1F_Clu_NPoints[idet]->Fill(clu->nPoints());
-      mH1F_Clu_En[idet]->Fill(iclu_energy);
-      mH2F_Clu_yVx[idet]->Fill(iclu_x,iclu_y);
-      mH2F_Clu_sigmaxVsigmin[idet]->Fill(clu->sigmaMin(),clu->sigmaMax());
-      mH1F_Clu_theta[idet]->Fill(clu->theta());
-      mH2F_Clu_Chi2NdfPhoton_2V1[idet]->Fill(clu->chi2Ndf1Photon(),clu->chi2Ndf2Photon());
+    else{ std::cout <<"|hits is empty:"<<hits << std::endl; }
 
-      StThreeVectorD iclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
-      StLorentzVectorD iclu_p = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
+    if( clusters!=0 ){
+      unsigned int nc = mMuFcsColl->numberOfClusters(idet);
+      mH1F_NClusters[idet]->Fill(nc);
+      unsigned int iclus=mMuFcsColl->indexOfFirstCluster(idet);
+      nc += iclus;
+      for( ; iclus<nc; ++iclus){
+	StMuFcsCluster* clu = (StMuFcsCluster*)clusters->At(iclus);
+	float iclu_x = clu->x();
+	float iclu_y = clu->y();
+	float iclu_energy = clu->energy();
+	mH1F_Clu_NTowers[idet]->Fill(clu->nTowers());
+	mH1F_Clu_NNei[idet]->Fill(clu->nNeighbor());
+	mH1F_Clu_NPoints[idet]->Fill(clu->nPoints());
+	mH1F_Clu_En[idet]->Fill(iclu_energy);
+	mH2F_Clu_yVx[idet]->Fill(iclu_x,iclu_y);
+	mH2F_Clu_sigmaxVsigmin[idet]->Fill(clu->sigmaMin(),clu->sigmaMax());
+	mH1F_Clu_theta[idet]->Fill(clu->theta());
+	mH2F_Clu_Chi2NdfPhoton_2V1[idet]->Fill(clu->chi2Ndf1Photon(),clu->chi2Ndf2Photon());
 
-      if( idet<=kFcsEcalSouthDetId ){
-	if( iclus==(nc-1) ){ continue; }
-	for( int j=iclus+1; j<nc; j++ ){
-	  StMuFcsCluster* cluj = (StMuFcsCluster*)clusters->At(j);
-	  float jclu_energy = cluj->energy();
-	  float jclu_x = cluj->x();
-	  float jclu_y = cluj->y();
-	  StThreeVectorD jclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, jclu_x, jclu_y );
-	  double ensum = iclu_energy + jclu_energy;
-	  float zgg = (fabs(iclu_energy - jclu_energy)) / (ensum);
-	  StLorentzVectorD jclu_p = mFcsDb->getLorentzVector( jclu_pos, jclu_energy, 0 );
+	StThreeVectorD iclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
+	StLorentzVectorD iclu_p = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
+
+	if( idet<=kFcsEcalSouthDetId ){
+	  if( iclus==(nc-1) ){ continue; }
+	  for( int j=iclus+1; j<nc; j++ ){
+	    StMuFcsCluster* cluj = (StMuFcsCluster*)clusters->At(j);
+	    float jclu_energy = cluj->energy();
+	    float jclu_x = cluj->x();
+	    float jclu_y = cluj->y();
+	    StThreeVectorD jclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, jclu_x, jclu_y );
+	    double ensum = iclu_energy + jclu_energy;
+	    float zgg = (fabs(iclu_energy - jclu_energy)) / (ensum);
+	    StLorentzVectorD jclu_p = mFcsDb->getLorentzVector( jclu_pos, jclu_energy, 0 );
 	  
-	  if( jclu_energy<mEnCut ){ continue; }
-	  if( zgg>0.7 ){ continue; }
-	  if( ensum>bestclu_totale ){
-	    check_fillclu = true;
-	    bestclu_invmass = ((iclu_p + jclu_p).m());
-	    bestclu_totale = ensum;
-	    bestclu_dgg = sqrt( (iclu_pos[0]-jclu_pos[0])*(iclu_pos[0]-jclu_pos[0]) + (iclu_pos[1]-jclu_pos[1])*(iclu_pos[1]-jclu_pos[1]) + (iclu_pos[2]-jclu_pos[2])*(iclu_pos[2]-jclu_pos[2]) );
-	    bestclu_zgg = zgg;
-	    double cluidotj = iclu_pos[0]*jclu_pos[0] + iclu_pos[1]*jclu_pos[1] + iclu_pos[2]*jclu_pos[2];          //dot product of vectors for the current cluster position and cluster j position
-	    double iclumag = sqrt( iclu_pos[0]*iclu_pos[0] + iclu_pos[1]*iclu_pos[1] + iclu_pos[2]*iclu_pos[2] );  //magnitude of position vector for current cluster
-	    double jclumag = sqrt( jclu_pos[0]*jclu_pos[0] + jclu_pos[1]*jclu_pos[1] + jclu_pos[2]*jclu_pos[2] );//magnitude of position vector for cluster j
-	    bestclu_opening_angle = acos( cluidotj / (iclumag*jclumag) );
-	    if( iclu_energy>jclu_energy ){ bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = jclu_energy; }
-	    else                         { bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = iclu_energy; }
-	  }
-	}//jclu
-      }
-    }//iclu
-
-    TClonesArray* points = mMuFcsColl->getPointArray();
-    if( points==0 ){
-      LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS points for detectorId:"<<idet << endm;
-      continue;
-    }
-    int np = mMuFcsColl->numberOfPoints(idet);
-    mH1F_NPoints[idet]->Fill(np);
-    for( int ipoint=mMuFcsColl->indexOfFirstPoint(idet); ipoint<np; ++ipoint ){
-      StMuFcsPoint* point = (StMuFcsPoint*)points->At(ipoint);
-      float ipoi_x = point->x();
-      float ipoi_y = point->y();
-      float ipoi_energy = point->energy();
-      mH1F_Poi_En[idet]->Fill(ipoi_energy);
-      mH1F_Poi_NCluPhotons[idet]->Fill(point->nParentClusterPhotons());
-      mH2F_Poi_yVx[idet]->Fill(ipoi_x,ipoi_y);
-      StThreeVectorD ipoi_pos = mFcsDb->getStarXYZfromColumnRow( idet, ipoi_x, ipoi_y );
-      StLorentzVectorD ipoi_p = mFcsDb->getLorentzVector(ipoi_pos, ipoi_energy, 0);
-      
-      if( idet<=kFcsEcalSouthDetId ){
-	if( ipoint==(np-1) ){ continue; }
-	for( int j=(ipoint+1); j<np; ++j ){
-	  StMuFcsPoint* poij = (StMuFcsPoint*)points->At(j);
-	  float jpoi_energy = poij->energy();
-	  float poiesum = ipoi_energy+jpoi_energy;
-	  float zgg = (fabs(ipoi_energy - jpoi_energy)) / (poiesum);
-	  StThreeVectorD jpoi_pos = mFcsDb->getStarXYZfromColumnRow(idet, poij->x(), poij->y());
-	  StLorentzVectorD jpoi_p = mFcsDb->getLorentzVector(jpoi_pos, jpoi_energy, 0);
-
-	  if( idet<=kFcsEcalSouthDetId ){
-	    if( jpoi_energy<mEnCut ){ continue; }
-	    if( zgg>=0.7 ){ continue; }
-	    if( poiesum>bestpoi_totale ){
-	      check_fillpoi = true;
-	      bestpoi_invmass = (ipoi_p + jpoi_p).m();
-	      bestpoi_totale = poiesum;
-	      bestpoi_dgg = sqrt( (ipoi_pos[0]-jpoi_pos[0])*(ipoi_pos[0]-jpoi_pos[0]) + (ipoi_pos[1]-jpoi_pos[1])*(ipoi_pos[1]-jpoi_pos[1]) + (ipoi_pos[2]-jpoi_pos[2])*(ipoi_pos[2]-jpoi_pos[2]) );
-	    bestpoi_zgg = zgg;
-	    double poiidotj = ipoi_pos[0]*jpoi_pos[0] + ipoi_pos[1]*jpoi_pos[1] + ipoi_pos[2]*jpoi_pos[2];          //dot product of vectors for the current point position and point j position
-	    double ipoimag = sqrt( ipoi_pos[0]*ipoi_pos[0] + ipoi_pos[1]*ipoi_pos[1] + ipoi_pos[2]*ipoi_pos[2] );  //magnitude of position vector for current point
-	    double jpoimag = sqrt( jpoi_pos[0]*jpoi_pos[0] + jpoi_pos[1]*jpoi_pos[1] + jpoi_pos[2]*jpoi_pos[2] );//magnitude of position vector for point j
-	    bestclu_opening_angle = acos( poiidotj / (ipoimag*jpoimag) );
-	    if( ipoi_energy>jpoi_energy ){ bestpoi_hightowerenergy = ipoi_energy; bestpoi_lowtowerenergy = jpoi_energy; }
-	    else                         { bestpoi_hightowerenergy = jpoi_energy; bestpoi_lowtowerenergy = ipoi_energy; }
+	    if( jclu_energy<mEnCut ){ continue; }
+	    if( zgg>0.7 ){ continue; }
+	    if( ensum>bestclu_totale ){
+	      check_fillclu = true;
+	      bestclu_invmass = ((iclu_p + jclu_p).m());
+	      bestclu_totale = ensum;
+	      bestclu_dgg = sqrt( (iclu_pos[0]-jclu_pos[0])*(iclu_pos[0]-jclu_pos[0]) + (iclu_pos[1]-jclu_pos[1])*(iclu_pos[1]-jclu_pos[1]) + (iclu_pos[2]-jclu_pos[2])*(iclu_pos[2]-jclu_pos[2]) );
+	      bestclu_zgg = zgg;
+	      double cluidotj = iclu_pos[0]*jclu_pos[0] + iclu_pos[1]*jclu_pos[1] + iclu_pos[2]*jclu_pos[2];          //dot product of vectors for the current cluster position and cluster j position
+	      double iclumag = sqrt( iclu_pos[0]*iclu_pos[0] + iclu_pos[1]*iclu_pos[1] + iclu_pos[2]*iclu_pos[2] );  //magnitude of position vector for current cluster
+	      double jclumag = sqrt( jclu_pos[0]*jclu_pos[0] + jclu_pos[1]*jclu_pos[1] + jclu_pos[2]*jclu_pos[2] );//magnitude of position vector for cluster j
+	      bestclu_opening_angle = acos( cluidotj / (iclumag*jclumag) );
+	      if( iclu_energy>jclu_energy ){ bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = jclu_energy; }
+	      else                         { bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = iclu_energy; }
 	    }
-	  }
-	}//j point
-      }
-    }//i point
+	  }//jclu
+	}
+      }//iclu
+    }
+
+    if( points!=0 ){
+      unsigned int np = mMuFcsColl->numberOfPoints(idet);
+      mH1F_NPoints[idet]->Fill(np);
+      unsigned int ipoint=mMuFcsColl->indexOfFirstPoint(idet);
+      np += ipoint;
+      for( ; ipoint<np; ++ipoint ){
+	StMuFcsPoint* point = (StMuFcsPoint*)points->At(ipoint);
+	float ipoi_x = point->x();
+	float ipoi_y = point->y();
+	float ipoi_energy = point->energy();
+	mH1F_Poi_En[idet]->Fill(ipoi_energy);
+	mH1F_Poi_NCluPhotons[idet]->Fill(point->nParentClusterPhotons());
+	mH2F_Poi_yVx[idet]->Fill(ipoi_x,ipoi_y);
+	StThreeVectorD ipoi_pos = mFcsDb->getStarXYZfromColumnRow( idet, ipoi_x, ipoi_y );
+	StLorentzVectorD ipoi_p = mFcsDb->getLorentzVector(ipoi_pos, ipoi_energy, 0);
+      
+	if( idet<=kFcsEcalSouthDetId ){
+	  if( ipoint==(np-1) ){ continue; }
+	  for( int j=(ipoint+1); j<np; ++j ){
+	    StMuFcsPoint* poij = (StMuFcsPoint*)points->At(j);
+	    float jpoi_energy = poij->energy();
+	    float poiesum = ipoi_energy+jpoi_energy;
+	    float zgg = (fabs(ipoi_energy - jpoi_energy)) / (poiesum);
+	    StThreeVectorD jpoi_pos = mFcsDb->getStarXYZfromColumnRow(idet, poij->x(), poij->y());
+	    StLorentzVectorD jpoi_p = mFcsDb->getLorentzVector(jpoi_pos, jpoi_energy, 0);
+
+	    if( idet<=kFcsEcalSouthDetId ){
+	      if( jpoi_energy<mEnCut ){ continue; }
+	      if( zgg>=0.7 ){ continue; }
+	      if( poiesum>bestpoi_totale ){
+		check_fillpoi = true;
+		bestpoi_invmass = (ipoi_p + jpoi_p).m();
+		bestpoi_totale = poiesum;
+		bestpoi_dgg = sqrt( (ipoi_pos[0]-jpoi_pos[0])*(ipoi_pos[0]-jpoi_pos[0]) + (ipoi_pos[1]-jpoi_pos[1])*(ipoi_pos[1]-jpoi_pos[1]) + (ipoi_pos[2]-jpoi_pos[2])*(ipoi_pos[2]-jpoi_pos[2]) );
+		bestpoi_zgg = zgg;
+		double poiidotj = ipoi_pos[0]*jpoi_pos[0] + ipoi_pos[1]*jpoi_pos[1] + ipoi_pos[2]*jpoi_pos[2];          //dot product of vectors for the current point position and point j position
+		double ipoimag = sqrt( ipoi_pos[0]*ipoi_pos[0] + ipoi_pos[1]*ipoi_pos[1] + ipoi_pos[2]*ipoi_pos[2] );  //magnitude of position vector for current point
+		double jpoimag = sqrt( jpoi_pos[0]*jpoi_pos[0] + jpoi_pos[1]*jpoi_pos[1] + jpoi_pos[2]*jpoi_pos[2] );//magnitude of position vector for point j
+		bestclu_opening_angle = acos( poiidotj / (ipoimag*jpoimag) );
+		if( ipoi_energy>jpoi_energy ){ bestpoi_hightowerenergy = ipoi_energy; bestpoi_lowtowerenergy = jpoi_energy; }
+		else                         { bestpoi_hightowerenergy = jpoi_energy; bestpoi_lowtowerenergy = ipoi_energy; }
+	      }
+	    }
+	  }//j point
+	}
+      }//i point
+    }
     
   }//fcs dets
 
@@ -497,14 +512,13 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 
 Int_t StFcsRun22QaMaker::Finish()
 {
-  if( mAllHists->GetEntriesFast()!=0 ){
-    TFile File(mFileName.Data(),"RECREATE");
+  if( mFileOutput!=0 ){
+    mFileOutput->cd();
     mAllHists->Write();
-    File.Close();
     return kStOk;
   }
   else{
-    LOG_WARN << "StFcsRun22QaMaker::Finish() - No histograms loaded so no file created" << endm;
+    LOG_WARN << "StFcsRun22QaMaker::Finish() - No file created because pointer is null" << endm;
     return kStWarn;
   }
 }
@@ -529,7 +543,6 @@ UInt_t StFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const 
   }
   h1->SetTitle(title);
   mAllHists->Add(h1);
-  mAllHists->SetOwner(kTRUE);
   return status;//1 if histogram loaded or exists, 0 otherwise
 }
 
@@ -552,7 +565,6 @@ UInt_t StFcsRun22QaMaker::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, 
     h1->SetTitle(title);
     arr->Add(h1);
     mAllHists->Add(h1);
-    mAllHists->SetOwner(kTRUE);
   }
   return status;
 }
@@ -576,7 +588,6 @@ UInt_t StFcsRun22QaMaker::AddH2F(TFile* file, TH1*& h2, const char* name, const 
   }
   h2->SetTitle(title);
   mAllHists->Add(h2);
-  mAllHists->SetOwner(kTRUE);
   return status;//1 if histogram loaded, 0 if new
 }
 
@@ -599,9 +610,197 @@ UInt_t StFcsRun22QaMaker::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, 
     h2->SetTitle(title);
     arr->Add(h2);
     mAllHists->Add(h2);
-    mAllHists->SetOwner(kTRUE);
   }
   return status; 
 }
 
+/*
+virtual void Paint(Option_t opt="")
+{
+  TString option(opt);
+  option.ToUpper();
+  if( option.Contains("E") ){ PaintEventInfo(); }
+  if( option.Contains("A") ){ PaintAdcVTb(); }
+  if( option.Contains("H") ){ PaintFcsHitQa(); }
+  if( option.Contains("C") ){ PaintFcsClusterQa(); }
+  if( option.Contains("M") ){ PaintFcsClusterPi0(); }
+  if( option.Contains("P") ){ PaintFcsPointQa(); }
+  if( option.Contains("R") ){ PaintFcsPointPi0(); }
+}
+*/
+void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,3);
+  canv->cd(1);
+  mH1F_Entries->Draw("hist e");
+  canv->cd(2);
+  mH2F_BxId_7V48->Draw("colz");
+  canv->cd(3);
+  mH2F_Mult_tofVref->Draw("colz");
+  canv->cd(4);
+  mH1F_Spin->Draw("hist e");
+  canv->cd(5);
+  mH1F_Triggers->Draw("hist e");
+  canv->cd(6);
+  mH1F_VertexPrimZ->Draw("hist e");
+  canv->cd(7);
+  mH1F_VertexVpd->Draw("hist e");
+  canv->cd(8);
+  mH1F_VertexBbc->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawAdcVTb(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(5,5);
+  for( UInt_t i=0; i<kFcsNDet; ++i ){
+    for( Int_t ich=0, ipad=1; ich<mH2F_Hit_adcVtb[i]->GetEntriesFast(); ++ich,++ipad ){
+      if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+      canv->cd(ipad);
+      ((TH1*)mH2F_Hit_adcVtb[i]->UncheckedAt(ich))->Draw("colz");
+    }
+  }
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
+{
+  for( UShort_t i=0; i<kFcsNDet; ++i ){
+    canv->Clear();
+    canv->Divide(3,2);
+    canv->cd(1);
+    mH2F_Hit_enVid[i]->Draw("colz");
+    canv->cd(2);
+    mH2F_Hit_fitpeakVid[i]->Draw("colz");
+    canv->cd(3);
+    mH2F_Hit_chi2Vid[i]->Draw("colz");
+    canv->cd(4);
+    mH2F_Hit_npeaksVid[i]->Draw("colz");
+    canv->cd(5);
+    mH1F_Hit_NHits[i]->Draw("colz");
+    canv->Print(savename);
+  }
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1);
+  mH1F_Hit_ESum[0]->Draw("hist e");
+  canv->cd(2);
+  mH1F_Hit_ESum[1]->Draw("hist e");
+  canv->cd(3);
+  mH1F_Hit_ESum[2]->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,1);
+  canv->cd(1);
+  mH1F_Epd_NHits->Draw("hist e");
+  canv->cd(2);
+  mH1F_Epd_NHitsWest->Draw("hist e");
+  canv->Print(savename);
+  canv->Clear();
+  canv->Divide(5,5);
+  for( UInt_t i=0; i<2; ++i ){
+    for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_depVqt[i]->GetEntriesFast(); ++ich,++ipad ){
+      if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+      canv->cd(ipad);
+      ((TH1*)mH2F_HitPres_depVqt[i]->UncheckedAt(ich))->Draw("colz");
+    }
+  }
+  canv->Print(savename);
+  canv->Clear();
+  canv->Divide(5,5);
+  for( UInt_t i=0; i<2; ++i ){
+    for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_peakVtac[i]->GetEntriesFast(); ++ich,++ipad ){
+      if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+      canv->cd(ipad);
+      ((TH1*)mH2F_HitPres_peakVtac[i]->UncheckedAt(ich))->Draw("colz");
+    }
+  }
+}
+
+void StFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
+{
+  for( UShort_t i=0; i<kFcsNDet; ++i ){
+    canv->Clear();
+    canv->Divide(3,3);
+    canv->cd(1);
+    mH1F_NClusters[i]->Draw("hist e");
+    canv->cd(2);
+    mH1F_Clu_NTowers[i]->Draw("hist e");
+    canv->cd(3);
+    mH1F_Clu_NNei[i]->Draw("hist e");
+    canv->cd(4);
+    mH1F_Clu_NPoints[i]->Draw("hist e");
+    canv->cd(5);
+    mH1F_Clu_En[i]->Draw("hist e");
+    canv->cd(6);
+    mH2F_Clu_yVx[i]->Draw("colz");
+    canv->cd(7);
+    mH2F_Clu_sigmaxVsigmin[i]->Draw("colz");
+    canv->cd(8);
+    mH1F_Clu_theta[i]->Draw("hist e");
+    canv->cd(9);
+    mH2F_Clu_Chi2NdfPhoton_2V1[i]->Draw("colz");
+    canv->Print(savename);
+  }
+}
+
+void StFcsRun22QaMaker::DrawFcsClusterPi0(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,2);
+  canv->cd(1);
+  mH2F_CluHigh_angleVesum->Draw("colz");
+  canv->cd(2);
+  mH2F_CluHighEn_lowVhigh->Draw("colz");
+  canv->cd(3);
+  mH2F_CluHigh_dggVesum->Draw("colz");
+  canv->cd(4);
+  mH2F_CluHigh_invmassVesum->Draw("colz");
+  canv->cd(5);
+  mH2F_CluHigh_invmassVdgg->Draw("colz");
+  canv->cd(6);
+  mH2F_CluHigh_invmassVzgg->Draw("colz");
+  canv->Print(savename);
+}
+void StFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
+{
+  for( UShort_t i=0; i<kFcsNDet; ++i ){
+    canv->Clear();
+    canv->Divide(2,2);
+    canv->cd(1);
+    mH1F_NPoints[i]->Draw("hist e");
+    canv->cd(2);
+    mH1F_Poi_En[i]->Draw("hist e");
+    canv->cd(3);
+    mH1F_Poi_NCluPhotons[i]->Draw("hist e");
+    canv->cd(4);
+    mH2F_Poi_yVx[i]->Draw("colz");
+    canv->Print(savename);
+  }
+}
+
+void StFcsRun22QaMaker::DrawFcsPointPi0(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,2);
+  canv->cd(1);
+  mH2F_PoiHigh_angleVesum->Draw("colz");
+  canv->cd(2);
+  mH2F_PoiHighEn_lowVhigh->Draw("colz");
+  canv->cd(3);
+  mH2F_PoiHigh_dggVesum->Draw("colz");
+  canv->cd(4);
+  mH2F_PoiHigh_invmassVesum->Draw("colz");
+  canv->cd(5);
+  mH2F_PoiHigh_invmassVdgg->Draw("colz");
+  canv->cd(6);
+  mH2F_PoiHigh_invmassVzgg->Draw("colz");
+  canv->Print(savename);
+}
 

@@ -6,10 +6,12 @@
   To generate a ROOT file of histograms related to the FCS and event data in the produced MuDsts from RHIC Run 22 that can be used to do quality assurance (QA) on the data.
 
   DESCRIPTION
-  This class inherits from StMaker and contains many histograms to be used for Quality Assurance (QA) of MuDst files that contain Forward Calorimeter System (FCS) data. It uses #LoadHists() together with the functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. These functions should be used exclusively in this and inherited classes to automate histogram management. #FillEventInfo() is used (and can be re-implemented) to fill QA histograms related to event information. #FillFcsInfo() is used (and can be re-implemented) to fill QA histograms related to FCS information.
+  This class inherits from StMaker and contains many histograms to be used for Quality Assurance (QA) of MuDst files that contain Forward Calorimeter System (FCS) data. It uses #LoadHists() together with the functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. These functions should be used exclusively in this and inherited classes to automate histogram management. #FillEventInfo() is used (and can be re-implemented) to fill QA histograms related to event information. #FillFcsInfo() is used (and can be re-implemented) to fill QA histograms related to FCS information. The idea is that inherited classes don't need to implement the #Init() function only the #LoadHists() function.
 
   LOG
   @[May 24, 2024 .. June 4, 2024] > Implemented basic variables needed to read data from MuDst. QA histograms of event information: number of events, spin, vertex, trigger, and bunch crossing. Fcs hit information: ADC vs. TB, Energy, Multiplicity, NPeaks, Peak location, Fit Chi^2/NDF, Total Energy. EPD DEP Adc and time peak location to QT adc and time peak location. Fcs Cluster information: Multiplicity (Tower, Neighbor, Points), Energy, Location, SigmaMax and SigmaMin, theta,Chi^2/NDF for 1 and 2 Photon fits. Cluster Pi0 reconstruction with highest energy clusters: Invariant Mass, Angle, Energy Sum, dgg, zgg, High vs. Low Energy. Point information: Multiplicity, Energy, Location. Point Pi0 reconstructions with highest energy points: Invariant Mass, Angle, Energy Sum, dgg, zgg, High vs. Low Energy. Implemented functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. #LoadHists() can be modified by inherited classes to create separate QA histograms. Internal #mAllHists will own and handle all the created histograms automatically when functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() are used. #FillEventInfo() is used to fill the event information histograms. #FillFcsInfo() fills the others. Also implemented #mSpinRndm to generate random spin patterns for testing, as long #mSpinDbMkr equals 0 it will generate random spins.
+
+  @[June 7, 2024] > Modified the ranges of some histograms. Change #mH1F_Epd_NHits to store total epd hits, and added #mH1F_Epd_NHitsWest to hold information for just the EPD west hits. Added #SetOwner() which will set #mAllHists as owner of all the histograms also changed how histograms are created so that #TObjArray::SetOwner() is only called once as it should be since one call loops over the entire array. Added #mFileOutput for saving ROOT files and is created in #Init() before the histograms to comply with ROOT framework philosophy. In #Make() get the hit, cluster, and point arrays outside the idet loop since each idet call needs the same hit/cluster/point #TClonesArray. Fixed how to loop over hits, clusters, and points since the number of hits/clusters/points doesn't take into the account the first index so need to add the number of hits/clusters/points to the first index to get the correct maximum index of the loop. Added drawing functions for the histograms.
  */
 
 #ifndef STFCSRUN22QAMAKER_HH
@@ -20,6 +22,7 @@
 
 //ROOT Headers
 #include "TRandom3.h"
+#include "TCanvas.h"
 #include "TObjArray.h"
 #include "TString.h"
 #include "TFile.h"
@@ -66,7 +69,18 @@ class StFcsRun22QaMaker : public StMaker
   const char* getFileName(){ return mFileName.Data(); }
 
   virtual UInt_t LoadHists(TFile* file);
+  void SetOwner(Bool_t enable=kTRUE){ mAllHists->SetOwner(enable); }
   static void spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol ); //@[June 3, 2024] > Taken from https://drupal.star.bnl.gov/STAR/blog/oleg/spin-patterns-and-polarization-direction
+
+  //virtual void Paint(Option_t opt="");
+  void DrawEventInfo(TCanvas* canv, const char* savename);
+  void DrawAdcVTb(TCanvas* canv, const char* savename);
+  void DrawFcsHitQa(TCanvas* canv, const char* savename);
+  void DrawEpdHitQa(TCanvas* canv, const char* savename);
+  void DrawFcsClusterQa(TCanvas* canv, const char* savename);
+  void DrawFcsClusterPi0(TCanvas* canv, const char* savename);
+  void DrawFcsPointQa(TCanvas* canv, const char* savename);
+  void DrawFcsPointPi0(TCanvas* canv, const char* savename);
   
 protected:
   //UInt_t mEvent;  //Keeps track of number of events
@@ -114,8 +128,9 @@ protected:
   TH1* mH1F_Hit_NHits[kFcsNDet];   //!< Hit multiplicity in FCS
   TH1* mH1F_Hit_ESum[3];           //!< Total energy sum in ecal[0], hcal[1], pres[2]
   //TH1* mH2F_Hit_colVrow[3];        //!< @[May 28, 2024] > Trying to emulate mHitMap in StFcsQaMaker
-  
-  TH1* mH1F_Epd_NHits = 0;            //!< Number of hits from EPD collection only west side
+
+  TH1* mH1F_Epd_NHits = 0;            //!< Number of hits from EPD collection
+  TH1* mH1F_Epd_NHitsWest = 0;            //!< Number of hits from EPD collection only west side
   TObjArray* mH2F_HitPres_depVqt[2];    //!< Special for checking EPD ADC Qt vs. DEP sum split by North[0], South[1] Fcs designation
   TObjArray* mH2F_HitPres_peakVtac[2];  //!< Special for checking EPD TAC values vs. found peak time from FCS split by North[0], South[1] Fcs designation
   
@@ -150,11 +165,12 @@ protected:
   float mEnCut = 1.0;
 
 private:
+  TFile* mFileOutput = 0;              //!< For saving histograms not loading
   TRandom3 mSpinRndm;
 
   TObjArray* mAllHists = 0;            //!< Store all histogram pointers in this array to make it easier to write and delete them. It will also own all the histograms to make things easier
 #ifndef SKIPDefImp
-  ClassDef(StFcsRun22QaMaker,1);
+  ClassDef(StFcsRun22QaMaker,2);
 #endif
 };
 
