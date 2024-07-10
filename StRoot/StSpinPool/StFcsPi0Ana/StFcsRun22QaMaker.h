@@ -15,6 +15,8 @@
 
   @[June 25, 2024] > Added booleans #mFcsAdcTbOn, #mEpdAdcQaOn, #mEpdTacQaOn to control turning on and off the histograms for the Fcs ADC vs. TB histograms, the FCS Dep sums vs. Adc from Epd Qa, and the Fcs peak location vs. EPD TAC values respectively. These histograms are all object arrays and will take huge amounts of space and are not essential usually to assess data quality. Added #mH1F_BbcTimeDiff histogram to look at BBC time difference which is used for vertex. Added #mH1F_VertexZdc for checking z vertex from ZDC. Added #mH2F_Mult_tofVecal to check Fcs multiflicity against TOF multiplicity since the reference multiplicity was missing from data. Modified #DrawEventInfo() to plot the new histograms.
 
+  @[July 10, 2024] > Checking if able to retrieve StEpdHits from Trig data. It seems StMuEvent does have trigger data but StEvent does not. The trigger data from MuDsts can be used to fill the EPD hits, which I discovered after running code similar to that in EPD hit maker. Need to modify StEpdHitMaker to read trigger data from MuDsts. Implmented code that will either grab StMuEpdHitCollection from MuDst or from StEpdHitMaker whichever is available, respective of that order. Changed and added some more plot options.
+
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
@@ -53,6 +55,8 @@
 #include "StMuDSTMaker/COMMON/StMuFcsHit.h"
 #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
 #include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
+#include "StEpdDbMaker/StEpdDbMaker.h"
+#include "StEpdHitMaker/StEpdHitMaker.h"
 
 class StFcsRun22QaMaker : public StMaker
 {
@@ -81,6 +85,15 @@ class StFcsRun22QaMaker : public StMaker
 
   //virtual void Paint(Option_t opt="");
   void DrawEventInfo(TCanvas* canv, const char* savename);
+
+  void DrawVertex(TCanvas* canv, const char* savename);
+  void DrawBxId(TCanvas* canv, const char* savename);
+  void DrawFcsHitSingle(TCanvas* canv, unsigned int det, const char* savename);
+  void DrawFcsTotalE(TCanvas* canv, const char* savename);
+  void DrawFcsClusterSingle(TCanvas* canv, unsigned int det, const char* savename);
+  void DrawFcsPointSingle(TCanvas* canv, unsigned int det, const char* savename);
+  
+  
   void DrawAdcVTb(TCanvas* canv, const char* savename);
   void DrawFcsHitQa(TCanvas* canv, const char* savename);
   void DrawEpdHitQa(TCanvas* canv, const char* savename);
@@ -101,9 +114,10 @@ protected:
 
   StFcsDb* mFcsDb = 0;
   StMuFcsCollection* mMuFcsColl = 0;
-  TClonesArray* mMuEpdHits = 0;
+  //TClonesArray* mMuEpdHits = 0;
   StSpinDbMaker* mSpinDbMkr = 0;     //!< @[May 27, 2024] > Doesn't have proper spin database simply a placeholder
   //StEpdGeom* mEpdGeo=0;
+  StEpdHitMaker* mEpdHitMkr = 0;     //@[July 5, 2024] > Checking for afterburner of EPD hits in trig data
   
   //Data to save
   TString mFileName;

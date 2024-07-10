@@ -239,6 +239,45 @@ Int_t StFcsRun22QaMaker::Make()
   mRunInfo = &(mMuEvent->runInfo());
   if( mRunInfo==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !RunInfo" <<endm; return kStErr; }
 
+  /*  
+  StEvent* event = (StEvent*)GetInputDS("StEvent");
+  std::cout << "|event:" << event << std::endl;
+  if( event==0 ){ std::cout << "BIGTIMEERROR" << std::endl; }
+  else{
+    StTriggerData* trg = event->triggerData();
+    std::cout << "|trg:"<<trg << std::endl;
+    if( trg==0 ){
+      std::cout << "TRIGGERERRORR" << std::endl;
+    }
+  }
+
+  StEpdDbMaker* mEpdDbMaker = (StEpdDbMaker*)GetMaker("epdDb");
+  if (!mEpdDbMaker){ std::cout << "No StEpdDbMaker found by StEpdHitMaker::GetEpdDbMaker" << std::endl; }
+  else{
+    for (short ew=0; ew<2; ew++){        // EastWest (ew) = 0,1 for east,west
+      for (short PP=1; PP<13; PP++){     // note position (PP) goes from 1..12
+	for (short TT=1; TT<32; TT++){   // note tile number (TT) goes from 1..31
+	  short crateAdc = mEpdDbMaker->GetCrateAdc(ew,PP,TT);
+	  int PrePost = 0;
+	  std::cout << "StFcsRun22QaMaker::Make()  -- this is what I get from StEpdDbMaker...\n";
+	  std::cout << "EW\tPP\tTT\tcrateAdc\t\boardAdc\tchannelAdc\tcrateTac\tboardTac\tchannelTac\n";
+	  std::cout << ew << "\t" << PP << "\t" << TT << "\t" 
+		    << mEpdDbMaker->GetCrateAdc(ew,PP,TT) << "\t"
+		    << mEpdDbMaker->GetBoardAdc(ew,PP,TT) << "\t"
+		    << mEpdDbMaker->GetChannelAdc(ew,PP,TT) << "\t"
+		    << mEpdDbMaker->GetCrateTac(ew,PP,TT) << "\t"
+		    << mEpdDbMaker->GetBoardTac(ew,PP,TT) << "\t"
+		    << mEpdDbMaker->GetChannelTac(ew,PP,TT) << "\n";
+	  //---------------------------------------------------
+	  short boardAdc   = mEpdDbMaker->GetBoardAdc(ew,PP,TT);
+	  short channelAdc = mEpdDbMaker->GetChannelAdc(ew,PP,TT);
+	  int ADC = mTrigData->epdADC(crateAdc,boardAdc,channelAdc,PrePost);
+	  std::cout << "|boardAdc:"<<boardAdc << "|channelAdc:"<<channelAdc << "|ADC:"<<ADC << std::endl;
+	}
+      }
+    }
+  }
+  */
   mH1F_Entries->Fill(1);
 
   Int_t infostatus = this->FillEventInfo();
@@ -315,12 +354,21 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 {
   mMuFcsColl = mMuDst->muFcsCollection();
   if (!mMuFcsColl) { LOG_ERROR << "StFcsRun22QaMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
-  
-  TClonesArray* mMuEpdHits = mMuDst->epdHits();
-  //std::cout << "|mMuEpdHits:"<<mMuEpdHits << std::endl;
-  if( mMuEpdHits==0 ){ LOG_ERROR << "StFcsRun22QaMaker::FillFcsInfo - No EPD hits" << endm; return kStWarn; }
-  unsigned int nepdhits = mMuDst->numberOfEpdHit();
-  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Fill(nepdhits); }
+
+  TClonesArray* mMuEpdHits = 0;
+  StEpdCollection* epdcoll = 0;
+  unsigned int nepdhits = 0;
+  if( mEpdAdcQaOn || mEpdTacQaOn ){
+    mMuEpdHits = mMuDst->epdHits();
+    //std::cout << "|mMuEpdHits:"<<mMuEpdHits << std::endl;
+    if( mMuEpdHits==0 ){
+      LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << endm;
+      mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
+      if( mEpdHitMkr==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << endm; return kStWarn; }
+      else{ epdcoll = mEpdHitMkr->GetEpdCollection(); }
+      if( epdcoll==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; return kStWarn; }
+    }
+  }
   
   bool check_fillclu = false;
   bool check_fillpoi = false;
@@ -381,6 +429,15 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 	  for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
 	}
 	if( mEpdAdcQaOn || mEpdTacQaOn ){
+	  StSPtrVecEpdHit* epdhits = 0;
+	  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+	  else if( epdcoll!=0 ){
+	    epdhits = &(epdcoll->epdHits());
+	    nepdhits = epdhits->size();
+	  }
+	  else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
+	  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Fill(nepdhits); }
+
 	  if( idet>=kFcsPresNorthDetId ){
 	    int fcspp; int fcstt;
 	    mFcsDb->getEPDfromId(idet,hit_id,fcspp,fcstt);
@@ -388,16 +445,33 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 	    int adc=0;
 	    int tac=0;
 	    int nhitwest=0;
+	    //int* p_ew = 0;
+	    //int* p_epdpp = 0;
+	    //int* p_epdtt = 0;
+	    StMuEpdHit* muepdhit = 0;
+	    StEpdHit* epdhit = 0;
 	    for(unsigned int i=0; i<nepdhits; ++i ){
-	      StMuEpdHit* epdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i);  //To match similar in StMuDstMaker->epdHit(int i)
-	      int ew = epdhit->side();
-	      int epdpp = epdhit->position();
-	      int epdtt = epdhit->tile();
+	      if( mMuEpdHits!=0 ){
+		muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i);  //To match similar in StMuDstMaker->epdHit(int i)
+		// p_ew = &(epdhit->side());
+		// p_epdpp = &(epdhit->position());
+		// p_epdtt = &(epdhit->tile());
+	      }
+	      else if( epdhits!=0 ){
+		epdhit = (StEpdHit*)(*epdhits)[i];
+		// p_ew = &(epdhit->side());
+		// p_epdpp = &(epdhit->position());
+		// p_epdtt = &(epdhit->tile());
+	      }
+	      else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; }
+	      int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();
+	      int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();
+	      int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();
 	      if( 1==ew ){
 		++nhitwest;
 		if( fcspp==epdpp && fcstt==epdtt ){
-		  adc = epdhit->adc();
-		  tac = epdhit->tac();
+		  adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+		  tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
 		  if( idet>kFcsPresNorthDetId ){ break; } //Only break for PresSouth because only need to fill nhits once which is done for PresNorth
 		}
 	      }
@@ -665,7 +739,7 @@ void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   canv->cd(1);
   mH1F_Entries->Draw("hist e");
   canv->cd(2);
-  mH1F_Triggers->Draw("hist e");
+  mH1F_Triggers->Draw("hist e p");
   canv->cd(3);
   mH1F_VertexPrimZ->Draw("hist e");
   canv->cd(4);
@@ -674,16 +748,111 @@ void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   mH1F_VertexBbc->Draw("hist e");
   canv->cd(6);
   mH1F_BbcTimeDiff->Draw("hist e");
-  canv->cd(7);
+  canv->cd(7)->SetLogy(1);
   mH1F_VertexZdc->Draw("hist e");
   canv->cd(8);
   mH2F_BxId_7V48->Draw("colz");
   canv->cd(9);
-  mH2F_Mult_tofVref->Draw("colz");
+  //mH2F_Mult_tofVref->Draw("colz");
+  TH1* tofmult = ((TH2*)mH2F_Mult_tofVecal)->ProjectionY("tofmult");
+  tofmult->SetTitle("TOF Multiplicty");
+  tofmult->Draw("hist e");
   canv->cd(10);
   mH2F_Mult_tofVecal->Draw("colz");
   canv->cd(11);
   mH1F_Spin->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1);
+  mH1F_VertexVpd->Draw("hist e");
+  canv->cd(2);
+  mH1F_VertexBbc->Draw("hist e");
+  canv->cd(3);
+  mH1F_BbcTimeDiff->Draw("hist e");
+  canv->cd(4)->SetLogy();
+  mH1F_VertexZdc->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawBxId(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  mH2F_BxId_7V48->Draw("colz");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawFcsHitSingle(TCanvas* canv, unsigned int det, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,2);
+  canv->cd(1)->SetLogz(1);
+  mH2F_Hit_enVid[det]->Draw("colz");
+  canv->cd(2)->SetLogz(1);
+  mH2F_Hit_fitpeakVid[det]->Draw("colz");
+  canv->cd(3)->SetLogz(1);
+  mH2F_Hit_chi2Vid[det]->Draw("colz");
+  canv->cd(4)->SetLogz(1);
+  mH2F_Hit_npeaksVid[det]->Draw("colz");
+  canv->cd(5);
+  mH1F_Hit_NHits[det]->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawFcsClusterSingle(TCanvas* canv, unsigned int det, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,3);
+  canv->cd(1);
+  mH1F_NClusters[det]->Draw("hist e");
+  canv->cd(2);
+  mH1F_Clu_NTowers[det]->Draw("hist e");
+  canv->cd(3);
+  mH1F_Clu_NNei[det]->Draw("hist e");
+  canv->cd(4);
+  mH1F_Clu_NPoints[det]->Draw("hist e");
+  canv->cd(5);
+  mH1F_Clu_En[det]->Draw("hist e");
+  canv->cd(6);
+  mH2F_Clu_yVx[det]->Draw("colz");
+  canv->cd(7);
+  mH2F_Clu_sigmaxVsigmin[det]->Draw("colz");
+  canv->cd(8);
+  mH1F_Clu_theta[det]->Draw("hist e");
+  canv->cd(9);
+  mH2F_Clu_Chi2NdfPhoton_2V1[det]->Draw("colz");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawFcsPointSingle(TCanvas* canv, unsigned int det, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1);
+  mH1F_NPoints[det]->Draw("hist e");
+  canv->cd(2);
+  mH1F_Poi_En[det]->Draw("hist e");
+  canv->cd(3);
+  mH1F_Poi_NCluPhotons[det]->Draw("hist e");
+  canv->cd(4);
+  mH2F_Poi_yVx[det]->Draw("colz");
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawFcsTotalE(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1);
+  mH1F_Hit_ESum[0]->Draw("hist e");
+  canv->cd(2);
+  mH1F_Hit_ESum[1]->Draw("hist e");
+  canv->cd(3);
+  mH1F_Hit_ESum[2]->Draw("hist e");
   canv->Print(savename);
 }
 
@@ -708,16 +877,16 @@ void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
   for( UShort_t i=0; i<kFcsNDet; ++i ){
     canv->Clear();
     canv->Divide(3,2);
-    canv->cd(1);
+    canv->cd(1)->SetLogz(1);
     mH2F_Hit_enVid[i]->Draw("colz");
-    canv->cd(2);
+    canv->cd(2)->SetLogz(1);
     mH2F_Hit_fitpeakVid[i]->Draw("colz");
-    canv->cd(3);
+    canv->cd(3)->SetLogz(1);
     mH2F_Hit_chi2Vid[i]->Draw("colz");
-    canv->cd(4);
+    canv->cd(4)->SetLogz(1);
     mH2F_Hit_npeaksVid[i]->Draw("colz");
     canv->cd(5);
-    mH1F_Hit_NHits[i]->Draw("colz");
+    mH1F_Hit_NHits[i]->Draw("hist e");
     canv->Print(savename);
   }
   canv->Clear();
