@@ -360,13 +360,19 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
   unsigned int nepdhits = 0;
   if( mEpdAdcQaOn || mEpdTacQaOn ){
     mMuEpdHits = mMuDst->epdHits();
-    //std::cout << "|mMuEpdHits:"<<mMuEpdHits << std::endl;
+    std::cout << "|mMuEpdHits:"<<mMuEpdHits << std::endl;
+    if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
     if( mMuEpdHits==0 ){
-      LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << endm;
+      //LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << endm;
+      std::cout << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << std::endl;
       mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
-      if( mEpdHitMkr==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << endm; return kStWarn; }
+      if( mEpdHitMkr==0 ){
+	//LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << endm; return kStWarn; }
+	std::cout << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << std::endl; return kStWarn; }
       else{ epdcoll = mEpdHitMkr->GetEpdCollection(); }
-      if( epdcoll==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; return kStWarn; }
+      if( epdcoll==0 ){
+	//LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; return kStWarn; }
+	std::cout << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << std::endl; return kStWarn; }
     }
   }
   
