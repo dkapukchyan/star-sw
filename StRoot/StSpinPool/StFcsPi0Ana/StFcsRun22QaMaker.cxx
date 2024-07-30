@@ -33,6 +33,8 @@ StFcsRun22QaMaker::StFcsRun22QaMaker(const char* name):StMaker(name)
 
   memset(mH2F_HitPres_depVqt,0,sizeof(mH2F_HitPres_depVqt));
   memset(mH2F_HitPres_peakVtac,0,sizeof(mH2F_HitPres_peakVtac));
+  memset(mH2F_HitEpd_tacVadcmip,0,sizeof(mH2F_HitEpd_tacVadcmip));
+  memset(mH2F_HitEpd_nmipVchkey,0,sizeof(mH2F_HitEpd_nmipVchkey));
 
   memset(mH1F_NClusters,0,sizeof(mH1F_NClusters));
   memset(mH1F_Clu_NTowers,0,sizeof(mH1F_Clu_NTowers));
@@ -79,10 +81,11 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;TrigId",999,890000,890999);//@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   
   loaded += AddH1F(file,mH1F_VertexPrimZ,"H1F_VertexPrimZ","Primary Vertex (z);cm",201,-100.5,100.5);
-  loaded += AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",200,-200,200);
-  loaded += AddH1F(file,mH1F_VertexBbc,"H1F_VertexBbc","Bbc Vertex (z);cm",200,-200,200);
+  loaded += AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",50,-200,200);
+  loaded += AddH1F(file,mH1F_VertexBbc,"H1F_VertexBbc","Bbc Vertex (z);cm",50,-200,200);
   loaded += AddH1F(file,mH1F_BbcTimeDiff,"H1F_BbcTimeDiff","Bbc Time difference", 200,-5000,5000);
-  loaded += AddH1F(file,mH1F_VertexZdc,"H1F_VertexZdc","Zdc Vertex (z);cm",200,-200,200);
+  loaded += AddH1F(file,mH1F_VertexZdc,"H1F_VertexZdc","Zdc Vertex (z);cm",50,-200,200);
+  loaded += AddH1F(file,mH1F_VertexEpd,"H1F_VertexEpd","Epd Vertex (z);cm",50,-200,200);
   
   loaded += AddH2F(file,mH2F_BxId_7V48,"H2F_BxId7V48","Bunch Crossing Id;48 bit;7 bit", 121,-0.5,120.5, 121,-0.5,120.5);
   loaded += AddH2F(file,mH2F_Mult_tofVref,"H2F_Mult_tofVref","TOF multiplicity vs. Reference multiplicity;RefMult;TofMult",100,0,100,100,0,100);
@@ -166,21 +169,41 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += AddH1F(file,mH1F_Hit_ESum[1],"H1F_Hit_ESum_Hcal","Total energy sum in Hcal;Energy (GeV)", 100,0,100);
   loaded += AddH1F(file,mH1F_Hit_ESum[2],"H1F_Hit_ESum_Pres","Total energy sum in Pres;Energy (GeV)", 100,0,100);
 
-  if( mEpdAdcQaOn || mEpdTacQaOn ){
+  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
     loaded += AddH1F(file,mH1F_Epd_NHits,"H1F_Epd_NHits","Number of Hits from EPD collection;NHits",500,0,500);
     loaded += AddH1F(file,mH1F_Epd_NHitsWest,"H1F_Epd_NHitsWest","Number of Hits form EPD collection (West);NHits",300,0,300);
     if( mEpdAdcQaOn ){
       mH2F_HitPres_depVqt[0]   = new TObjArray();
       mH2F_HitPres_depVqt[1]   = new TObjArray();
-      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[0],192,"H2F_HitPres_depVqt_PN","QT sum vs. DEP ADC sum for Fcs Preshower North hits;QtSum;DepSum", 64,0,4096, 64,0,1024);
-      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[1],192,"H2F_HitPres_depVqt_PS","QT sum vs. DEP ADC sum for Fcs Preshower South hits;QtSum;DepSum", 64,0,4096, 64,0,1024);
+      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[0],192,"H2F_HitPres_depVqt_PN","QT sum vs. DEP ADC sum for Fcs Preshower North hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
+      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[1],192,"H2F_HitPres_depVqt_PS","QT sum vs. DEP ADC sum for Fcs Preshower South hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
     }
     if( mEpdTacQaOn ){
       mH2F_HitPres_peakVtac[0] = new TObjArray();
       mH2F_HitPres_peakVtac[1] = new TObjArray();
-      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TDC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TDC", 100,0,100, 100,0,100);
-      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TDC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TDC", 100,0,100, 100,0,100); 
+      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TAC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TAC", 100,0,100, 100,0,100);
+      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TAC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TAC", 100,0,100, 100,0,100); 
     }
+    if( mEpdTacAdcOn ){
+      mH2F_HitEpd_tacVadcmip[0] = new TObjArray(); //Create new array for east side
+      mH2F_HitEpd_tacVadcmip[1] = new TObjArray(); //Create new array for west side
+      //EPD has 372 tiles on one side
+      loaded += AddH2FArr(file,mH2F_HitEpd_tacVadcmip[0],372,"H2F_HitEpd_tacVadcmip_E","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000);
+      loaded += AddH2FArr(file,mH2F_HitEpd_tacVadcmip[1],372,"H2F_HitEpd_tacVadcmip_W","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000 );
+    }
+
+    loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[0],"H2F_HitEpd_nmipVchkey_E","NMIP values for East EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
+    loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[1],"H2F_HitEpd_nmipVchkey_W","NMIP values for West EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
+    
+    loaded += AddH2F(file,mH2F_Epd_earlywVearlye,"H2F_Epd_earlywVearlye","EPD Earliest TAC West vs. East;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
+    loaded += AddH2F(file,mH2F_Epd_avgwVavge,"H2F_Epd_avgwVavge","EPD Average TAC West vs. East;Average East TAC;Average West TAC", 200,0,1000, 200,0,1000);
+    loaded += AddH1F(file,mH1F_EpdTacDiff_Early,"H1F_EpdTacDiff_Early","Epd TAC difference from Earliest TAC;TacDiff Early",200,-3000,3000);
+    loaded += AddH1F(file,mH1F_EpdTacDiff_Avg,"H1F_EpdTacDiff_Avg","Epd TAC difference from Average TAC;TacDiff Avg",200,-3000,3000);
+    
+    loaded += AddH2F(file,mH2F_EpdCut_earlywVearlye,"H2F_EpdCut_earlywVearlye","EPD Earliest TAC West vs. East with 1<nMIP<15;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
+    loaded += AddH2F(file,mH2F_EpdCut_avgwVavge,"H2F_EpdCut_avgwVavge","EPD Average TAC West vs. East with 1<nMIP<15;Average East TAC;Average West TAC", 200,0,2000, 200,0,2000);
+    loaded += AddH1F(file,mH1F_EpdCutTacDiff_Early,"H1F_EpdCutTacDiff_Early","Epd TAC difference from Earliest TAC and 1<nMIP<15;TacDiff Early",200,-3000,3000);
+    loaded += AddH1F(file,mH1F_EpdCutTacDiff_Avg,"H1F_EpdCutTacDiff_Avg","Epd TAC difference from Average TAC and 1<nMIP<15;TacDiff Avg",200,-3000,3000);
   }
   
   loaded += AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
@@ -239,47 +262,8 @@ Int_t StFcsRun22QaMaker::Make()
   mRunInfo = &(mMuEvent->runInfo());
   if( mRunInfo==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !RunInfo" <<endm; return kStErr; }
 
-  /*  
-  StEvent* event = (StEvent*)GetInputDS("StEvent");
-  std::cout << "|event:" << event << std::endl;
-  if( event==0 ){ std::cout << "BIGTIMEERROR" << std::endl; }
-  else{
-    StTriggerData* trg = event->triggerData();
-    std::cout << "|trg:"<<trg << std::endl;
-    if( trg==0 ){
-      std::cout << "TRIGGERERRORR" << std::endl;
-    }
-  }
-
-  StEpdDbMaker* mEpdDbMaker = (StEpdDbMaker*)GetMaker("epdDb");
-  if (!mEpdDbMaker){ std::cout << "No StEpdDbMaker found by StEpdHitMaker::GetEpdDbMaker" << std::endl; }
-  else{
-    for (short ew=0; ew<2; ew++){        // EastWest (ew) = 0,1 for east,west
-      for (short PP=1; PP<13; PP++){     // note position (PP) goes from 1..12
-	for (short TT=1; TT<32; TT++){   // note tile number (TT) goes from 1..31
-	  short crateAdc = mEpdDbMaker->GetCrateAdc(ew,PP,TT);
-	  int PrePost = 0;
-	  std::cout << "StFcsRun22QaMaker::Make()  -- this is what I get from StEpdDbMaker...\n";
-	  std::cout << "EW\tPP\tTT\tcrateAdc\t\boardAdc\tchannelAdc\tcrateTac\tboardTac\tchannelTac\n";
-	  std::cout << ew << "\t" << PP << "\t" << TT << "\t" 
-		    << mEpdDbMaker->GetCrateAdc(ew,PP,TT) << "\t"
-		    << mEpdDbMaker->GetBoardAdc(ew,PP,TT) << "\t"
-		    << mEpdDbMaker->GetChannelAdc(ew,PP,TT) << "\t"
-		    << mEpdDbMaker->GetCrateTac(ew,PP,TT) << "\t"
-		    << mEpdDbMaker->GetBoardTac(ew,PP,TT) << "\t"
-		    << mEpdDbMaker->GetChannelTac(ew,PP,TT) << "\n";
-	  //---------------------------------------------------
-	  short boardAdc   = mEpdDbMaker->GetBoardAdc(ew,PP,TT);
-	  short channelAdc = mEpdDbMaker->GetChannelAdc(ew,PP,TT);
-	  int ADC = mTrigData->epdADC(crateAdc,boardAdc,channelAdc,PrePost);
-	  std::cout << "|boardAdc:"<<boardAdc << "|channelAdc:"<<channelAdc << "|ADC:"<<ADC << std::endl;
-	}
-      }
-    }
-  }
-  */
   mH1F_Entries->Fill(1);
-
+  
   Int_t infostatus = this->FillEventInfo();
   switch( infostatus ){
   case kStEOF: return kStEOF;
@@ -289,7 +273,28 @@ Int_t StFcsRun22QaMaker::Make()
   case kStStop: return kStStop;
   }
   //std::cout << "Filled Event" << std::endl;
-
+  
+  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
+    mMuEpdHits = 0;
+    mEpdColl = 0;
+    mMuEpdHits = mMuDst->epdHits();
+    if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
+    if( mMuEpdHits==0 ){ LOG_INFO << "StFcsRun22QaMaker::Make - No MuEPD hits" << endm;
+      mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
+      if( mEpdHitMkr==0 ){ LOG_WARN << "StFcsRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
+      else{ mEpdColl = mEpdHitMkr->GetEpdCollection(); }
+      if( mEpdColl==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
+    }
+    Int_t epdstatus = this->FillEpdInfo();
+    switch( epdstatus ){
+    case kStEOF: return kStEOF;
+    case kStErr: return kStErr;
+    case kStFatal: return kStFatal;
+    case kStSkip: return kStSkip;
+    case kStStop: return kStStop;
+    }
+  }
+  
   Int_t fcsstatus = this->FillFcsInfo();
   switch( fcsstatus ){
   case kStEOF: return kStEOF;
@@ -354,27 +359,6 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 {
   mMuFcsColl = mMuDst->muFcsCollection();
   if (!mMuFcsColl) { LOG_ERROR << "StFcsRun22QaMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
-
-  TClonesArray* mMuEpdHits = 0;
-  StEpdCollection* epdcoll = 0;
-  unsigned int nepdhits = 0;
-  if( mEpdAdcQaOn || mEpdTacQaOn ){
-    mMuEpdHits = mMuDst->epdHits();
-    std::cout << "|mMuEpdHits:"<<mMuEpdHits << std::endl;
-    if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
-    if( mMuEpdHits==0 ){
-      //LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << endm;
-      std::cout << "StFcsRun22QaMaker::FillFcsInfo - No MuEPD hits" << std::endl;
-      mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
-      if( mEpdHitMkr==0 ){
-	//LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << endm; return kStWarn; }
-	std::cout << "StFcsRun22QaMaker::FillFcsInfo - No StEpdHitMaker(\"epdHit\")" << std::endl; return kStWarn; }
-      else{ epdcoll = mEpdHitMkr->GetEpdCollection(); }
-      if( epdcoll==0 ){
-	//LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; return kStWarn; }
-	std::cout << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << std::endl; return kStWarn; }
-    }
-  }
   
   bool check_fillclu = false;
   bool check_fillpoi = false;
@@ -434,63 +418,46 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
 	if( mFcsAdcTbOn ){
 	  for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
 	}
-	if( mEpdAdcQaOn || mEpdTacQaOn ){
-	  StSPtrVecEpdHit* epdhits = 0;
-	  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
-	  else if( epdcoll!=0 ){
-	    epdhits = &(epdcoll->epdHits());
-	    nepdhits = epdhits->size();
-	  }
-	  else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
-	  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Fill(nepdhits); }
+	if( kFcsPresNorthDetId<=idet && idet<=kFcsPresSouthDetId ){
+	  if( mEpdAdcQaOn || mEpdTacQaOn ){
+	    unsigned int nepdhits = 0;
 
-	  if( idet>=kFcsPresNorthDetId ){
+	    StSPtrVecEpdHit* epdhits = 0;
+	    if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+	    else if( mEpdColl!=0 ){
+	      epdhits = &(mEpdColl->epdHits());
+	      nepdhits = epdhits->size();
+	    }
+	    else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
+	    
 	    int fcspp; int fcstt;
 	    mFcsDb->getEPDfromId(idet,hit_id,fcspp,fcstt);
 	    //For processing epd hits
-	    int adc=0;
-	    int tac=0;
-	    int nhitwest=0;
-	    //int* p_ew = 0;
-	    //int* p_epdpp = 0;
-	    //int* p_epdtt = 0;
+	    int adc = 0;
+	    int tac = 0;
 	    StMuEpdHit* muepdhit = 0;
 	    StEpdHit* epdhit = 0;
 	    for(unsigned int i=0; i<nepdhits; ++i ){
-	      if( mMuEpdHits!=0 ){
-		muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i);  //To match similar in StMuDstMaker->epdHit(int i)
-		// p_ew = &(epdhit->side());
-		// p_epdpp = &(epdhit->position());
-		// p_epdtt = &(epdhit->tile());
-	      }
-	      else if( epdhits!=0 ){
-		epdhit = (StEpdHit*)(*epdhits)[i];
-		// p_ew = &(epdhit->side());
-		// p_epdpp = &(epdhit->position());
-		// p_epdtt = &(epdhit->tile());
-	      }
+	      if( mMuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
+	      else if( epdhits!=0 ){ epdhit = (StEpdHit*)(*epdhits)[i]; }
 	      else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; }
-	      int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();
-	      int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();
-	      int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();
+	      int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
+	      int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
+	      int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
 	      if( 1==ew ){
-		++nhitwest;
-		if( fcspp==epdpp && fcstt==epdtt ){
-		  adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
-		  tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
-		  if( idet>kFcsPresNorthDetId ){ break; } //Only break for PresSouth because only need to fill nhits once which is done for PresNorth
-		}
+		adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+		tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
+		if( fcspp==epdpp && fcstt==epdtt ){ break; }
 	      }
 	    }
 	    //Here adc and tac is equal to ADC and TAC from matched epd hit
-	    if( idet==kFcsPresNorthDetId ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
 	    if( mEpdAdcQaOn ){ ((TH1*) mH2F_HitPres_depVqt[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(adc,hit_adcsum); }
 	    if( mEpdTacQaOn ){ ((TH1*) mH2F_HitPres_peakVtac[idet-kFcsPresNorthDetId]->UncheckedAt(hit_id))->Fill(tac,hit_tbpeak); }
 	  }
 	}
       }//fcs hits
     }
-    else{ std::cout <<"|hits is empty:"<<hits << std::endl; }
+    else{ LOG_INFO <<"|hits is empty:"<<hits << endm; }
 
     if( clusters!=0 ){
       unsigned int nc = mMuFcsColl->numberOfClusters(idet);
@@ -633,6 +600,112 @@ Int_t StFcsRun22QaMaker::Finish()
   }
 }
 
+Int_t StFcsRun22QaMaker::FillEpdInfo()
+{
+  if( mMuEpdHits==0 && mEpdColl==0 ){
+    LOG_WARN << "StFcsRun22QaMaker::FillEpdInfo() has no epd hits" << endm;
+    return kStWarn;
+  }
+  unsigned int nepdhits = 0;
+  StSPtrVecEpdHit* epdhits = 0;
+  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+  else if( mEpdColl!=0 ){
+    epdhits = &(mEpdColl->epdHits());
+    nepdhits = epdhits->size();
+  }
+  else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
+  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Fill(nepdhits); }
+  
+  //For processing epd hits
+  //Larger TAC values mean earlier times so a tac of 0 means latest possible time
+  int earliesttace  = 0;  //Stores the largest TAC value in EPD East
+  int earliesttacw  = 0;  //Stores the largest TAC value in EPD West
+  int navgtacw   = 0;     //Number of TAC values summed for EPD West
+  int navgtace   = 0;     //Number of TAC values summed for EPD East
+  double sumtacw = 0;     //Sum of TAC values for EPD West
+  double sumtace = 0;     //Sum of TAC values for EPD East
+
+  int cut_earliesttace  = 0;  //Stores the largest TAC value in EPD East
+  int cut_earliesttacw  = 0;  //Stores the largest TAC value in EPD West
+  int cut_navgtacw   = 0;     //Number of TAC values summed for EPD West
+  int cut_navgtace   = 0;     //Number of TAC values summed for EPD East
+  double cut_sumtacw = 0;     //Sum of TAC values for EPD West
+  double cut_sumtace = 0;     //Sum of TAC values for EPD East
+
+  int nhitwest   = 0;
+  StMuEpdHit* muepdhit = 0;
+  StEpdHit* epdhit = 0;
+  //std::cout << "|mMuEpdHits:"<<mMuEpdHits << "|mEpdColl:"<<mEpdColl << "|epdhits:"<<epdhits << "|nepdhits:"<<nepdhits << std::endl;
+  for(unsigned int i=0; i<nepdhits; ++i ){
+    if( mMuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
+    else if( epdhits!=0 ){ epdhit = (StEpdHit*)((*epdhits)[i]); }
+    else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; } 
+    //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
+    int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
+    int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
+    int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
+    //int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+    float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();
+    //float adcnmip = 0;
+    //if( nmip>0.0001 ){ adcnmip = static_cast<float>(adc)/nmip; }
+    int tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
+    //std::cout << "|ew:"<<ew << "|pp:"<<epdpp << "|tt:"<<epdtt << "|adc:"<<adc << "|nmip:"<<nmip <<"tac:"<<tac << std::endl
+    if( ew==-1 ){ //This is east side
+      if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[0]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
+      mH2F_HitEpd_nmipVchkey[0]->Fill((epdpp-1)*31+(epdtt-1),nmip);
+      sumtace += tac;
+      ++navgtace;
+      if( tac > earliesttace ){ earliesttace = tac; }
+      if( 1<nmip && nmip<15 ){
+	cut_sumtace += tac;
+	++cut_navgtace;
+	if( tac > cut_earliesttace ){ cut_earliesttace = tac; }
+      }
+    }
+    if( ew==1 ){ //This is west side
+      if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[1]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
+      mH2F_HitEpd_nmipVchkey[1]->Fill((epdpp-1)*31+(epdtt-1),nmip);
+      sumtacw += tac;
+      ++navgtacw;
+      ++nhitwest;
+      if( tac > earliesttacw ){ earliesttacw = tac; }
+      if( 1<nmip && nmip<15 ){
+	cut_sumtacw += tac;
+	++cut_navgtacw;
+	if( tac > cut_earliesttacw ){ cut_earliesttacw = tac; }
+      }
+    }
+  }// EPD hit loop
+  
+  double avgtace = 0;
+  double avgtacw = 0;
+  double cut_avgtace = 0;
+  double cut_avgtacw = 0;
+  if( navgtace>0 )    { avgtace = sumtace/static_cast<double>(navgtace); }
+  if( navgtacw>0 )    { avgtacw = sumtacw/static_cast<double>(navgtacw); }
+  if( cut_navgtace>0 ){ cut_avgtace = cut_sumtace/static_cast<double>(cut_navgtace); }
+  if( cut_navgtacw>0 ){ cut_avgtacw = cut_sumtacw/static_cast<double>(cut_navgtacw); }
+  
+  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
+
+  //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
+  if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
+  if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Fill(earliesttace,earliesttacw); }
+  if( mH1F_EpdTacDiff_Early!=0 ) { mH1F_EpdTacDiff_Early->Fill( earliesttacw - earliesttace ); }
+  if( mH1F_EpdTacDiff_Avg!=0 )   { mH1F_EpdTacDiff_Avg->Fill( avgtacw - avgtace ); }
+
+  //std::cout << "|cut_earlye:"<<cut_earliesttace << "|cut_earlyw:"<<cut_earliesttacw << "|cut_avge:"<<cut_avgtace << "|cut_avgw:"<<cut_avgtacw << std::endl;
+  if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( cut_avgtace,cut_avgtacw  ); }
+  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(cut_earliesttace,cut_earliesttacw); }
+  if( mH1F_EpdCutTacDiff_Early!=0 ) { mH1F_EpdCutTacDiff_Early->Fill( cut_earliesttacw - cut_earliesttace ); }
+  if( mH1F_EpdCutTacDiff_Avg!=0 )   { mH1F_EpdCutTacDiff_Avg->Fill( cut_avgtacw - cut_avgtace ); }
+
+  mH1F_VertexEpd->Fill( (avgtacw-avgtace) * -0.2475 );
+  //@[Julye 17, 2024] > Using the same logic as BBC since haven't looked at EpdTacDiff histograms, also because EPD has same 15.6ps/TAC as BBC.
+  //@[July 21, 2024]>After looking at TAC differences it seems average with no cuts gives actual results and ADC_Nmip cut tac values do not.
+  //@[July 23, 2024]>Looking at TAC diff don't need to subtract 4096 like we do for BBC
+  return kStOk;
+}
 
 UInt_t StFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
@@ -757,15 +830,17 @@ void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   canv->cd(7)->SetLogy(1);
   mH1F_VertexZdc->Draw("hist e");
   canv->cd(8);
-  mH2F_BxId_7V48->Draw("colz");
+  mH1F_VertexEpd->Draw("hist e");
   canv->cd(9);
+  mH2F_BxId_7V48->Draw("colz");
+  canv->cd(10);
   //mH2F_Mult_tofVref->Draw("colz");
   TH1* tofmult = ((TH2*)mH2F_Mult_tofVecal)->ProjectionY("tofmult");
   tofmult->SetTitle("TOF Multiplicty");
   tofmult->Draw("hist e");
-  canv->cd(10);
-  mH2F_Mult_tofVecal->Draw("colz");
   canv->cd(11);
+  mH2F_Mult_tofVecal->Draw("colz");
+  canv->cd(12);
   mH1F_Spin->Draw("hist e");
   canv->Print(savename);
 }
@@ -908,21 +983,50 @@ void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
 
 void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 {
-  if( mEpdAdcQaOn || mEpdTacQaOn ){
+  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
     canv->Clear();
-    canv->Divide(2,1);
+    canv->Divide(2,2);
     canv->cd(1);
     mH1F_Epd_NHits->Draw("hist e");
     canv->cd(2);
     mH1F_Epd_NHitsWest->Draw("hist e");
+    canv->cd(3)->SetLogz(true);
+    mH2F_HitEpd_nmipVchkey[0]->Draw("colz");
+    canv->cd(4)->SetLogz(true);
+    mH2F_HitEpd_nmipVchkey[1]->Draw("colz");
     canv->Print(savename);
+    
+    canv->Clear();
+    canv->Divide(2,2);
+    canv->cd(1)->SetLogz(true);
+    mH2F_Epd_earlywVearlye->Draw("colz");
+    canv->cd(2)->SetLogz(true);
+    mH2F_Epd_avgwVavge->Draw("colz");
+    canv->cd(3);
+    mH1F_EpdTacDiff_Early->Draw("hist e");
+    canv->cd(4);
+    mH1F_EpdTacDiff_Avg->Draw("hist e");
+    canv->Print(savename);
+
+    canv->Clear();
+    canv->Divide(2,2);
+    canv->cd(1)->SetLogz(true);
+    mH2F_EpdCut_earlywVearlye->Draw("colz");
+    canv->cd(2)->SetLogz(true);
+    mH2F_EpdCut_avgwVavge->Draw("colz");
+    canv->cd(3);
+    mH1F_EpdCutTacDiff_Early->Draw("hist e");
+    canv->cd(4);
+    mH1F_EpdCutTacDiff_Avg->Draw("hist e");
+    canv->Print(savename);
+    
     if( mEpdAdcQaOn ){
       canv->Clear();
       canv->Divide(5,5);
       for( UInt_t i=0; i<2; ++i ){
 	for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_depVqt[i]->GetEntriesFast(); ++ich,++ipad ){
 	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	  canv->cd(ipad);
+	  canv->cd(ipad)->SetLogz(true);
 	  ((TH1*)mH2F_HitPres_depVqt[i]->UncheckedAt(ich))->Draw("colz");
 	}
       }
@@ -936,6 +1040,17 @@ void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
 	  canv->cd(ipad);
 	  ((TH1*)mH2F_HitPres_peakVtac[i]->UncheckedAt(ich))->Draw("colz");
+	}
+      }
+    }
+    if( mEpdTacAdcOn ){
+      canv->Clear();
+      canv->Divide(5,5);
+      for( UInt_t i=0; i<2; ++i ){
+	for( Int_t ich=0, ipad=1; ich<mH2F_HitEpd_tacVadcmip[i]->GetEntriesFast(); ++ich,++ipad ){
+	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+	  canv->cd(ipad)->SetLogz(1);
+	  ((TH1*)mH2F_HitEpd_tacVadcmip[i]->UncheckedAt(ich))->Draw("colz");
 	}
       }
     }

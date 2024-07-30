@@ -17,8 +17,10 @@
 
   @[July 10, 2024] > Checking if able to retrieve StEpdHits from Trig data. It seems StMuEvent does have trigger data but StEvent does not. The trigger data from MuDsts can be used to fill the EPD hits, which I discovered after running code similar to that in EPD hit maker. modified StEpdHitMaker to read trigger data from MuDsts. Implmented code that will either grab StMuEpdHitCollection from MuDst or from StEpdHitMaker whichever is available, respective of that order. Changed and added some more plot options.
 
-  @[July 15, 2025] > Checking if MuDst contains a #TClonesArray of EPD hits always returns a non-zero value. This means to check if EPD data is in MuDsts it is better to check the size of the #TClonesArray, which is what the code does now.
+  @[July 15, 2024] > Checking if MuDst contains a #TClonesArray of EPD hits always returns a non-zero value. This means to check if EPD data is in MuDsts it is better to check the size of the #TClonesArray, which is what the code does now.
 
+  @[July 30, 2024] > Added more EPD QA histograms as well EPD vertex histogram based on the averaged TAC value. This is done in #FillEpdInfo() and modified #Make() to call this function if any of the EPD QA flags are on. As a result removed some of those EPD related histograms from #FillFcsInfo(). Also Added #mEpdTacAdcOn which is a flag for turning on the EPD hits TAC vs. ADC nMip for each channel. Also note that nmip returns the ADC normalized to the mip ADC not the ADC value where the MIP is. Modified and added plotting options as needed. Added histograms and code include checking early and average East and West EPD TAC values with and without an nMip cut.
+  
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
@@ -84,6 +86,7 @@ class StFcsRun22QaMaker : public StMaker
   void setFcsAdcTbOn(bool value=true)  { mFcsAdcTbOn = value; }
   void setEpdAdcQaOn(bool value=true)  { mEpdAdcQaOn = value; }
   void setEpdTacQaOn(bool value=true)  { mEpdTacQaOn = value; }
+  void setEpdTacAdcOn(bool value=true) { mEpdTacAdcOn = value; }
 
   //virtual void Paint(Option_t opt="");
   void DrawEventInfo(TCanvas* canv, const char* savename);
@@ -116,16 +119,18 @@ protected:
 
   StFcsDb* mFcsDb = 0;
   StMuFcsCollection* mMuFcsColl = 0;
-  //TClonesArray* mMuEpdHits = 0;
   StSpinDbMaker* mSpinDbMkr = 0;     //!< @[May 27, 2024] > Doesn't have proper spin database simply a placeholder
   //StEpdGeom* mEpdGeo=0;
+  TClonesArray* mMuEpdHits = 0;
   StEpdHitMaker* mEpdHitMkr = 0;     //@[July 5, 2024] > Checking for afterburner of EPD hits in trig data
+  StEpdCollection* mEpdColl = 0;
   
   //Data to save
   TString mFileName;
   //TFile* mFile_Output = 0; //!< TFile to save all the data
 
   virtual Int_t FillEventInfo();
+  virtual Int_t FillEpdInfo();
   virtual Int_t FillFcsInfo();
 
   //Machinery to make managing and creating a large number of histograms easier
@@ -141,6 +146,7 @@ protected:
   TH1* mH1F_VertexBbc = 0;            //!< Vertex histograms from BBC
   TH1* mH1F_BbcTimeDiff = 0;          //!< BBC Time difference used to compute the vertex
   TH1* mH1F_VertexZdc = 0;            //!< Vertex from ZDC
+  TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
   TH1* mH2F_BxId_7V48 = 0;            //!< Bunch crossing Id 7 bit vs. 48 bit
   TH1* mH2F_Mult_tofVref = 0;         //!< Tof multiplicty vs. Reference multiplicity
   TH1* mH2F_Mult_tofVecal = 0;        //!< Tof multiplicity vs. Fcs Ecal multiplicity
@@ -159,6 +165,17 @@ protected:
   TH1* mH1F_Epd_NHitsWest = 0;          //!< Number of hits from EPD collection only west side
   TObjArray* mH2F_HitPres_depVqt[2];    //!< Special for checking EPD ADC Qt vs. DEP sum split by North[0], South[1] Fcs designation
   TObjArray* mH2F_HitPres_peakVtac[2];  //!< Special for checking EPD TAC values vs. found peak time from FCS split by North[0], South[1] Fcs designation
+  TObjArray* mH2F_HitEpd_tacVadcmip[2]; //!< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
+  TH1* mH2F_HitEpd_nmipVchkey[2];        //!< Special for checking nmip of a given channel in the EPD. The "chkey" is (supersector-1)*31+(tileid-1)
+  
+  TH1* mH2F_Epd_earlywVearlye = 0;      //!< EPD hit with Earliest West TAC vs. Earliest East TAC (Since using common stop early means largest TAC value)
+  TH1* mH2F_Epd_avgwVavge = 0;          //!< EPD Averaged West TAC vs. Averaged East TAC
+  TH1* mH1F_EpdTacDiff_Early = 0;       //!< Difference between the TAC value of the earliest West tile and East tile
+  TH1* mH1F_EpdTacDiff_Avg = 0;         //!< Difference between the average TAC value from West tiles and East tiles
+  TH1* mH2F_EpdCut_earlywVearlye = 0;   //!< EPD hit with Earliest West TAC vs. Earliest East TAC with channel 1<nMIP<15 (Since using common stop early means largest TAC value)
+  TH1* mH2F_EpdCut_avgwVavge = 0;       //!< EPD Averaged West TAC vs. Averaged East TAC with channel 1<nMIP<15
+  TH1* mH1F_EpdCutTacDiff_Early = 0;    //!< Difference between the TAC value of the earliest West tile and East tile with cut 1<adcnmip<15
+  TH1* mH1F_EpdCutTacDiff_Avg = 0;      //!< Difference between the average TAC value from West tiles and East tiles with cut 1<adcnmip
   
   TH1* mH1F_NClusters[kFcsNDet];              //!< Cluster multiplicity
   TH1* mH1F_Clu_NTowers[kFcsNDet];            //!< Number towers in a cluster
@@ -193,12 +210,15 @@ protected:
   bool mFcsAdcTbOn = true;             //!< For turning on/off Adc V tb histograms for the FCS
   bool mEpdAdcQaOn = true;             //!< For turning on/off Qt V Dep histograms from the EPD data
   bool mEpdTacQaOn = true;             //!< For turning on/off Tac V PeakX histograms from the EPD data
+  bool mEpdTacAdcOn = true;            //!< For turning on/off TAC vs. ADC histograms for all EPD channels
 
 private:
   TFile* mFileOutput = 0;              //!< For saving histograms not loading
   TRandom3 mSpinRndm;
 
   TObjArray* mAllHists = 0;            //!< Store all histogram pointers in this array to make it easier to write and delete them. It will also own all the histograms to make things easier
+
+  double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
 #ifndef SKIPDefImp
   ClassDef(StFcsRun22QaMaker,2);
 #endif
