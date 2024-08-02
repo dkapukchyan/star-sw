@@ -20,6 +20,8 @@
   @[July 15, 2024] > Checking if MuDst contains a #TClonesArray of EPD hits always returns a non-zero value. This means to check if EPD data is in MuDsts it is better to check the size of the #TClonesArray, which is what the code does now.
 
   @[July 30, 2024] > Added more EPD QA histograms as well EPD vertex histogram based on the averaged TAC value. This is done in #FillEpdInfo() and modified #Make() to call this function if any of the EPD QA flags are on. As a result removed some of those EPD related histograms from #FillFcsInfo(). Also Added #mEpdTacAdcOn which is a flag for turning on the EPD hits TAC vs. ADC nMip for each channel. Also note that nmip returns the ADC normalized to the mip ADC not the ADC value where the MIP is. Modified and added plotting options as needed. Added histograms and code include checking early and average East and West EPD TAC values with and without an nMip cut.
+
+  @[July 31, 2024] > Added and modified the functions related to drawing the EPD QA histograms. In particular, separated out the histograms into different categories with their own draw functions.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -101,7 +103,15 @@ class StFcsRun22QaMaker : public StMaker
   
   void DrawAdcVTb(TCanvas* canv, const char* savename);
   void DrawFcsHitQa(TCanvas* canv, const char* savename);
+  
   void DrawEpdHitQa(TCanvas* canv, const char* savename);
+  void DrawEpdTacQa(TCanvas* canv, const char* savename);
+  void DrawEpdTacCutQa(TCanvas* canv, const char* savename);
+  void DrawEpdDepAdcQa(TCanvas* canv, const char* savename);
+  void DrawEpdDepTacQa(TCanvas* canv, const char* savename);
+  void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);
+  void DrawEpdAllQa(TCanvas* canv, const char* savename);
+  
   void DrawFcsClusterQa(TCanvas* canv, const char* savename);
   void DrawFcsClusterPi0(TCanvas* canv, const char* savename);
   void DrawFcsPointQa(TCanvas* canv, const char* savename);

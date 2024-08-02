@@ -13,7 +13,6 @@
 
 #include "StFcsRun22QaMaker.h"
 
-
 ClassImp(StFcsRun22QaMaker)
 
 
@@ -848,15 +847,20 @@ void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 void StFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1);
   mH1F_VertexVpd->Draw("hist e");
-  canv->cd(2);
-  mH1F_VertexBbc->Draw("hist e");
-  canv->cd(3);
-  mH1F_BbcTimeDiff->Draw("hist e");
-  canv->cd(4)->SetLogy();
+  canv->cd(2)->SetLogy();
   mH1F_VertexZdc->Draw("hist e");
+  if( mH1F_VertexEpd!=0 ){
+    canv->cd(3);
+    mH1F_VertexEpd->Draw("hist e");
+  }
+  canv->cd(4);
+  mH1F_VertexBbc->Draw("hist e");
+  canv->cd(5);
+  mH1F_BbcTimeDiff->Draw("hist e");
+
   canv->Print(savename);
 }
 
@@ -983,78 +987,103 @@ void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
 
 void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 {
-  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
-    canv->Clear();
-    canv->Divide(2,2);
-    canv->cd(1);
-    mH1F_Epd_NHits->Draw("hist e");
-    canv->cd(2);
-    mH1F_Epd_NHitsWest->Draw("hist e");
-    canv->cd(3)->SetLogz(true);
-    mH2F_HitEpd_nmipVchkey[0]->Draw("colz");
-    canv->cd(4)->SetLogz(true);
-    mH2F_HitEpd_nmipVchkey[1]->Draw("colz");
-    canv->Print(savename);
-    
-    canv->Clear();
-    canv->Divide(2,2);
-    canv->cd(1)->SetLogz(true);
-    mH2F_Epd_earlywVearlye->Draw("colz");
-    canv->cd(2)->SetLogz(true);
-    mH2F_Epd_avgwVavge->Draw("colz");
-    canv->cd(3);
-    mH1F_EpdTacDiff_Early->Draw("hist e");
-    canv->cd(4);
-    mH1F_EpdTacDiff_Avg->Draw("hist e");
-    canv->Print(savename);
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1);
+  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Draw("hist e"); }
+  canv->cd(2);
+  if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Draw("hist e"); }
+  canv->cd(3)->SetLogz(true);
+  if( mH2F_HitEpd_nmipVchkey[0]!=0 ){ mH2F_HitEpd_nmipVchkey[0]->Draw("colz"); }
+  canv->cd(4)->SetLogz(true);
+  if( mH2F_HitEpd_nmipVchkey[1]!=0 ){ mH2F_HitEpd_nmipVchkey[1]->Draw("colz"); }
+  canv->Print(savename);
+}
 
+void StFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1)->SetLogz(true);
+  if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Draw("colz"); }
+  canv->cd(2)->SetLogz(true);
+  if( mH2F_Epd_avgwVavge!=0 ){ mH2F_Epd_avgwVavge->Draw("colz"); }
+  canv->cd(3);
+  if( mH1F_EpdTacDiff_Early!=0 ){ mH1F_EpdTacDiff_Early->Draw("hist e"); }
+  canv->cd(4);
+  if( mH1F_EpdTacDiff_Avg!=0 ){ mH1F_EpdTacDiff_Avg->Draw("hist e"); }
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1)->SetLogz(true);
+  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Draw("colz"); }
+  canv->cd(2)->SetLogz(true);
+  if( mH2F_EpdCut_avgwVavge!=0 ){ mH2F_EpdCut_avgwVavge->Draw("colz"); }
+  canv->cd(3);
+  if( mH1F_EpdCutTacDiff_Early!=0 ){ mH1F_EpdCutTacDiff_Early->Draw("hist e"); }
+  canv->cd(4);
+  if( mH1F_EpdCutTacDiff_Avg!=0 ){ mH1F_EpdCutTacDiff_Avg->Draw("hist e"); }
+  canv->Print(savename);
+}
+
+void StFcsRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
+{
+  if( mEpdAdcQaOn || (mH2F_HitPres_depVqt[0]!=0 && mH2F_HitPres_depVqt[1]!=0) ){
     canv->Clear();
-    canv->Divide(2,2);
-    canv->cd(1)->SetLogz(true);
-    mH2F_EpdCut_earlywVearlye->Draw("colz");
-    canv->cd(2)->SetLogz(true);
-    mH2F_EpdCut_avgwVavge->Draw("colz");
-    canv->cd(3);
-    mH1F_EpdCutTacDiff_Early->Draw("hist e");
-    canv->cd(4);
-    mH1F_EpdCutTacDiff_Avg->Draw("hist e");
+    canv->Divide(5,5);
+    for( UInt_t i=0; i<2; ++i ){
+      for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_depVqt[i]->GetEntriesFast(); ++ich,++ipad ){
+	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+	canv->cd(ipad)->SetLogz(true);
+	((TH1*)mH2F_HitPres_depVqt[i]->UncheckedAt(ich))->Draw("colz");
+      }
+    }
     canv->Print(savename);
-    
-    if( mEpdAdcQaOn ){
-      canv->Clear();
-      canv->Divide(5,5);
-      for( UInt_t i=0; i<2; ++i ){
-	for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_depVqt[i]->GetEntriesFast(); ++ich,++ipad ){
-	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	  canv->cd(ipad)->SetLogz(true);
-	  ((TH1*)mH2F_HitPres_depVqt[i]->UncheckedAt(ich))->Draw("colz");
-	}
-      }
-      canv->Print(savename);
-    }
-    if( mEpdTacQaOn ){
-      canv->Clear();
-      canv->Divide(5,5);
-      for( UInt_t i=0; i<2; ++i ){
-	for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_peakVtac[i]->GetEntriesFast(); ++ich,++ipad ){
-	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	  canv->cd(ipad);
-	  ((TH1*)mH2F_HitPres_peakVtac[i]->UncheckedAt(ich))->Draw("colz");
-	}
-      }
-    }
-    if( mEpdTacAdcOn ){
-      canv->Clear();
-      canv->Divide(5,5);
-      for( UInt_t i=0; i<2; ++i ){
-	for( Int_t ich=0, ipad=1; ich<mH2F_HitEpd_tacVadcmip[i]->GetEntriesFast(); ++ich,++ipad ){
-	  if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	  canv->cd(ipad)->SetLogz(1);
-	  ((TH1*)mH2F_HitEpd_tacVadcmip[i]->UncheckedAt(ich))->Draw("colz");
-	}
+  }  
+}
+
+void StFcsRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
+{
+  if( mEpdTacQaOn || (mH2F_HitPres_peakVtac[0]!=0 && mH2F_HitPres_peakVtac[1]!=0) ){
+    canv->Clear();
+    canv->Divide(5,5);
+    for( UInt_t i=0; i<2; ++i ){
+      for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_peakVtac[i]->GetEntriesFast(); ++ich,++ipad ){
+	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+	canv->cd(ipad);
+	((TH1*)mH2F_HitPres_peakVtac[i]->UncheckedAt(ich))->Draw("colz");
       }
     }
   }
+}
+
+void StFcsRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
+{
+  if( mEpdTacAdcOn || (mH2F_HitEpd_tacVadcmip[0]!=0 && mH2F_HitEpd_tacVadcmip[1]!=0) ){
+    canv->Clear();
+    canv->Divide(5,5);
+    for( UInt_t i=0; i<2; ++i ){
+      for( Int_t ich=0, ipad=1; ich<mH2F_HitEpd_tacVadcmip[i]->GetEntriesFast(); ++ich,++ipad ){
+	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
+	canv->cd(ipad)->SetLogz(1);
+	((TH1*)mH2F_HitEpd_tacVadcmip[i]->UncheckedAt(ich))->Draw("colz");
+      }
+    }
+  }
+}
+
+void StFcsRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
+{
+  DrawEpdHitQa(canv, savename);
+  DrawEpdTacQa( canv, savename);
+  DrawEpdTacCutQa( canv, savename);
+  DrawEpdDepAdcQa( canv, savename);
+  DrawEpdDepTacQa( canv, savename);
+  DrawEpdTacAdcQa( canv, savename);
 }
 
 void StFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
