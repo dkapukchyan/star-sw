@@ -6,7 +6,7 @@
   To generate a ROOT file of histograms related to the FCS and event data in the produced MuDsts from RHIC Run 22 that can be used to do quality assurance (QA) on the data.
 
   DESCRIPTION
-  This class inherits from StMaker and contains many histograms to be used for Quality Assurance (QA) of MuDst files that contain Forward Calorimeter System (FCS) data. It uses #LoadHists() together with the functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. These functions should be used exclusively in this and inherited classes to automate histogram management. #FillEventInfo() is used (and can be re-implemented) to fill QA histograms related to event information. #FillFcsInfo() is used (and can be re-implemented) to fill QA histograms related to FCS information. The idea is that inherited classes don't need to implement the #Init() function only the #LoadHists() function.
+  This class inherits from StMaker and contains many histograms to be used for Quality Assurance (QA) of MuDst files that contain Forward Calorimeter System (FCS) data. It uses #LoadHists() together with the functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. These functions should be used exclusively in this and inherited classes to automate histogram management. #FillEventInfo() is used (and can be re-implemented) to fill QA histograms related to event information. #FillFcsInfo() is used (and can be re-implemented) to fill QA histograms related to FCS information. The idea is that inherited classes don't need to implement the #Init() function only the #LoadHists() function. Also can be used to do some EPD Qa with the #FillEpdInfo() function.
 
   LOG
   @[May 24, 2024 .. June 4, 2024] > Implemented basic variables needed to read data from MuDst. QA histograms of event information: number of events, spin, vertex, trigger, and bunch crossing. Fcs hit information: ADC vs. TB, Energy, Multiplicity, NPeaks, Peak location, Fit Chi^2/NDF, Total Energy. EPD DEP Adc and time peak location to QT adc and time peak location. Fcs Cluster information: Multiplicity (Tower, Neighbor, Points), Energy, Location, SigmaMax and SigmaMin, theta,Chi^2/NDF for 1 and 2 Photon fits. Cluster Pi0 reconstruction with highest energy clusters: Invariant Mass, Angle, Energy Sum, dgg, zgg, High vs. Low Energy. Point information: Multiplicity, Energy, Location. Point Pi0 reconstructions with highest energy points: Invariant Mass, Angle, Energy Sum, dgg, zgg, High vs. Low Energy. Implemented functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() to ease histogram creation and management. #LoadHists() can be modified by inherited classes to create separate QA histograms. Internal #mAllHists will own and handle all the created histograms automatically when functions #AddH1F(), #AddH2F(), #AddH1FArr(), #AddH2FArr() are used. #FillEventInfo() is used to fill the event information histograms. #FillFcsInfo() fills the others. Also implemented #mSpinRndm to generate random spin patterns for testing, as long #mSpinDbMkr equals 0 it will generate random spins.
@@ -22,6 +22,8 @@
   @[July 30, 2024] > Added more EPD QA histograms as well EPD vertex histogram based on the averaged TAC value. This is done in #FillEpdInfo() and modified #Make() to call this function if any of the EPD QA flags are on. As a result removed some of those EPD related histograms from #FillFcsInfo(). Also Added #mEpdTacAdcOn which is a flag for turning on the EPD hits TAC vs. ADC nMip for each channel. Also note that nmip returns the ADC normalized to the mip ADC not the ADC value where the MIP is. Modified and added plotting options as needed. Added histograms and code include checking early and average East and West EPD TAC values with and without an nMip cut.
 
   @[July 31, 2024] > Added and modified the functions related to drawing the EPD QA histograms. In particular, separated out the histograms into different categories with their own draw functions.
+  @[August, 13, 2024] > Changed tacdiff histograms from 1d to 2d. They now store the tac difference taken from doing averages vs. the tac differences taken from the earliest (i.e. highest) TAC values and added a tac cut of 50 to the average histograms.
+
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -180,12 +182,10 @@ protected:
   
   TH1* mH2F_Epd_earlywVearlye = 0;      //!< EPD hit with Earliest West TAC vs. Earliest East TAC (Since using common stop early means largest TAC value)
   TH1* mH2F_Epd_avgwVavge = 0;          //!< EPD Averaged West TAC vs. Averaged East TAC
-  TH1* mH1F_EpdTacDiff_Early = 0;       //!< Difference between the TAC value of the earliest West tile and East tile
-  TH1* mH1F_EpdTacDiff_Avg = 0;         //!< Difference between the average TAC value from West tiles and East tiles
+  TH1* mH2F_EpdTacDiff_avgVearly = 0;       //EPD tac difference between West and East tiles (in that order) computed from average tac vs. differences computed using earliest TAC
   TH1* mH2F_EpdCut_earlywVearlye = 0;   //!< EPD hit with Earliest West TAC vs. Earliest East TAC with channel 1<nMIP<15 (Since using common stop early means largest TAC value)
   TH1* mH2F_EpdCut_avgwVavge = 0;       //!< EPD Averaged West TAC vs. Averaged East TAC with channel 1<nMIP<15
-  TH1* mH1F_EpdCutTacDiff_Early = 0;    //!< Difference between the TAC value of the earliest West tile and East tile with cut 1<adcnmip<15
-  TH1* mH1F_EpdCutTacDiff_Avg = 0;      //!< Difference between the average TAC value from West tiles and East tiles with cut 1<adcnmip
+  TH1* mH2F_EpdCutTacDiff_avgVearly = 0;  //!< EPD tac difference between West and East tiles (in that order)  computed from average tac vs. differences computed using earliest TAC; computed with cut 1<adcnmip<15 && TAC>50
   
   TH1* mH1F_NClusters[kFcsNDet];              //!< Cluster multiplicity
   TH1* mH1F_Clu_NTowers[kFcsNDet];            //!< Number towers in a cluster

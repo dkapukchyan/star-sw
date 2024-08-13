@@ -194,15 +194,13 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
     loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[0],"H2F_HitEpd_nmipVchkey_E","NMIP values for East EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
     loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[1],"H2F_HitEpd_nmipVchkey_W","NMIP values for West EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
     
-    loaded += AddH2F(file,mH2F_Epd_earlywVearlye,"H2F_Epd_earlywVearlye","EPD Earliest TAC West vs. East;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
+    loaded += AddH2F(file,mH2F_Epd_earlywVearlye,"H2F_Epd_earlywVearlye","EPD Earliest TAC West vs. East;Earliest East TAC;Earliest West TAC", 421,-10,4200, 421,-10,4200);
     loaded += AddH2F(file,mH2F_Epd_avgwVavge,"H2F_Epd_avgwVavge","EPD Average TAC West vs. East;Average East TAC;Average West TAC", 200,0,1000, 200,0,1000);
-    loaded += AddH1F(file,mH1F_EpdTacDiff_Early,"H1F_EpdTacDiff_Early","Epd TAC difference from Earliest TAC;TacDiff Early",200,-3000,3000);
-    loaded += AddH1F(file,mH1F_EpdTacDiff_Avg,"H1F_EpdTacDiff_Avg","Epd TAC difference from Average TAC;TacDiff Avg",200,-3000,3000);
+    loaded += AddH2F(file,mH2F_EpdTacDiff_avgVearly,"H2F_EpdTacDiff_avgVearly","Epd TAC difference from Average TAC vs. Early TAC;TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
     
     loaded += AddH2F(file,mH2F_EpdCut_earlywVearlye,"H2F_EpdCut_earlywVearlye","EPD Earliest TAC West vs. East with 1<nMIP<15;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
     loaded += AddH2F(file,mH2F_EpdCut_avgwVavge,"H2F_EpdCut_avgwVavge","EPD Average TAC West vs. East with 1<nMIP<15;Average East TAC;Average West TAC", 200,0,2000, 200,0,2000);
-    loaded += AddH1F(file,mH1F_EpdCutTacDiff_Early,"H1F_EpdCutTacDiff_Early","Epd TAC difference from Earliest TAC and 1<nMIP<15;TacDiff Early",200,-3000,3000);
-    loaded += AddH1F(file,mH1F_EpdCutTacDiff_Avg,"H1F_EpdCutTacDiff_Avg","Epd TAC difference from Average TAC and 1<nMIP<15;TacDiff Avg",200,-3000,3000);
+    loaded += AddH2F(file,mH2F_EpdCutTacDiff_avgVearly,"H2F_EpdCutTacDiff_avgVearly","#splitline{Epd TAC difference from Average TAC vs. Early TAC}{with cuts 1<nMIP<15 & TAC>50};TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
   }
   
   loaded += AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
@@ -655,7 +653,7 @@ Int_t StFcsRun22QaMaker::FillEpdInfo()
       sumtace += tac;
       ++navgtace;
       if( tac > earliesttace ){ earliesttace = tac; }
-      if( 1<nmip && nmip<15 ){
+      if( 1<nmip && nmip<15 && tac>50){
 	cut_sumtace += tac;
 	++cut_navgtace;
 	if( tac > cut_earliesttace ){ cut_earliesttace = tac; }
@@ -668,7 +666,7 @@ Int_t StFcsRun22QaMaker::FillEpdInfo()
       ++navgtacw;
       ++nhitwest;
       if( tac > earliesttacw ){ earliesttacw = tac; }
-      if( 1<nmip && nmip<15 ){
+      if( 1<nmip && nmip<15 && tac>50 ){
 	cut_sumtacw += tac;
 	++cut_navgtacw;
 	if( tac > cut_earliesttacw ){ cut_earliesttacw = tac; }
@@ -690,16 +688,21 @@ Int_t StFcsRun22QaMaker::FillEpdInfo()
   //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
   if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
   if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Fill(earliesttace,earliesttacw); }
-  if( mH1F_EpdTacDiff_Early!=0 ) { mH1F_EpdTacDiff_Early->Fill( earliesttacw - earliesttace ); }
-  if( mH1F_EpdTacDiff_Avg!=0 )   { mH1F_EpdTacDiff_Avg->Fill( avgtacw - avgtace ); }
+  //if( mH1F_EpdTacDiff_Early!=0 ) { mH1F_EpdTacDiff_Early->Fill( earliesttacw - earliesttace ); }
+  //if( mH1F_EpdTacDiff_Avg!=0 )   { mH1F_EpdTacDiff_Avg->Fill( avgtacw - avgtace ); }
+  if( mH2F_EpdTacDiff_avgVearly!=0 ){ mH2F_EpdTacDiff_avgVearly->Fill( earliesttacw-earliesttace, avgtacw - avgtace ); }
 
   //std::cout << "|cut_earlye:"<<cut_earliesttace << "|cut_earlyw:"<<cut_earliesttacw << "|cut_avge:"<<cut_avgtace << "|cut_avgw:"<<cut_avgtacw << std::endl;
   if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( cut_avgtace,cut_avgtacw  ); }
   if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(cut_earliesttace,cut_earliesttacw); }
-  if( mH1F_EpdCutTacDiff_Early!=0 ) { mH1F_EpdCutTacDiff_Early->Fill( cut_earliesttacw - cut_earliesttace ); }
-  if( mH1F_EpdCutTacDiff_Avg!=0 )   { mH1F_EpdCutTacDiff_Avg->Fill( cut_avgtacw - cut_avgtace ); }
+  //if( mH1F_EpdCutTacDiff_Early!=0 ) { mH1F_EpdCutTacDiff_Early->Fill( cut_earliesttacw - cut_earliesttace ); }
+  //if( mH1F_EpdCutTacDiff_Avg!=0 )   { mH1F_EpdCutTacDiff_Avg->Fill( cut_avgtacw - cut_avgtace ); }
+  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){ mH2F_EpdCutTacDiff_avgVearly->Fill( cut_earliesttacw-cut_earliesttace, cut_avgtacw-cut_avgtace ); }
 
-  mH1F_VertexEpd->Fill( (avgtacw-avgtace) * -0.2475 );
+  //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
+  if( cut_avgtace>50 && cut_avgtace>50 ){
+    mH1F_VertexEpd->Fill( (cut_avgtacw-cut_avgtace) * -0.2475 );
+  }
   //@[Julye 17, 2024] > Using the same logic as BBC since haven't looked at EpdTacDiff histograms, also because EPD has same 15.6ps/TAC as BBC.
   //@[July 21, 2024]>After looking at TAC differences it seems average with no cuts gives actual results and ADC_Nmip cut tac values do not.
   //@[July 23, 2024]>Looking at TAC diff don't need to subtract 4096 like we do for BBC
@@ -1003,30 +1006,46 @@ void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 void StFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1)->SetLogz(true);
   if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Draw("colz"); }
   canv->cd(2)->SetLogz(true);
   if( mH2F_Epd_avgwVavge!=0 ){ mH2F_Epd_avgwVavge->Draw("colz"); }
-  canv->cd(3);
-  if( mH1F_EpdTacDiff_Early!=0 ){ mH1F_EpdTacDiff_Early->Draw("hist e"); }
-  canv->cd(4);
-  if( mH1F_EpdTacDiff_Avg!=0 ){ mH1F_EpdTacDiff_Avg->Draw("hist e"); }
+  if( mH2F_EpdTacDiff_avgVearly!=0 ){
+    canv->cd(3);
+    mH2F_EpdTacDiff_avgVearly->Draw("colz");
+    TH1D* earlytac = ((TH2*)mH2F_EpdTacDiff_avgVearly)->ProjectionX("H1F_EpdTacDiff_early");
+    earlytac->SetTitle("Epd TAC difference from Earliest TAC;TacDiff Early");
+    TH1D* avgtac   = ((TH2*)mH2F_EpdTacDiff_avgVearly)->ProjectionY("H1F_EpdTacDiff_avg");
+    avgtac->SetTitle("Epd TAC difference from Average TAC;TacDiff Avg");
+    canv->cd(4);
+    earlytac->Draw("hist e");
+    canv->cd(5);
+    avgtac->Draw("hist e");    
+  }
   canv->Print(savename);
 }
 
 void StFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1)->SetLogz(true);
   if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Draw("colz"); }
   canv->cd(2)->SetLogz(true);
   if( mH2F_EpdCut_avgwVavge!=0 ){ mH2F_EpdCut_avgwVavge->Draw("colz"); }
-  canv->cd(3);
-  if( mH1F_EpdCutTacDiff_Early!=0 ){ mH1F_EpdCutTacDiff_Early->Draw("hist e"); }
-  canv->cd(4);
-  if( mH1F_EpdCutTacDiff_Avg!=0 ){ mH1F_EpdCutTacDiff_Avg->Draw("hist e"); }
+  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){
+    canv->cd(3);
+    mH2F_EpdCutTacDiff_avgVearly->Draw("colz");
+    TH1D* earlytac = ((TH2*)mH2F_EpdCutTacDiff_avgVearly)->ProjectionX("H1F_EpdCutTacDiff_early");
+    earlytac->SetTitle("Epd TAC difference from Earliest TAC and 1<nMIP<15 and TAC>50;TacDiff Early");
+    TH1D* avgtac   = ((TH2*)mH2F_EpdCutTacDiff_avgVearly)->ProjectionY("H1F_EpdCutTacDiff_avg");
+    avgtac->SetTitle("Epd TAC difference from Average TAC and 1<nMIP<15 and TAC>50;TacDiff Avg");
+    canv->cd(4);
+    earlytac->Draw("hist e");
+    canv->cd(5);
+    avgtac->Draw("hist e");
+  }
   canv->Print(savename);
 }
 
