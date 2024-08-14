@@ -11,12 +11,12 @@
 #include "StThreeVectorF.hh"
 #include "Stypes.h"
 
-#include "StFcsRun22QaMaker.h"
+#include "StMuFcsRun22QaMaker.h"
 
-ClassImp(StFcsRun22QaMaker)
+ClassImp(StMuFcsRun22QaMaker)
 
 
-StFcsRun22QaMaker::StFcsRun22QaMaker(const char* name):StMaker(name)
+StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 {
   mFileName = "";
   mSpinRndm.SetSeed(0);
@@ -51,19 +51,19 @@ StFcsRun22QaMaker::StFcsRun22QaMaker(const char* name):StMaker(name)
   memset(mH2F_Poi_yVx,0,sizeof(mH2F_Poi_yVx));
 }
 
-StFcsRun22QaMaker::~StFcsRun22QaMaker()
+StMuFcsRun22QaMaker::~StMuFcsRun22QaMaker()
 {
   delete mAllHists;
   delete mFileOutput;
 }
 
-Short_t StFcsRun22QaMaker::getRandomSpin()
+Short_t StMuFcsRun22QaMaker::getRandomSpin()
 {
   if( mSpinRndm.Rndm()<0.5 ){ return -1; }
   else{ return 1; }
 }
 
-void StFcsRun22QaMaker::spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol )
+void StMuFcsRun22QaMaker::spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol )
 {
   if( bpol!=0 || ypol!=0 ){ bpol=0; ypol=0; }
   if( spin4bit & 0x1 ) ypol = +1;
@@ -72,7 +72,7 @@ void StFcsRun22QaMaker::spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol )
   if( spin4bit & 0x8 ) bpol = -1;
 }
 
-UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
+UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 {
   UInt_t loaded = 0;
   loaded += AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
@@ -220,44 +220,44 @@ UInt_t StFcsRun22QaMaker::LoadHists(TFile* file)
   return loaded;
 }
 
-Int_t StFcsRun22QaMaker::Init()
+Int_t StMuFcsRun22QaMaker::Init()
 {
   if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
   mFileOutput = new TFile(mFileName.Data(), "RECREATE");
   UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
   SetOwner(kTRUE);
-  LOG_INFO << "StFcsRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
+  LOG_INFO << "StMuFcsRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
   return kStOk;
 }
 
-Int_t StFcsRun22QaMaker::InitRun(int runnumber)
+Int_t StMuFcsRun22QaMaker::InitRun(int runnumber)
 {
   mFcsDb = static_cast<StFcsDb*>(GetDataSet("fcsDb"));
   //mFcsDb->setDbAccess(0);
   if (!mFcsDb) {
-    LOG_ERROR << "StFcsRun22QaMaker::InitRun Failed to get StFcsDbMaker" << endm;
+    LOG_ERROR << "StMuFcsRun22QaMaker::InitRun Failed to get StFcsDbMaker" << endm;
     return kStFatal;
   }
   // if( !mEpdGeo ){ mEpdGeo = new StEpdGeom(); }
   // else{
-  //   LOG_ERROR << "StFcsRun22QaMaker::InitRun - StEpdGeom Exists!" << endm;
+  //   LOG_ERROR << "StMuFcsRun22QaMaker::InitRun - StEpdGeom Exists!" << endm;
   //   return kStFatal;
   // }
   return kStOk;
 }
 
-Int_t StFcsRun22QaMaker::Make()
+Int_t StMuFcsRun22QaMaker::Make()
 {
   mMuDstMkr = (StMuDstMaker*)GetInputDS("MuDst");
-  if( mMuDstMkr==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !MuDstMkr" <<endm; return kStErr; }
+  if( mMuDstMkr==0 ){ LOG_ERROR <<"StMuFcsRun22QaMaker::Make - !MuDstMkr" <<endm; return kStErr; }
   mMuDst = mMuDstMkr->muDst();
-  if( mMuDst==0 ){ LOG_ERROR << "StFcsRun22QaMaker::Make - !MuDst" << endm; return kStErr; }
+  if( mMuDst==0 ){ LOG_ERROR << "StMuFcsRun22QaMaker::Make - !MuDst" << endm; return kStErr; }
   mMuEvent = mMuDst->event();
-  if( mMuEvent==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !MuEvent" <<endm; return kStErr; }
+  if( mMuEvent==0 ){ LOG_ERROR <<"StMuFcsRun22QaMaker::Make - !MuEvent" <<endm; return kStErr; }
   mTrigData = mMuEvent->triggerData();
-  if( mTrigData==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !TrigData" <<endm; return kStErr; }
+  if( mTrigData==0 ){ LOG_ERROR <<"StMuFcsRun22QaMaker::Make - !TrigData" <<endm; return kStErr; }
   mRunInfo = &(mMuEvent->runInfo());
-  if( mRunInfo==0 ){ LOG_ERROR <<"StFcsRun22QaMaker::Make - !RunInfo" <<endm; return kStErr; }
+  if( mRunInfo==0 ){ LOG_ERROR <<"StMuFcsRun22QaMaker::Make - !RunInfo" <<endm; return kStErr; }
 
   mH1F_Entries->Fill(1);
   
@@ -276,11 +276,11 @@ Int_t StFcsRun22QaMaker::Make()
     mEpdColl = 0;
     mMuEpdHits = mMuDst->epdHits();
     if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
-    if( mMuEpdHits==0 ){ LOG_INFO << "StFcsRun22QaMaker::Make - No MuEPD hits" << endm;
+    if( mMuEpdHits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::Make - No MuEPD hits" << endm;
       mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
-      if( mEpdHitMkr==0 ){ LOG_WARN << "StFcsRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
+      if( mEpdHitMkr==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
       else{ mEpdColl = mEpdHitMkr->GetEpdCollection(); }
-      if( mEpdColl==0 ){ LOG_WARN << "StFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
+      if( mEpdColl==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
     }
     Int_t epdstatus = this->FillEpdInfo();
     switch( epdstatus ){
@@ -310,7 +310,7 @@ Int_t StFcsRun22QaMaker::Make()
   else{ return kStOk; } //Both were ok
 }
 
-Int_t StFcsRun22QaMaker::FillEventInfo()
+Int_t StMuFcsRun22QaMaker::FillEventInfo()
 {
   mH2F_BxId_7V48->Fill(mTrigData->bunchId48Bit(),mTrigData->bunchId7Bit());
   mH2F_Mult_tofVref->Fill(mMuEvent->refMult(),mTrigData->tofMultiplicity());
@@ -330,7 +330,7 @@ Int_t StFcsRun22QaMaker::FillEventInfo()
   
   //Trigger Information
   StMuTriggerIdCollection* TrigMuColl = &(mMuEvent->triggerIdCollection());
-  if( !TrigMuColl ){ LOG_ERROR <<"StFcsRun22QaMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
+  if( !TrigMuColl ){ LOG_ERROR <<"StMuFcsRun22QaMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
   const StTriggerId& trgIDs = TrigMuColl->nominal();
   Int_t ntrig = trgIDs.triggerIds().size();
   for( Int_t i=0; i<ntrig; ++i ){ mH1F_Triggers->Fill(trgIDs.triggerIds().at(i));}
@@ -352,10 +352,10 @@ Int_t StFcsRun22QaMaker::FillEventInfo()
   return kStOk;
 }
 
-Int_t StFcsRun22QaMaker::FillFcsInfo()
+Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 {
   mMuFcsColl = mMuDst->muFcsCollection();
-  if (!mMuFcsColl) { LOG_ERROR << "StFcsRun22QaMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
+  if (!mMuFcsColl) { LOG_ERROR << "StMuFcsRun22QaMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
   
   bool check_fillclu = false;
   bool check_fillpoi = false;
@@ -379,11 +379,11 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
   double esum[3] = {0,0,0}; //total energy deposited from all hits in the Ecal, Hcal, and Pres respectively
 
   TClonesArray* hits = mMuFcsColl->getHitArray();
-  if( hits==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
+  if( hits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
   TClonesArray* clusters = mMuFcsColl->getClusterArray();
-  if( clusters==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS clusters" << endm; }
+  if( clusters==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS clusters" << endm; }
   TClonesArray* points = mMuFcsColl->getPointArray();
-  if( points==0 ){ LOG_INFO << "StFcsRun22QaMaker::FillFcsInfo - No FCS points" << endm; }
+  if( points==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS points" << endm; }
   
   //std::cout << "|hits:"<<hits << "|clusters:"<<clusters << "|points:"<<points << std::endl;
     
@@ -584,7 +584,7 @@ Int_t StFcsRun22QaMaker::FillFcsInfo()
   return kStOk;
 }
 
-Int_t StFcsRun22QaMaker::Finish()
+Int_t StMuFcsRun22QaMaker::Finish()
 {
   if( mFileOutput!=0 ){
     mFileOutput->cd();
@@ -592,15 +592,15 @@ Int_t StFcsRun22QaMaker::Finish()
     return kStOk;
   }
   else{
-    LOG_WARN << "StFcsRun22QaMaker::Finish() - No file created because pointer is null" << endm;
+    LOG_WARN << "StMuFcsRun22QaMaker::Finish() - No file created because pointer is null" << endm;
     return kStWarn;
   }
 }
 
-Int_t StFcsRun22QaMaker::FillEpdInfo()
+Int_t StMuFcsRun22QaMaker::FillEpdInfo()
 {
   if( mMuEpdHits==0 && mEpdColl==0 ){
-    LOG_WARN << "StFcsRun22QaMaker::FillEpdInfo() has no epd hits" << endm;
+    LOG_WARN << "StMuFcsRun22QaMaker::FillEpdInfo() has no epd hits" << endm;
     return kStWarn;
   }
   unsigned int nepdhits = 0;
@@ -709,7 +709,7 @@ Int_t StFcsRun22QaMaker::FillEpdInfo()
   return kStOk;
 }
 
-UInt_t StFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
+UInt_t StMuFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
   UInt_t status = 0;
   if( h1!=0 ){
@@ -731,7 +731,7 @@ UInt_t StFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const 
   return status;//1 if histogram loaded or exists, 0 otherwise
 }
 
-UInt_t StFcsRun22QaMaker::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
+UInt_t StMuFcsRun22QaMaker::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
   UInt_t status = 0;
   for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
@@ -754,7 +754,7 @@ UInt_t StFcsRun22QaMaker::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, 
   return status;
 }
 
-UInt_t StFcsRun22QaMaker::AddH2F(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
+UInt_t StMuFcsRun22QaMaker::AddH2F(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
 {
   UInt_t status = 0;
   if( h2!=0 ){
@@ -776,7 +776,7 @@ UInt_t StFcsRun22QaMaker::AddH2F(TFile* file, TH1*& h2, const char* name, const 
   return status;//1 if histogram loaded, 0 if new
 }
 
-UInt_t StFcsRun22QaMaker::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
+UInt_t StMuFcsRun22QaMaker::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
 {
   UInt_t status = 0;
   for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
@@ -813,7 +813,7 @@ virtual void Paint(Option_t opt="")
   if( option.Contains("R") ){ PaintFcsPointPi0(); }
 }
 */
-void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(4,3);
@@ -847,7 +847,7 @@ void StFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
@@ -867,14 +867,14 @@ void StFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawBxId(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawBxId(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   mH2F_BxId_7V48->Draw("colz");
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawFcsHitSingle(TCanvas* canv, unsigned int det, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsHitSingle(TCanvas* canv, unsigned int det, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
@@ -891,7 +891,7 @@ void StFcsRun22QaMaker::DrawFcsHitSingle(TCanvas* canv, unsigned int det, const 
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawFcsClusterSingle(TCanvas* canv, unsigned int det, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsClusterSingle(TCanvas* canv, unsigned int det, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,3);
@@ -916,7 +916,7 @@ void StFcsRun22QaMaker::DrawFcsClusterSingle(TCanvas* canv, unsigned int det, co
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawFcsPointSingle(TCanvas* canv, unsigned int det, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsPointSingle(TCanvas* canv, unsigned int det, const char* savename)
 {
   canv->Clear();
   canv->Divide(2,2);
@@ -931,7 +931,7 @@ void StFcsRun22QaMaker::DrawFcsPointSingle(TCanvas* canv, unsigned int det, cons
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawFcsTotalE(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsTotalE(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(2,2);
@@ -944,7 +944,7 @@ void StFcsRun22QaMaker::DrawFcsTotalE(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawAdcVTb(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawAdcVTb(TCanvas* canv, const char* savename)
 {
   if( mFcsAdcTbOn ){
     canv->Clear();
@@ -960,7 +960,7 @@ void StFcsRun22QaMaker::DrawAdcVTb(TCanvas* canv, const char* savename)
   }
 }
 
-void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
 {
   for( UShort_t i=0; i<kFcsNDet; ++i ){
     canv->Clear();
@@ -988,7 +988,7 @@ void StFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(2,2);
@@ -1003,7 +1003,7 @@ void StFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
@@ -1026,7 +1026,7 @@ void StFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
@@ -1049,7 +1049,7 @@ void StFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StFcsRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
 {
   if( mEpdAdcQaOn || (mH2F_HitPres_depVqt[0]!=0 && mH2F_HitPres_depVqt[1]!=0) ){
     canv->Clear();
@@ -1065,7 +1065,7 @@ void StFcsRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
   }  
 }
 
-void StFcsRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
 {
   if( mEpdTacQaOn || (mH2F_HitPres_peakVtac[0]!=0 && mH2F_HitPres_peakVtac[1]!=0) ){
     canv->Clear();
@@ -1080,7 +1080,7 @@ void StFcsRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
   }
 }
 
-void StFcsRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
 {
   if( mEpdTacAdcOn || (mH2F_HitEpd_tacVadcmip[0]!=0 && mH2F_HitEpd_tacVadcmip[1]!=0) ){
     canv->Clear();
@@ -1095,7 +1095,7 @@ void StFcsRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
   }
 }
 
-void StFcsRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
 {
   DrawEpdHitQa(canv, savename);
   DrawEpdTacQa( canv, savename);
@@ -1105,7 +1105,7 @@ void StFcsRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
   DrawEpdTacAdcQa( canv, savename);
 }
 
-void StFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
 {
   for( UShort_t i=0; i<kFcsNDet; ++i ){
     canv->Clear();
@@ -1132,7 +1132,7 @@ void StFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
   }
 }
 
-void StFcsRun22QaMaker::DrawFcsClusterPi0(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsClusterPi0(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
@@ -1150,7 +1150,7 @@ void StFcsRun22QaMaker::DrawFcsClusterPi0(TCanvas* canv, const char* savename)
   mH2F_CluHigh_invmassVzgg->Draw("colz");
   canv->Print(savename);
 }
-void StFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
 {
   for( UShort_t i=0; i<kFcsNDet; ++i ){
     canv->Clear();
@@ -1167,7 +1167,7 @@ void StFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
   }
 }
 
-void StFcsRun22QaMaker::DrawFcsPointPi0(TCanvas* canv, const char* savename)
+void StMuFcsRun22QaMaker::DrawFcsPointPi0(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);

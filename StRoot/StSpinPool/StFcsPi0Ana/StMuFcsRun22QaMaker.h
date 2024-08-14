@@ -24,12 +24,14 @@
   @[July 31, 2024] > Added and modified the functions related to drawing the EPD QA histograms. In particular, separated out the histograms into different categories with their own draw functions.
   @[August, 13, 2024] > Changed tacdiff histograms from 1d to 2d. They now store the tac difference taken from doing averages vs. the tac differences taken from the earliest (i.e. highest) TAC values and added a tac cut of 50 to the average histograms.
 
+  @[August 14, 2024] > Renamed class to StMuFcsRun22QaMaker
+
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
-#ifndef STFCSRUN22QAMAKER_HH
-#define STFCSRUN22QAMAKER_HH
+#ifndef STMUFCSRUN22QAMAKER_HH
+#define STMUFCSRUN22QAMAKER_HH
 
 //C/C++ Headers
 #include <iostream>
@@ -66,11 +68,11 @@
 #include "StEpdDbMaker/StEpdDbMaker.h"
 #include "StEpdHitMaker/StEpdHitMaker.h"
 
-class StFcsRun22QaMaker : public StMaker
+class StMuFcsRun22QaMaker : public StMaker
 {
  public:
-  StFcsRun22QaMaker(const char* name = "FcsRun22Qa");
-  ~StFcsRun22QaMaker();
+  StMuFcsRun22QaMaker(const char* name = "FcsRun22Qa");
+  ~StMuFcsRun22QaMaker();
 
   virtual Int_t Init();
   virtual Int_t InitRun(int runnumber);
@@ -230,7 +232,7 @@ private:
 
   double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
 #ifndef SKIPDefImp
-  ClassDef(StFcsRun22QaMaker,2);
+  ClassDef(StMuFcsRun22QaMaker,1);
 #endif
 };
 
