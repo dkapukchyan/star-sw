@@ -26,6 +26,7 @@
 
   @[August 14, 2024] > Renamed class to StMuFcsRun22QaMaker
 
+  @[August 20, 2024] > Got rid of EPD related histgrams and draw functions. Uses new #HistManager class to manage histograms.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -68,6 +69,9 @@
 #include "StEpdDbMaker/StEpdDbMaker.h"
 #include "StEpdHitMaker/StEpdHitMaker.h"
 
+//Custom headers in this folder
+#include "HistManager.h"
+
 class StMuFcsRun22QaMaker : public StMaker
 {
  public:
@@ -79,20 +83,28 @@ class StMuFcsRun22QaMaker : public StMaker
   virtual Int_t Make();
   virtual Int_t Finish();
 
-  void setOutFileName(const char* name){ mFileName = name; }
-  //static void LoadDataFromFile(TFile* file, TObjArray* arr);
+  /*
+  //Machinery to make managing and creating a large number of histograms easier
+  UInt_t AddH1F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1F(file,h,name,title,nbins,xlow,xhigh); }
+  UInt_t AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1FArr(file,arr,nobjs,name,title,nbins,xlow,xhigh); }
+  UInt_t AddH2F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.Add2F(file,h,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
+  UInt_t AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.AddH2FArr(file,arr,nobjs,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
+  */
+
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
   Short_t getRandomSpin(); //!< If <0.5 spin down, if >=0.5 spin up
-  const char* getFileName(){ return mFileName.Data(); }
-
-  virtual UInt_t LoadHists(TFile* file);
-  void SetOwner(Bool_t enable=kTRUE){ mAllHists->SetOwner(enable); }
   static void spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol ); //@[June 3, 2024] > Taken from https://drupal.star.bnl.gov/STAR/blog/oleg/spin-patterns-and-polarization-direction
+  //const char* getFileName(){ return mFileName.Data(); }
+  
+  //void setOutFileName(const char* name){ mFileName = name; }
+  void setHistManager( HistManager* hm );
+  //TFile* makeFile(const char* fname, Option_t* option = "RECREATE",const char* ftitle="",Int_t compress=ROOT::RCompressionSetting::EDefaults::kUseCompiledDefault){ if( mHists!=0 ){ return mHists->InitFile(fname,option,ftitle,compress); } else{ return 0; } }
+  virtual UInt_t LoadHists(TFile* file);
+
   void setFcsAdcTbOn(bool value=true)  { mFcsAdcTbOn = value; }
   void setEpdAdcQaOn(bool value=true)  { mEpdAdcQaOn = value; }
   void setEpdTacQaOn(bool value=true)  { mEpdTacQaOn = value; }
-  void setEpdTacAdcOn(bool value=true) { mEpdTacAdcOn = value; }
 
   //virtual void Paint(Option_t opt="");
   void DrawEventInfo(TCanvas* canv, const char* savename);
@@ -104,18 +116,12 @@ class StMuFcsRun22QaMaker : public StMaker
   void DrawFcsClusterSingle(TCanvas* canv, unsigned int det, const char* savename);
   void DrawFcsPointSingle(TCanvas* canv, unsigned int det, const char* savename);
   
-  
   void DrawAdcVTb(TCanvas* canv, const char* savename);
   void DrawFcsHitQa(TCanvas* canv, const char* savename);
-  
-  void DrawEpdHitQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacCutQa(TCanvas* canv, const char* savename);
+
   void DrawEpdDepAdcQa(TCanvas* canv, const char* savename);
   void DrawEpdDepTacQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);
-  void DrawEpdAllQa(TCanvas* canv, const char* savename);
-  
+    
   void DrawFcsClusterQa(TCanvas* canv, const char* savename);
   void DrawFcsClusterPi0(TCanvas* canv, const char* savename);
   void DrawFcsPointQa(TCanvas* canv, const char* savename);
@@ -136,22 +142,15 @@ protected:
   StSpinDbMaker* mSpinDbMkr = 0;     //!< @[May 27, 2024] > Doesn't have proper spin database simply a placeholder
   //StEpdGeom* mEpdGeo=0;
   TClonesArray* mMuEpdHits = 0;
-  StEpdHitMaker* mEpdHitMkr = 0;     //@[July 5, 2024] > Checking for afterburner of EPD hits in trig data
+  StEpdHitMaker* mEpdHitMkr = 0;
   StEpdCollection* mEpdColl = 0;
   
   //Data to save
-  TString mFileName;
+  //TString mFileName;
   //TFile* mFile_Output = 0; //!< TFile to save all the data
 
   virtual Int_t FillEventInfo();
-  virtual Int_t FillEpdInfo();
   virtual Int_t FillFcsInfo();
-
-  //Machinery to make managing and creating a large number of histograms easier
-  UInt_t AddH1F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh); //!< This functions should be used to make 1D histograms so that the internal #AllHists obj array can hold a copy to it which will make it easier to write and delete the histograms. Returns 1 if histogram was created/loaded from file, 0 otherwise
-  UInt_t AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh); //!< This functions should be used to make #nobjs number of the same 1D histogram (names will be incremented from 0 to nobjs) and store them in the TObjArray given by #arr. Those histogram pointers will also be copied into #AllHists which will own the object. Returns number of histograms created/loaded from file
-  UInt_t AddH2F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh);//!< This function should be used to make 2D histograms so that the internal #AllHists obj array can hold a copy to it which will make it easier to write and delete the histograms. Returns 1 if histogram was created/loaded from file, 0 otherwise
-  UInt_t AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh);//!< This functions should be used to make #nobjs number of the same 2D histogram (names will be incremented from 0 to nobjs) and store them in the TObjArray given by #arr. Those histogram pointers will also be copied into #AllHists which will own the object. Returns number of histograms created/loaded from file
   
   TH1* mH1F_Entries = 0;              //!< Number of events processed no cuts (i.e. "Make" calls)
   TH1* mH1F_Triggers = 0;             //!< Triggers in the events
@@ -160,7 +159,7 @@ protected:
   TH1* mH1F_VertexBbc = 0;            //!< Vertex histograms from BBC
   TH1* mH1F_BbcTimeDiff = 0;          //!< BBC Time difference used to compute the vertex
   TH1* mH1F_VertexZdc = 0;            //!< Vertex from ZDC
-  TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
+  //TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
   TH1* mH2F_BxId_7V48 = 0;            //!< Bunch crossing Id 7 bit vs. 48 bit
   TH1* mH2F_Mult_tofVref = 0;         //!< Tof multiplicty vs. Reference multiplicity
   TH1* mH2F_Mult_tofVecal = 0;        //!< Tof multiplicity vs. Fcs Ecal multiplicity
@@ -175,19 +174,9 @@ protected:
   TH1* mH1F_Hit_ESum[3];                 //!< Total energy sum in ecal[0], hcal[1], pres[2]
   //TH1* mH2F_Hit_colVrow[3];            //!< @[May 28, 2024] > Trying to emulate mHitMap in StFcsQaMaker
 
-  TH1* mH1F_Epd_NHits = 0;              //!< Number of hits from EPD collection
-  TH1* mH1F_Epd_NHitsWest = 0;          //!< Number of hits from EPD collection only west side
   TObjArray* mH2F_HitPres_depVqt[2];    //!< Special for checking EPD ADC Qt vs. DEP sum split by North[0], South[1] Fcs designation
   TObjArray* mH2F_HitPres_peakVtac[2];  //!< Special for checking EPD TAC values vs. found peak time from FCS split by North[0], South[1] Fcs designation
   TObjArray* mH2F_HitEpd_tacVadcmip[2]; //!< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
-  TH1* mH2F_HitEpd_nmipVchkey[2];        //!< Special for checking nmip of a given channel in the EPD. The "chkey" is (supersector-1)*31+(tileid-1)
-  
-  TH1* mH2F_Epd_earlywVearlye = 0;      //!< EPD hit with Earliest West TAC vs. Earliest East TAC (Since using common stop early means largest TAC value)
-  TH1* mH2F_Epd_avgwVavge = 0;          //!< EPD Averaged West TAC vs. Averaged East TAC
-  TH1* mH2F_EpdTacDiff_avgVearly = 0;       //EPD tac difference between West and East tiles (in that order) computed from average tac vs. differences computed using earliest TAC
-  TH1* mH2F_EpdCut_earlywVearlye = 0;   //!< EPD hit with Earliest West TAC vs. Earliest East TAC with channel 1<nMIP<15 (Since using common stop early means largest TAC value)
-  TH1* mH2F_EpdCut_avgwVavge = 0;       //!< EPD Averaged West TAC vs. Averaged East TAC with channel 1<nMIP<15
-  TH1* mH2F_EpdCutTacDiff_avgVearly = 0;  //!< EPD tac difference between West and East tiles (in that order)  computed from average tac vs. differences computed using earliest TAC; computed with cut 1<adcnmip<15 && TAC>50
   
   TH1* mH1F_NClusters[kFcsNDet];              //!< Cluster multiplicity
   TH1* mH1F_Clu_NTowers[kFcsNDet];            //!< Number towers in a cluster
@@ -222,18 +211,15 @@ protected:
   bool mFcsAdcTbOn = true;             //!< For turning on/off Adc V tb histograms for the FCS
   bool mEpdAdcQaOn = true;             //!< For turning on/off Qt V Dep histograms from the EPD data
   bool mEpdTacQaOn = true;             //!< For turning on/off Tac V PeakX histograms from the EPD data
-  bool mEpdTacAdcOn = true;            //!< For turning on/off TAC vs. ADC histograms for all EPD channels
 
 private:
-  TFile* mFileOutput = 0;              //!< For saving histograms not loading
+  HistManager* mHists = 0;             //!< Manage loading and saving histograms
+  bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
+  //TFile* mFileOutput = 0;              //!< For saving histograms not loading
   TRandom3 mSpinRndm;
 
-  TObjArray* mAllHists = 0;            //!< Store all histogram pointers in this array to make it easier to write and delete them. It will also own all the histograms to make things easier
-
-  double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
-#ifndef SKIPDefImp
-  ClassDef(StMuFcsRun22QaMaker,1);
-#endif
+  //Version 2 is when EPD and FCS functionality was separated and is no longer backward compabitible with older generated files. 
+  ClassDef(StMuFcsRun22QaMaker,2)
 };
 
 #endif

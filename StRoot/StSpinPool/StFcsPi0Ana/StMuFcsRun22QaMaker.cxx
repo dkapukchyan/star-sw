@@ -18,9 +18,9 @@ ClassImp(StMuFcsRun22QaMaker)
 
 StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 {
-  mFileName = "";
+  //mFileName = "";
   mSpinRndm.SetSeed(0);
-  mAllHists = new TObjArray();
+  //mAllHists = new TObjArray();
 
   memset(mH2F_Hit_adcVtb,0,sizeof(mH2F_Hit_adcVtb));
   memset(mH2F_Hit_enVid,0,sizeof(mH2F_Hit_enVid));
@@ -32,8 +32,6 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 
   memset(mH2F_HitPres_depVqt,0,sizeof(mH2F_HitPres_depVqt));
   memset(mH2F_HitPres_peakVtac,0,sizeof(mH2F_HitPres_peakVtac));
-  memset(mH2F_HitEpd_tacVadcmip,0,sizeof(mH2F_HitEpd_tacVadcmip));
-  memset(mH2F_HitEpd_nmipVchkey,0,sizeof(mH2F_HitEpd_nmipVchkey));
 
   memset(mH1F_NClusters,0,sizeof(mH1F_NClusters));
   memset(mH1F_Clu_NTowers,0,sizeof(mH1F_Clu_NTowers));
@@ -53,8 +51,16 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 
 StMuFcsRun22QaMaker::~StMuFcsRun22QaMaker()
 {
-  delete mAllHists;
-  delete mFileOutput;
+  if( mInternalHists ){ delete mHists; }
+  //delete mFileOutput;
+}
+
+void StMuFcsRun22QaMaker::setHistManager( HistManager* hm )
+{
+  if( mInternalHists ){ delete mHists; mHists = 0; }
+  mInternalHists = false;
+  if( mHists!=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::setHistManager() - HistManager exists and is external - no changes made" << endm; return; }
+  else{ mHists = hm; }
 }
 
 Short_t StMuFcsRun22QaMaker::getRandomSpin()
@@ -74,23 +80,23 @@ void StMuFcsRun22QaMaker::spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol )
 
 UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 {
+  if( mHists==0 ){ return 0; }
   UInt_t loaded = 0;
-  loaded += AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
+  loaded += mHists->AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
   
-  loaded += AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;TrigId",999,890000,890999);//@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
+  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;TrigId",999,890000,890999);//@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   
-  loaded += AddH1F(file,mH1F_VertexPrimZ,"H1F_VertexPrimZ","Primary Vertex (z);cm",201,-100.5,100.5);
-  loaded += AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",50,-200,200);
-  loaded += AddH1F(file,mH1F_VertexBbc,"H1F_VertexBbc","Bbc Vertex (z);cm",50,-200,200);
-  loaded += AddH1F(file,mH1F_BbcTimeDiff,"H1F_BbcTimeDiff","Bbc Time difference", 200,-5000,5000);
-  loaded += AddH1F(file,mH1F_VertexZdc,"H1F_VertexZdc","Zdc Vertex (z);cm",50,-200,200);
-  loaded += AddH1F(file,mH1F_VertexEpd,"H1F_VertexEpd","Epd Vertex (z);cm",50,-200,200);
+  loaded += mHists->AddH1F(file,mH1F_VertexPrimZ,"H1F_VertexPrimZ","Primary Vertex (z);cm",201,-100.5,100.5);
+  loaded += mHists->AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",50,-200,200);
+  loaded += mHists->AddH1F(file,mH1F_VertexBbc,"H1F_VertexBbc","Bbc Vertex (z);cm",50,-200,200);
+  loaded += mHists->AddH1F(file,mH1F_BbcTimeDiff,"H1F_BbcTimeDiff","Bbc Time difference", 200,-5000,5000);
+  loaded += mHists->AddH1F(file,mH1F_VertexZdc,"H1F_VertexZdc","Zdc Vertex (z);cm",50,-200,200);
   
-  loaded += AddH2F(file,mH2F_BxId_7V48,"H2F_BxId7V48","Bunch Crossing Id;48 bit;7 bit", 121,-0.5,120.5, 121,-0.5,120.5);
-  loaded += AddH2F(file,mH2F_Mult_tofVref,"H2F_Mult_tofVref","TOF multiplicity vs. Reference multiplicity;RefMult;TofMult",100,0,100,100,0,100);
-  loaded += AddH2F(file,mH2F_Mult_tofVecal,"H2F_Mult_tofVecal","TOF multiplicity vs. Fcs Ecal multiplicity;EcalMult;TofMult",200,0,1000,100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_BxId_7V48,"H2F_BxId7V48","Bunch Crossing Id;48 bit;7 bit", 121,-0.5,120.5, 121,-0.5,120.5);
+  loaded += mHists->AddH2F(file,mH2F_Mult_tofVref,"H2F_Mult_tofVref","TOF multiplicity vs. Reference multiplicity;RefMult;TofMult",100,0,100,100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_Mult_tofVecal,"H2F_Mult_tofVecal","TOF multiplicity vs. Fcs Ecal multiplicity;EcalMult;TofMult",200,0,1000,100,0,100);
 
-  loaded += AddH1F(file,mH1F_Spin,"H1F_Spin","Spin",3,-1.5,1.5);
+  loaded += mHists->AddH1F(file,mH1F_Spin,"H1F_Spin","Spin",3,-1.5,1.5);
 
   TString namesuffix[6] = {"EN","ES","HN","HS","PN","PS"};
   for( UShort_t i=0; i<kFcsNDet; ++i ){
@@ -105,133 +111,122 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
     TString histtitle = "Adc vs. Tb for " + namesuffix[i] + ";tb;adc";
     if( mFcsAdcTbOn ){
       mH2F_Hit_adcVtb[i] = new TObjArray(); //Create new array for each detector
-      loaded += AddH2FArr(file,(mH2F_Hit_adcVtb[i]),nchs,histname.Data(),histtitle.Data(),100,0,100,400,0,4000);
+      loaded += mHists->AddH2FArr(file,(mH2F_Hit_adcVtb[i]),nchs,histname.Data(),histtitle.Data(),100,0,100,400,0,4000);
     }
     histname = "H2F_Hit_enVid_" + namesuffix[i];
     histtitle = "Energy vs. Id for " + namesuffix[i] + ";id;energy (GeV)";    
-    loaded += AddH2F(file,(mH2F_Hit_enVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
+    loaded += mHists->AddH2F(file,(mH2F_Hit_enVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
     histname = "H2F_Hit_fitpeakVid_" + namesuffix[i];
     histtitle = "Fitted Peak Location vs. Id for " + namesuffix[i] + ";id;tb";
-    loaded += AddH2F(file,(mH2F_Hit_fitpeakVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
+    loaded += mHists->AddH2F(file,(mH2F_Hit_fitpeakVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
     histname = "H2F_Hit_chi2Vid_" + namesuffix[i];
     histtitle = "Chi^2/NDF for fitted peaks (npeaks>1) vs. Id for " + namesuffix[i] + ";id;Chi^2/NDF";
-    loaded += AddH2F(file,(mH2F_Hit_chi2Vid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,110,-10,100);
+    loaded += mHists->AddH2F(file,(mH2F_Hit_chi2Vid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,110,-10,100);
     histname = "H2F_Hit_npeaksVid_" + namesuffix[i];
     histtitle = "Number of fitted peaks vs. Id for " + namesuffix[i] + ";id;NPeaks";
-    loaded += AddH2F(file,(mH2F_Hit_npeaksVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,15,0,15);
+    loaded += mHists->AddH2F(file,(mH2F_Hit_npeaksVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,15,0,15);
     histname = "H1F_Hit_Nhits_" + namesuffix[i];
     histtitle = "Hit Multiplicity for " + namesuffix[i] + ";NChs";
-    loaded += AddH1F(file,(mH1F_Hit_NHits[i]),histname.Data(),histtitle.Data(),nchs,0,nchs);
+    loaded += mHists->AddH1F(file,(mH1F_Hit_NHits[i]),histname.Data(),histtitle.Data(),nchs,0,nchs);
 
     histname = "H1F_NClusters_" + namesuffix[i];
     histtitle = "Number of Clusters for " + namesuffix[i] + ";NClusters";
-    loaded += AddH1F(file,(mH1F_NClusters[i]),histname.Data(),histtitle.Data(),50,0,50);
+    loaded += mHists->AddH1F(file,(mH1F_NClusters[i]),histname.Data(),histtitle.Data(),50,0,50);
     histname = "H1F_Clu_NTowers_" + namesuffix[i];
     histtitle = "Number of towers in a cluster for " + namesuffix[i] + ";NTowers/cluster";
-    loaded += AddH1F(file,(mH1F_Clu_NTowers[i]),histname.Data(),histtitle.Data(),100,0,100);
+    loaded += mHists->AddH1F(file,(mH1F_Clu_NTowers[i]),histname.Data(),histtitle.Data(),100,0,100);
     histname = "H1F_Clu_NNei_" + namesuffix[i];
     histtitle = "Number of neighbor clusters for a given cluster for " + namesuffix[i] + ";NNeighbors/cluster";
-    loaded += AddH1F(file,(mH1F_Clu_NNei[i]),histname.Data(),histtitle.Data(),10,0,10);
+    loaded += mHists->AddH1F(file,(mH1F_Clu_NNei[i]),histname.Data(),histtitle.Data(),10,0,10);
     histname = "H1F_Clu_NPoints_" + namesuffix[i];
     histtitle = "Number of points in a cluster for " + namesuffix[i] + ";NPoints/cluster";
-    loaded += AddH1F(file,(mH1F_Clu_NPoints[i]),histname.Data(),histtitle.Data(),4,0,4);
+    loaded += mHists->AddH1F(file,(mH1F_Clu_NPoints[i]),histname.Data(),histtitle.Data(),4,0,4);
     histname = "H1F_Clu_En_" + namesuffix[i];
     histtitle = "Energy in a cluster for " + namesuffix[i] + ";energy (GeV)";
-    loaded += AddH1F(file,(mH1F_Clu_En[i]),histname.Data(),histtitle.Data(),100,0,100);
+    loaded += mHists->AddH1F(file,(mH1F_Clu_En[i]),histname.Data(),histtitle.Data(),100,0,100);
     histname = "H2F_Clu_yVx_" + namesuffix[i];
     histtitle = "Cluster position in row vs. column space for " + namesuffix[i] + ";col;row";
-    loaded += AddH2F(file,(mH2F_Clu_yVx[i]),histname.Data(),histtitle.Data(), ncol+1,1,ncol+1, nrow+1,1,nrow+1);
+    loaded += mHists->AddH2F(file,(mH2F_Clu_yVx[i]),histname.Data(),histtitle.Data(), ncol+1,1,ncol+1, nrow+1,1,nrow+1);
     histname = "H2F_Clu_sigmaxVsigmin_" + namesuffix[i];
     histtitle = "Cluster Sigma Max vs. Sigma Min for " + namesuffix[i] + ";sigma min;sigma max";
-    loaded += AddH2F(file,(mH2F_Clu_sigmaxVsigmin[i]),histname.Data(),histtitle.Data(), 100,0,1, 100,0,1);
+    loaded += mHists->AddH2F(file,(mH2F_Clu_sigmaxVsigmin[i]),histname.Data(),histtitle.Data(), 100,0,1, 100,0,1);
     histname = "H1F_Clu_theta_" + namesuffix[i];
     histtitle = "Cluster theta for " + namesuffix[i];
-    loaded += AddH1F(file,(mH1F_Clu_theta[i]),histname.Data(),histtitle.Data(), 20,-1.0*TMath::Pi(),TMath::Pi());
+    loaded += mHists->AddH1F(file,(mH1F_Clu_theta[i]),histname.Data(),histtitle.Data(), 20,-1.0*TMath::Pi(),TMath::Pi());
     histname = "H2F_Clu_Chi2NdfPhoton_2V1_" + namesuffix[i];
     histtitle = "Cluster Chi^2/NDF for 2 photon fit vs. 1 photon fit for " + namesuffix[i] + ";1 photon Chi^2/NDF;2 photon Chi^2/NDF";
-    loaded += AddH2F(file,(mH2F_Clu_Chi2NdfPhoton_2V1[i]),histname.Data(),histtitle.Data(), 100,0,100, 100,0,100);
+    loaded += mHists->AddH2F(file,(mH2F_Clu_Chi2NdfPhoton_2V1[i]),histname.Data(),histtitle.Data(), 100,0,100, 100,0,100);
 
     histname = "H1F_NPoints_" + namesuffix[i];
     histtitle = "Number of points for " + namesuffix[i] + ";NPoints";
-    loaded += AddH1F(file,(mH1F_NPoints[i]),histname.Data(),histtitle.Data(), 50,0,50);
+    loaded += mHists->AddH1F(file,(mH1F_NPoints[i]),histname.Data(),histtitle.Data(), 50,0,50);
     histname = "H1F_Poi_En_" + namesuffix[i];
     histtitle = "Point Energy for " + namesuffix[i] + ";Energy (GeV)";
-    loaded += AddH1F(file,(mH1F_Poi_En[i]),histname.Data(),histtitle.Data(), 100,0,100);
+    loaded += mHists->AddH1F(file,(mH1F_Poi_En[i]),histname.Data(),histtitle.Data(), 100,0,100);
     histname = "H1F_Poi_NCluPhotons_" + namesuffix[i];
     histtitle = "Number of photons from parent cluster for " + namesuffix[i] + ";NPoints in Parent Cluster";
-    loaded += AddH1F(file,(mH1F_Poi_NCluPhotons[i]),histname.Data(),histtitle.Data(), 4,0,4);
+    loaded += mHists->AddH1F(file,(mH1F_Poi_NCluPhotons[i]),histname.Data(),histtitle.Data(), 4,0,4);
     histname = "H2F_Poi_yVx_" + namesuffix[i];
     histtitle = "Point positions for " + namesuffix[i] + ";x (cm);y (cm)";
-    loaded += AddH2F(file,(mH2F_Poi_yVx[i]),histname.Data(),histtitle.Data(), ncol+1,1,ncol+1, nrow+1,1,nrow+1 );
+    loaded += mHists->AddH2F(file,(mH2F_Poi_yVx[i]),histname.Data(),histtitle.Data(), ncol+1,1,ncol+1, nrow+1,1,nrow+1 );
   }
-  loaded += AddH1F(file,mH1F_Hit_ESum[0],"H1F_Hit_ESum_Ecal","Total energy sum in Ecal;Energy (GeV)", 200,0,200);
-  loaded += AddH1F(file,mH1F_Hit_ESum[1],"H1F_Hit_ESum_Hcal","Total energy sum in Hcal;Energy (GeV)", 100,0,100);
-  loaded += AddH1F(file,mH1F_Hit_ESum[2],"H1F_Hit_ESum_Pres","Total energy sum in Pres;Energy (GeV)", 100,0,100);
+  loaded += mHists->AddH1F(file,mH1F_Hit_ESum[0],"H1F_Hit_ESum_Ecal","Total energy sum in Ecal;Energy (GeV)", 200,0,200);
+  loaded += mHists->AddH1F(file,mH1F_Hit_ESum[1],"H1F_Hit_ESum_Hcal","Total energy sum in Hcal;Energy (GeV)", 100,0,100);
+  loaded += mHists->AddH1F(file,mH1F_Hit_ESum[2],"H1F_Hit_ESum_Pres","Total energy sum in Pres;Energy (GeV)", 100,0,100);
 
-  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
-    loaded += AddH1F(file,mH1F_Epd_NHits,"H1F_Epd_NHits","Number of Hits from EPD collection;NHits",500,0,500);
-    loaded += AddH1F(file,mH1F_Epd_NHitsWest,"H1F_Epd_NHitsWest","Number of Hits form EPD collection (West);NHits",300,0,300);
+  if( mEpdAdcQaOn || mEpdTacQaOn ){
     if( mEpdAdcQaOn ){
       mH2F_HitPres_depVqt[0]   = new TObjArray();
       mH2F_HitPres_depVqt[1]   = new TObjArray();
-      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[0],192,"H2F_HitPres_depVqt_PN","QT sum vs. DEP ADC sum for Fcs Preshower North hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
-      loaded += AddH2FArr(file,mH2F_HitPres_depVqt[1],192,"H2F_HitPres_depVqt_PS","QT sum vs. DEP ADC sum for Fcs Preshower South hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
+      loaded += mHists->AddH2FArr(file,mH2F_HitPres_depVqt[0],192,"H2F_HitPres_depVqt_PN","QT sum vs. DEP ADC sum for Fcs Preshower North hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
+      loaded += mHists->AddH2FArr(file,mH2F_HitPres_depVqt[1],192,"H2F_HitPres_depVqt_PS","QT sum vs. DEP ADC sum for Fcs Preshower South hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
     }
     if( mEpdTacQaOn ){
       mH2F_HitPres_peakVtac[0] = new TObjArray();
       mH2F_HitPres_peakVtac[1] = new TObjArray();
-      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TAC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TAC", 100,0,100, 100,0,100);
-      loaded += AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TAC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TAC", 100,0,100, 100,0,100); 
+      loaded += mHists->AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TAC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TAC", 100,0,100, 100,0,100);
+      loaded += mHists->AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TAC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TAC", 100,0,100, 100,0,100); 
     }
-    if( mEpdTacAdcOn ){
-      mH2F_HitEpd_tacVadcmip[0] = new TObjArray(); //Create new array for east side
-      mH2F_HitEpd_tacVadcmip[1] = new TObjArray(); //Create new array for west side
-      //EPD has 372 tiles on one side
-      loaded += AddH2FArr(file,mH2F_HitEpd_tacVadcmip[0],372,"H2F_HitEpd_tacVadcmip_E","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000);
-      loaded += AddH2FArr(file,mH2F_HitEpd_tacVadcmip[1],372,"H2F_HitEpd_tacVadcmip_W","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000 );
-    }
-
-    loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[0],"H2F_HitEpd_nmipVchkey_E","NMIP values for East EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
-    loaded += AddH2F(file,mH2F_HitEpd_nmipVchkey[1],"H2F_HitEpd_nmipVchkey_W","NMIP values for West EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
-    
-    loaded += AddH2F(file,mH2F_Epd_earlywVearlye,"H2F_Epd_earlywVearlye","EPD Earliest TAC West vs. East;Earliest East TAC;Earliest West TAC", 421,-10,4200, 421,-10,4200);
-    loaded += AddH2F(file,mH2F_Epd_avgwVavge,"H2F_Epd_avgwVavge","EPD Average TAC West vs. East;Average East TAC;Average West TAC", 200,0,1000, 200,0,1000);
-    loaded += AddH2F(file,mH2F_EpdTacDiff_avgVearly,"H2F_EpdTacDiff_avgVearly","Epd TAC difference from Average TAC vs. Early TAC;TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
-    
-    loaded += AddH2F(file,mH2F_EpdCut_earlywVearlye,"H2F_EpdCut_earlywVearlye","EPD Earliest TAC West vs. East with 1<nMIP<15;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
-    loaded += AddH2F(file,mH2F_EpdCut_avgwVavge,"H2F_EpdCut_avgwVavge","EPD Average TAC West vs. East with 1<nMIP<15;Average East TAC;Average West TAC", 200,0,2000, 200,0,2000);
-    loaded += AddH2F(file,mH2F_EpdCutTacDiff_avgVearly,"H2F_EpdCutTacDiff_avgVearly","#splitline{Epd TAC difference from Average TAC vs. Early TAC}{with cuts 1<nMIP<15 & TAC>50};TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
   }
   
-  loaded += AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
-  loaded += AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
-  loaded += AddH2F(file,mH2F_CluHigh_dggVesum,"H2F_CluHigh_dggVesum","Highest two energy clusters Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
-  loaded += AddH2F(file,mH2F_CluHigh_invmassVesum,"H2F_CluHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_CluHigh_invmassVdgg,"H2F_CluHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_CluHigh_invmassVzgg,"H2F_CluHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
+  loaded += mHists->AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_CluHigh_dggVesum,"H2F_CluHigh_dggVesum","Highest two energy clusters Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVesum,"H2F_CluHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVdgg,"H2F_CluHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVzgg,"H2F_CluHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
 
-  loaded += AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total point energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
-  loaded += AddH2F(file,mH2F_PoiHighEn_lowVhigh,"H2F_PoiHighEn_lowVhigh","Highest two energy points energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
-  loaded += AddH2F(file,mH2F_PoiHigh_dggVesum,"H2F_PoiHigh_dggVesum","Highest two energy points Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total point energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
+  loaded += mHists->AddH2F(file,mH2F_PoiHighEn_lowVhigh,"H2F_PoiHighEn_lowVhigh","Highest two energy points energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_PoiHigh_dggVesum,"H2F_PoiHigh_dggVesum","Highest two energy points Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
+  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
 
   return loaded;
 }
 
 Int_t StMuFcsRun22QaMaker::Init()
 {
-  if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
-  mFileOutput = new TFile(mFileName.Data(), "RECREATE");
+  //LOG_INFO << "StMuFcsRun22QaMaker::Init()" << endm;
+  //if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
+  if( mHists==0 ){
+    LOG_INFO << "StMuFcsRun22QaMaker::Init() - No HistManager specified. Creating a new one with file name StMuFcsRun22Qa.root. Potential conflicts exist if a HistManager exists with same file name" << endm;
+    mHists = new HistManager();
+    mInternalHists = true;
+    mHists->InitFile("StMuFcsRun22Qa.root");
+  }
+  
+  //mFileOutput = mHists->InitFile(); //new TFile(mFileName.Data(), "RECREATE");
   UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
-  SetOwner(kTRUE);
+  mHists->SetOwner(kTRUE);
   LOG_INFO << "StMuFcsRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
   return kStOk;
 }
 
 Int_t StMuFcsRun22QaMaker::InitRun(int runnumber)
 {
+  //LOG_INFO << "StMuFcsRun22QaMaker::InitRun()" << endm;
   mFcsDb = static_cast<StFcsDb*>(GetDataSet("fcsDb"));
   //mFcsDb->setDbAccess(0);
   if (!mFcsDb) {
@@ -248,6 +243,7 @@ Int_t StMuFcsRun22QaMaker::InitRun(int runnumber)
 
 Int_t StMuFcsRun22QaMaker::Make()
 {
+  //LOG_INFO << "StMuFcsRun22QaMaker::Make()" << endm;
   mMuDstMkr = (StMuDstMaker*)GetInputDS("MuDst");
   if( mMuDstMkr==0 ){ LOG_ERROR <<"StMuFcsRun22QaMaker::Make - !MuDstMkr" <<endm; return kStErr; }
   mMuDst = mMuDstMkr->muDst();
@@ -270,28 +266,17 @@ Int_t StMuFcsRun22QaMaker::Make()
   case kStStop: return kStStop;
   }
   //std::cout << "Filled Event" << std::endl;
-  
-  if( mEpdAdcQaOn || mEpdTacQaOn || mEpdTacAdcOn ){
-    mMuEpdHits = 0;
-    mEpdColl = 0;
-    mMuEpdHits = mMuDst->epdHits();
-    if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
-    if( mMuEpdHits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::Make - No MuEPD hits" << endm;
-      mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
-      if( mEpdHitMkr==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
-      else{ mEpdColl = mEpdHitMkr->GetEpdCollection(); }
-      if( mEpdColl==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
-    }
-    Int_t epdstatus = this->FillEpdInfo();
-    switch( epdstatus ){
-    case kStEOF: return kStEOF;
-    case kStErr: return kStErr;
-    case kStFatal: return kStFatal;
-    case kStSkip: return kStSkip;
-    case kStStop: return kStStop;
-    }
+  mMuEpdHits = 0;
+  mEpdColl = 0;
+  mMuEpdHits = mMuDst->epdHits();
+  if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
+  if( mMuEpdHits==0 ){ LOG_INFO << "StMuEpdRun22QaMaker::Make - No MuEPD hits" << endm;
+    mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
+    if( mEpdHitMkr==0 ){ LOG_WARN << "StMuEpdRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
+    else{ mEpdColl = mEpdHitMkr->GetEpdCollection(); }
+    if( mEpdColl==0 ){ LOG_WARN << "StMuEpdRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
   }
-  
+
   Int_t fcsstatus = this->FillFcsInfo();
   switch( fcsstatus ){
   case kStEOF: return kStEOF;
@@ -425,7 +410,7 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	      epdhits = &(mEpdColl->epdHits());
 	      nepdhits = epdhits->size();
 	    }
-	    else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
+	    else{ LOG_ERROR << "StMuFcsRun22QaMaker::FillFcsInfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return kStErr; }
 	    
 	    int fcspp; int fcstt;
 	    mFcsDb->getEPDfromId(idet,hit_id,fcspp,fcstt);
@@ -586,233 +571,26 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 
 Int_t StMuFcsRun22QaMaker::Finish()
 {
+  //LOG_INFO << "StMuFcsRun22QaMaker::Finish()" << endm;
+  TFile* file = mHists->InitFile(); //No arguments just returns the file pointer in #HistManager
+  if( file!=0 ){
+    LOG_INFO << "StMuFcsRun22QaMaker::Finish() - Writing to file:" << file->GetName() << endm;
+    file->cd();
+    mHists->Write();
+    return kStOk;
+  }
+  /*
   if( mFileOutput!=0 ){
     mFileOutput->cd();
     mAllHists->Write();
     return kStOk;
-  }
+    }*/
   else{
     LOG_WARN << "StMuFcsRun22QaMaker::Finish() - No file created because pointer is null" << endm;
     return kStWarn;
   }
 }
 
-Int_t StMuFcsRun22QaMaker::FillEpdInfo()
-{
-  if( mMuEpdHits==0 && mEpdColl==0 ){
-    LOG_WARN << "StMuFcsRun22QaMaker::FillEpdInfo() has no epd hits" << endm;
-    return kStWarn;
-  }
-  unsigned int nepdhits = 0;
-  StSPtrVecEpdHit* epdhits = 0;
-  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
-  else if( mEpdColl!=0 ){
-    epdhits = &(mEpdColl->epdHits());
-    nepdhits = epdhits->size();
-  }
-  else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A SERIOUS BUG IN THE CODE" << endm; return kStErr; }
-  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Fill(nepdhits); }
-  
-  //For processing epd hits
-  //Larger TAC values mean earlier times so a tac of 0 means latest possible time
-  int earliesttace  = 0;  //Stores the largest TAC value in EPD East
-  int earliesttacw  = 0;  //Stores the largest TAC value in EPD West
-  int navgtacw   = 0;     //Number of TAC values summed for EPD West
-  int navgtace   = 0;     //Number of TAC values summed for EPD East
-  double sumtacw = 0;     //Sum of TAC values for EPD West
-  double sumtace = 0;     //Sum of TAC values for EPD East
-
-  int cut_earliesttace  = 0;  //Stores the largest TAC value in EPD East
-  int cut_earliesttacw  = 0;  //Stores the largest TAC value in EPD West
-  int cut_navgtacw   = 0;     //Number of TAC values summed for EPD West
-  int cut_navgtace   = 0;     //Number of TAC values summed for EPD East
-  double cut_sumtacw = 0;     //Sum of TAC values for EPD West
-  double cut_sumtace = 0;     //Sum of TAC values for EPD East
-
-  int nhitwest   = 0;
-  StMuEpdHit* muepdhit = 0;
-  StEpdHit* epdhit = 0;
-  //std::cout << "|mMuEpdHits:"<<mMuEpdHits << "|mEpdColl:"<<mEpdColl << "|epdhits:"<<epdhits << "|nepdhits:"<<nepdhits << std::endl;
-  for(unsigned int i=0; i<nepdhits; ++i ){
-    if( mMuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
-    else if( epdhits!=0 ){ epdhit = (StEpdHit*)((*epdhits)[i]); }
-    else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; } 
-    //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
-    int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
-    int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
-    int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
-    //int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
-    float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();
-    //float adcnmip = 0;
-    //if( nmip>0.0001 ){ adcnmip = static_cast<float>(adc)/nmip; }
-    int tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
-    //std::cout << "|ew:"<<ew << "|pp:"<<epdpp << "|tt:"<<epdtt << "|adc:"<<adc << "|nmip:"<<nmip <<"tac:"<<tac << std::endl
-    if( ew==-1 ){ //This is east side
-      if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[0]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
-      mH2F_HitEpd_nmipVchkey[0]->Fill((epdpp-1)*31+(epdtt-1),nmip);
-      sumtace += tac;
-      ++navgtace;
-      if( tac > earliesttace ){ earliesttace = tac; }
-      if( 1<nmip && nmip<15 && tac>50){
-	cut_sumtace += tac;
-	++cut_navgtace;
-	if( tac > cut_earliesttace ){ cut_earliesttace = tac; }
-      }
-    }
-    if( ew==1 ){ //This is west side
-      if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[1]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
-      mH2F_HitEpd_nmipVchkey[1]->Fill((epdpp-1)*31+(epdtt-1),nmip);
-      sumtacw += tac;
-      ++navgtacw;
-      ++nhitwest;
-      if( tac > earliesttacw ){ earliesttacw = tac; }
-      if( 1<nmip && nmip<15 && tac>50 ){
-	cut_sumtacw += tac;
-	++cut_navgtacw;
-	if( tac > cut_earliesttacw ){ cut_earliesttacw = tac; }
-      }
-    }
-  }// EPD hit loop
-  
-  double avgtace = 0;
-  double avgtacw = 0;
-  double cut_avgtace = 0;
-  double cut_avgtacw = 0;
-  if( navgtace>0 )    { avgtace = sumtace/static_cast<double>(navgtace); }
-  if( navgtacw>0 )    { avgtacw = sumtacw/static_cast<double>(navgtacw); }
-  if( cut_navgtace>0 ){ cut_avgtace = cut_sumtace/static_cast<double>(cut_navgtace); }
-  if( cut_navgtacw>0 ){ cut_avgtacw = cut_sumtacw/static_cast<double>(cut_navgtacw); }
-  
-  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
-
-  //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
-  if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
-  if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Fill(earliesttace,earliesttacw); }
-  //if( mH1F_EpdTacDiff_Early!=0 ) { mH1F_EpdTacDiff_Early->Fill( earliesttacw - earliesttace ); }
-  //if( mH1F_EpdTacDiff_Avg!=0 )   { mH1F_EpdTacDiff_Avg->Fill( avgtacw - avgtace ); }
-  if( mH2F_EpdTacDiff_avgVearly!=0 ){ mH2F_EpdTacDiff_avgVearly->Fill( earliesttacw-earliesttace, avgtacw - avgtace ); }
-
-  //std::cout << "|cut_earlye:"<<cut_earliesttace << "|cut_earlyw:"<<cut_earliesttacw << "|cut_avge:"<<cut_avgtace << "|cut_avgw:"<<cut_avgtacw << std::endl;
-  if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( cut_avgtace,cut_avgtacw  ); }
-  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(cut_earliesttace,cut_earliesttacw); }
-  //if( mH1F_EpdCutTacDiff_Early!=0 ) { mH1F_EpdCutTacDiff_Early->Fill( cut_earliesttacw - cut_earliesttace ); }
-  //if( mH1F_EpdCutTacDiff_Avg!=0 )   { mH1F_EpdCutTacDiff_Avg->Fill( cut_avgtacw - cut_avgtace ); }
-  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){ mH2F_EpdCutTacDiff_avgVearly->Fill( cut_earliesttacw-cut_earliesttace, cut_avgtacw-cut_avgtace ); }
-
-  //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
-  if( cut_avgtace>50 && cut_avgtace>50 ){
-    mH1F_VertexEpd->Fill( (cut_avgtacw-cut_avgtace) * -0.2475 );
-  }
-  //@[Julye 17, 2024] > Using the same logic as BBC since haven't looked at EpdTacDiff histograms, also because EPD has same 15.6ps/TAC as BBC.
-  //@[July 21, 2024]>After looking at TAC differences it seems average with no cuts gives actual results and ADC_Nmip cut tac values do not.
-  //@[July 23, 2024]>Looking at TAC diff don't need to subtract 4096 like we do for BBC
-  return kStOk;
-}
-
-UInt_t StMuFcsRun22QaMaker::AddH1F(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
-{
-  UInt_t status = 0;
-  if( h1!=0 ){
-    //Here I am using bit 22 since that is unused by TH1
-    if( h1->TestBit(22) ){ h1=0; } //It is true that the file was loaded so safe to change pointer without delete
-    else{ mAllHists->Add(h1); return status; } //Object was new so stop and return 0 and re-add to array
-  }
-  if( file!=0 ){ h1 = (TH1F*)file->Get(name); }
-  if( h1==0 ){
-    h1 = new TH1F(name,title,nbins,xlow,xhigh);
-    h1->Sumw2();
-  }
-  else{
-    h1->SetBit(22);
-    ++status;
-  }
-  h1->SetTitle(title);
-  mAllHists->Add(h1);
-  return status;//1 if histogram loaded or exists, 0 otherwise
-}
-
-UInt_t StMuFcsRun22QaMaker::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
-{
-  UInt_t status = 0;
-  for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
-    std::stringstream ss_name;
-    ss_name << name << "_" << iobj;
-    TH1F* h1 = 0;
-    if( file!=0 ){ h1 = (TH1F*)file->Get(ss_name.str().c_str()); }
-    if( h1==0 ){
-      h1 = new TH1F(ss_name.str().c_str(),title,nbins,xlow,xhigh);
-      h1->Sumw2();
-    }
-    else{
-      h1->SetBit(22);
-      ++status;
-    }
-    h1->SetTitle(title);
-    arr->Add(h1);
-    mAllHists->Add(h1);
-  }
-  return status;
-}
-
-UInt_t StMuFcsRun22QaMaker::AddH2F(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
-{
-  UInt_t status = 0;
-  if( h2!=0 ){
-    //Here I am using bit 22 since that is unused by TH1
-    if( h2->TestBit(22) ){ h2=0; } //It is true that the file was loaded so safe to change pointer without delete
-    else{ mAllHists->Add(h2); return status; } //Object was new so stop and return 0 and re-add to array
-  }
-  if( file!=0 ){ h2 = (TH2F*)file->Get(name); }
-  if( h2==0 ){
-    h2 = new TH2F(name,title, nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
-    h2->Sumw2();
-  }
-  else{
-    h2->SetBit(22);
-    ++status;
-  }
-  h2->SetTitle(title);
-  mAllHists->Add(h2);
-  return status;//1 if histogram loaded, 0 if new
-}
-
-UInt_t StMuFcsRun22QaMaker::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
-{
-  UInt_t status = 0;
-  for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
-    std::stringstream ss_name;
-    ss_name << name << "_" << iobj;
-    TH2F* h2 = 0;
-    if( file!=0 ){ h2 = (TH2F*)file->Get(ss_name.str().c_str()); }
-    if( h2==0 ){
-      h2 = new TH2F(ss_name.str().c_str(),title,nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
-      h2->Sumw2();
-    }
-    else{
-      h2->SetBit(22);
-      ++status;
-    }
-    h2->SetTitle(title);
-    arr->Add(h2);
-    mAllHists->Add(h2);
-  }
-  return status; 
-}
-
-/*
-virtual void Paint(Option_t opt="")
-{
-  TString option(opt);
-  option.ToUpper();
-  if( option.Contains("E") ){ PaintEventInfo(); }
-  if( option.Contains("A") ){ PaintAdcVTb(); }
-  if( option.Contains("H") ){ PaintFcsHitQa(); }
-  if( option.Contains("C") ){ PaintFcsClusterQa(); }
-  if( option.Contains("M") ){ PaintFcsClusterPi0(); }
-  if( option.Contains("P") ){ PaintFcsPointQa(); }
-  if( option.Contains("R") ){ PaintFcsPointPi0(); }
-}
-*/
 void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 {
   canv->Clear();
@@ -831,8 +609,8 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   mH1F_BbcTimeDiff->Draw("hist e");
   canv->cd(7)->SetLogy(1);
   mH1F_VertexZdc->Draw("hist e");
-  canv->cd(8);
-  mH1F_VertexEpd->Draw("hist e");
+  //canv->cd(8);
+  //mH1F_VertexEpd->Draw("hist e");
   canv->cd(9);
   mH2F_BxId_7V48->Draw("colz");
   canv->cd(10);
@@ -850,18 +628,18 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 void StMuFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(3,2);
+  canv->Divide(2,2);
   canv->cd(1);
   mH1F_VertexVpd->Draw("hist e");
   canv->cd(2)->SetLogy();
   mH1F_VertexZdc->Draw("hist e");
-  if( mH1F_VertexEpd!=0 ){
+  /*if( mH1F_VertexEpd!=0 ){
     canv->cd(3);
     mH1F_VertexEpd->Draw("hist e");
-  }
-  canv->cd(4);
+    }*/
+  canv->cd(3);
   mH1F_VertexBbc->Draw("hist e");
-  canv->cd(5);
+  canv->cd(4);
   mH1F_BbcTimeDiff->Draw("hist e");
 
   canv->Print(savename);
@@ -988,66 +766,6 @@ void StMuFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-void StMuFcsRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
-{
-  canv->Clear();
-  canv->Divide(2,2);
-  canv->cd(1);
-  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Draw("hist e"); }
-  canv->cd(2);
-  if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Draw("hist e"); }
-  canv->cd(3)->SetLogz(true);
-  if( mH2F_HitEpd_nmipVchkey[0]!=0 ){ mH2F_HitEpd_nmipVchkey[0]->Draw("colz"); }
-  canv->cd(4)->SetLogz(true);
-  if( mH2F_HitEpd_nmipVchkey[1]!=0 ){ mH2F_HitEpd_nmipVchkey[1]->Draw("colz"); }
-  canv->Print(savename);
-}
-
-void StMuFcsRun22QaMaker::DrawEpdTacQa(TCanvas* canv, const char* savename)
-{
-  canv->Clear();
-  canv->Divide(3,2);
-  canv->cd(1)->SetLogz(true);
-  if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Draw("colz"); }
-  canv->cd(2)->SetLogz(true);
-  if( mH2F_Epd_avgwVavge!=0 ){ mH2F_Epd_avgwVavge->Draw("colz"); }
-  if( mH2F_EpdTacDiff_avgVearly!=0 ){
-    canv->cd(3);
-    mH2F_EpdTacDiff_avgVearly->Draw("colz");
-    TH1D* earlytac = ((TH2*)mH2F_EpdTacDiff_avgVearly)->ProjectionX("H1F_EpdTacDiff_early");
-    earlytac->SetTitle("Epd TAC difference from Earliest TAC;TacDiff Early");
-    TH1D* avgtac   = ((TH2*)mH2F_EpdTacDiff_avgVearly)->ProjectionY("H1F_EpdTacDiff_avg");
-    avgtac->SetTitle("Epd TAC difference from Average TAC;TacDiff Avg");
-    canv->cd(4);
-    earlytac->Draw("hist e");
-    canv->cd(5);
-    avgtac->Draw("hist e");    
-  }
-  canv->Print(savename);
-}
-
-void StMuFcsRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
-{
-  canv->Clear();
-  canv->Divide(3,2);
-  canv->cd(1)->SetLogz(true);
-  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Draw("colz"); }
-  canv->cd(2)->SetLogz(true);
-  if( mH2F_EpdCut_avgwVavge!=0 ){ mH2F_EpdCut_avgwVavge->Draw("colz"); }
-  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){
-    canv->cd(3);
-    mH2F_EpdCutTacDiff_avgVearly->Draw("colz");
-    TH1D* earlytac = ((TH2*)mH2F_EpdCutTacDiff_avgVearly)->ProjectionX("H1F_EpdCutTacDiff_early");
-    earlytac->SetTitle("Epd TAC difference from Earliest TAC and 1<nMIP<15 and TAC>50;TacDiff Early");
-    TH1D* avgtac   = ((TH2*)mH2F_EpdCutTacDiff_avgVearly)->ProjectionY("H1F_EpdCutTacDiff_avg");
-    avgtac->SetTitle("Epd TAC difference from Average TAC and 1<nMIP<15 and TAC>50;TacDiff Avg");
-    canv->cd(4);
-    earlytac->Draw("hist e");
-    canv->cd(5);
-    avgtac->Draw("hist e");
-  }
-  canv->Print(savename);
-}
 
 void StMuFcsRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
 {
@@ -1078,31 +796,6 @@ void StMuFcsRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
       }
     }
   }
-}
-
-void StMuFcsRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
-{
-  if( mEpdTacAdcOn || (mH2F_HitEpd_tacVadcmip[0]!=0 && mH2F_HitEpd_tacVadcmip[1]!=0) ){
-    canv->Clear();
-    canv->Divide(5,5);
-    for( UInt_t i=0; i<2; ++i ){
-      for( Int_t ich=0, ipad=1; ich<mH2F_HitEpd_tacVadcmip[i]->GetEntriesFast(); ++ich,++ipad ){
-	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	canv->cd(ipad)->SetLogz(1);
-	((TH1*)mH2F_HitEpd_tacVadcmip[i]->UncheckedAt(ich))->Draw("colz");
-      }
-    }
-  }
-}
-
-void StMuFcsRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
-{
-  DrawEpdHitQa(canv, savename);
-  DrawEpdTacQa( canv, savename);
-  DrawEpdTacCutQa( canv, savename);
-  DrawEpdDepAdcQa( canv, savename);
-  DrawEpdDepTacQa( canv, savename);
-  DrawEpdTacAdcQa( canv, savename);
 }
 
 void StMuFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
