@@ -47,7 +47,16 @@ UInt_t StMuEpdRun22QaMaker::LoadHists(TFile* file)
   UInt_t loaded = 0;
   loaded += mHists->AddH1F(file,mH1F_VertexEpd,"H1F_VertexEpd","Epd Vertex (z);cm",50,-200,200);
   loaded += mHists->AddH1F(file,mH1F_Epd_NHits,"H1F_Epd_NHits","Number of Hits from EPD collection;NHits",500,0,500);
-  loaded += mHists->AddH1F(file,mH1F_Epd_NHitsWest,"H1F_Epd_NHitsWest","Number of Hits form EPD collection (West);NHits",300,0,300);
+  loaded += mHists->AddH1F(file,mH1F_Epd_NHits_Cut,"H1F_Epd_NHits_Cut","Number of Hits from EPD collection with nMIP>0.7;NHits",500,0,500);
+  loaded += mHists->AddH1F(file,mH1F_Epd_NHitsWest,"H1F_Epd_NHitsWest","Number of Hits from EPD collection (West);NHits",300,0,300);
+  loaded += mHists->AddH1F(file,mH1F_Epd_NHitsWest_Cut,"H1F_Epd_NHitsWest_Cut","Number of Hits from EPD collection (West) with nMIP>0.7;NHits",300,0,300);
+
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_vpdVepd,"H2F_VertexZ_vpdVepd","VPD vs. Epd Vertex (z);EPD (z) cm;VPD (z) cm", 50,-200,200, 50,-200,200);
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_zdcVepd,"H2F_VertexZ_zdcVepd","ZDC vs. Epd Vertex (z);EPD (z) cm;ZDC (z) cm", 50,-200,200, 50,-200,200);
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_bbcVepd,"H2F_VertexZ_bbcVepd","BBC vs. Epd Vertex (z);EPD (z) cm;BBC (z) cm", 50,-200,200, 50,-200,200);
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_vpdVbbc,"H2F_VertexZ_vpdVbbc","VPD vs. BBC Vertex (z);BBC (z) cm;VPD (z) cm", 50,-200,200, 50,-200,200);
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_vpdVzdc,"H2F_VertexZ_vpdVzdc","VPD vs. ZDC Vertex (z);ZDC (z) cm;VPD (z) cm", 50,-200,200, 50,-200,200);
+  loaded += mHists->AddH2F(file,mH2F_VertexZ_zdcVbbc,"H2F_VertexZ_zdcVbbc","ZPD vs. BBC Vertex (z);BBC (z) cm;ZDC (z) cm", 50,-200,200, 50,-200,200);
 
   if( mEpdTacAdcOn ){
     mH2F_HitEpd_tacVadcmip[0] = new TObjArray(); //Create new array for east side
@@ -57,15 +66,15 @@ UInt_t StMuEpdRun22QaMaker::LoadHists(TFile* file)
     loaded += mHists->AddH2FArr(file,mH2F_HitEpd_tacVadcmip[1],372,"H2F_HitEpd_tacVadcmip_W","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000 );
   }
 
-  loaded += mHists->AddH2F(file,mH2F_HitEpd_nmipVchkey[0],"H2F_HitEpd_nmipVchkey_E","NMIP values for East EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
-  loaded += mHists->AddH2F(file,mH2F_HitEpd_nmipVchkey[1],"H2F_HitEpd_nmipVchkey_W","NMIP values for West EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,50);
+  loaded += mHists->AddH2F(file,mH2F_HitEpd_nmipVchkey[0],"H2F_HitEpd_nmipVchkey_E","NMIP values for East EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,25);
+  loaded += mHists->AddH2F(file,mH2F_HitEpd_nmipVchkey[1],"H2F_HitEpd_nmipVchkey_W","NMIP values for West EPD channels by key;key ((pp-1)*31+(tt-1));nmip", 372,0,372, 100,0,25);
     
   loaded += mHists->AddH2F(file,mH2F_Epd_earlywVearlye,"H2F_Epd_earlywVearlye","EPD Earliest TAC West vs. East;Earliest East TAC;Earliest West TAC", 421,-10,4200, 421,-10,4200);
   loaded += mHists->AddH2F(file,mH2F_Epd_avgwVavge,"H2F_Epd_avgwVavge","EPD Average TAC West vs. East;Average East TAC;Average West TAC", 200,0,1000, 200,0,1000);
   loaded += mHists->AddH2F(file,mH2F_EpdTacDiff_avgVearly,"H2F_EpdTacDiff_avgVearly","Epd TAC difference from Average TAC vs. Early TAC;TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
     
   loaded += mHists->AddH2F(file,mH2F_EpdCut_earlywVearlye,"H2F_EpdCut_earlywVearlye","EPD Earliest TAC West vs. East with 1<nMIP<15;Earliest East TAC;Earliest West TAC", 300,0,4200, 300,0,4200);
-  loaded += mHists->AddH2F(file,mH2F_EpdCut_avgwVavge,"H2F_EpdCut_avgwVavge","EPD Average TAC West vs. East with 1<nMIP<15;Average East TAC;Average West TAC", 200,0,2000, 200,0,2000);
+  loaded += mHists->AddH2F(file,mH2F_EpdCut_avgwVavge,"H2F_EpdCut_avgwVavge","EPD Average TAC West vs. East with 1<nMIP<15;Average East TAC;Average West TAC", 300,0,4200, 300,0,4200);
   loaded += mHists->AddH2F(file,mH2F_EpdCutTacDiff_avgVearly,"H2F_EpdCutTacDiff_avgVearly","#splitline{Epd TAC difference from Average TAC vs. Early TAC}{with cuts 1<nMIP<15 & TAC>50};TacDiff Early;TacDiff Avg",200,-3000,3000, 200,-3000,3000);
 
   return loaded;
@@ -140,6 +149,21 @@ Int_t StMuEpdRun22QaMaker::Make()
   case kStSkip: return kStSkip;
   case kStStop: return kStStop;
   }
+
+  //Do this after EPD vertex was filled
+  Double_t vpdz = 0;
+  if( mMuDst->btofHeader() ){ vpdz = mMuDst->btofHeader()->vpdVz(); }
+  Double_t zdcz = mTrigData->zdcVertexZ();
+  const float bbcTdiff = mTrigData->bbcTimeDifference() - 4096; //subtract 4096 since 0 means bad event and distribution is Gaussian around 4096
+  Double_t bbcz = 0;
+  if( fabs(bbcTdiff)>1.e-6 ){ bbcz = bbcTdiff * -0.2475; }
+
+  mH2F_VertexZ_vpdVepd->Fill(mEpdVertex,vpdz);
+  mH2F_VertexZ_zdcVepd->Fill(mEpdVertex,zdcz);
+  mH2F_VertexZ_bbcVepd->Fill(mEpdVertex,bbcz);
+  mH2F_VertexZ_vpdVbbc->Fill(bbcz,vpdz);
+  mH2F_VertexZ_vpdVzdc->Fill(zdcz,vpdz);
+  mH2F_VertexZ_zdcVbbc->Fill(bbcz,zdcz);
   
   //std::cout << "Finished Make" << std::endl;
   if( epdstatus==kStWarn ){ return kStWarn; } //Now check if either returned a warning and if so returning warning
@@ -179,6 +203,8 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   double cut_sumtace = 0;     //Sum of TAC values for EPD East
 
   int nhitwest   = 0;
+  int nhitscut = 0;
+  int nhitswestcut = 0;
   StMuEpdHit* muepdhit = 0;
   StEpdHit* epdhit = 0;
   //std::cout << "|mMuEpdHits:"<<mMuEpdHits << "|mEpdColl:"<<mEpdColl << "|epdhits:"<<epdhits << "|nepdhits:"<<nepdhits << std::endl;
@@ -196,6 +222,7 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
     //if( nmip>0.0001 ){ adcnmip = static_cast<float>(adc)/nmip; }
     int tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
     //std::cout << "|ew:"<<ew << "|pp:"<<epdpp << "|tt:"<<epdtt << "|adc:"<<adc << "|nmip:"<<nmip <<"tac:"<<tac << std::endl
+    if( nmip>0.7 ){ ++nhitscut; }
     if( ew==-1 ){ //This is east side
       if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[0]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
       mH2F_HitEpd_nmipVchkey[0]->Fill((epdpp-1)*31+(epdtt-1),nmip);
@@ -209,6 +236,7 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
       }
     }
     if( ew==1 ){ //This is west side
+      if( nmip>0.7 ){ ++nhitswestcut; }
       if( mEpdTacAdcOn ){ ((TH1*)mH2F_HitEpd_tacVadcmip[1]->UncheckedAt( (epdpp-1)*31+(epdtt-1) ))->Fill(nmip,tac); }
       mH2F_HitEpd_nmipVchkey[1]->Fill((epdpp-1)*31+(epdtt-1),nmip);
       sumtacw += tac;
@@ -231,8 +259,10 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   if( navgtacw>0 )    { avgtacw = sumtacw/static_cast<double>(navgtacw); }
   if( cut_navgtace>0 ){ cut_avgtace = cut_sumtace/static_cast<double>(cut_navgtace); }
   if( cut_navgtacw>0 ){ cut_avgtacw = cut_sumtacw/static_cast<double>(cut_navgtacw); }
-  
-  if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
+
+  if( mH1F_Epd_NHits_Cut!=0 ){ mH1F_Epd_NHits_Cut->Fill(nhitscut); }
+  if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
+  if( mH1F_Epd_NHitsWest_Cut!=0 ){ mH1F_Epd_NHitsWest_Cut->Fill(nhitswestcut); }
 
   //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
   if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
@@ -250,8 +280,10 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
 
   //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
   if( cut_avgtace>50 && cut_avgtace>50 ){
-    mH1F_VertexEpd->Fill( (cut_avgtacw-cut_avgtace) * -0.2475 );
+    mEpdVertex = (cut_avgtacw-cut_avgtace) * -0.2475;
+    mH1F_VertexEpd->Fill( mEpdVertex );
   }
+  else{ mEpdVertex = 0; }
   //@[Julye 17, 2024] > Using the same logic as BBC since haven't looked at EpdTacDiff histograms, also because EPD has same 15.6ps/TAC as BBC.
   //@[July 21, 2024]>After looking at TAC differences it seems average with no cuts gives actual results and ADC_Nmip cut tac values do not.
   //@[July 23, 2024]>Looking at TAC diff don't need to subtract 4096 like we do for BBC
@@ -283,25 +315,47 @@ Int_t StMuEpdRun22QaMaker::Finish()
 
 void StMuEpdRun22QaMaker::DrawEpdAllQa(TCanvas* canv, const char* savename)
 {
+  DrawVertex(canv, savename);
   DrawEpdHitQa(canv, savename);
   DrawEpdTacQa( canv, savename);
   DrawEpdTacCutQa( canv, savename);
-  DrawEpdDepAdcQa( canv, savename);
-  DrawEpdDepTacQa( canv, savename);
   DrawEpdTacAdcQa( canv, savename);
+}
+
+void StMuEpdRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(3,2);
+  canv->cd(1);
+  if( mH2F_VertexZ_vpdVepd!=0 ){ mH2F_VertexZ_vpdVepd->Draw("colz"); }
+  canv->cd(2);
+  if( mH2F_VertexZ_zdcVepd!=0 ){ mH2F_VertexZ_zdcVepd->Draw("colz"); }
+  canv->cd(3);
+  if( mH2F_VertexZ_bbcVepd!=0 ){ mH2F_VertexZ_bbcVepd->Draw("colz"); }
+  canv->cd(4);
+  if( mH2F_VertexZ_vpdVbbc!=0 ){ mH2F_VertexZ_vpdVbbc->Draw("colz"); }
+  canv->cd(5);
+  if( mH2F_VertexZ_vpdVzdc!=0 ){ mH2F_VertexZ_vpdVzdc->Draw("colz"); }
+  canv->cd(6);
+  if( mH2F_VertexZ_zdcVbbc!=0 ){ mH2F_VertexZ_zdcVbbc->Draw("colz"); }
+  canv->Print(savename);
 }
 
 void StMuEpdRun22QaMaker::DrawEpdHitQa(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1);
   if( mH1F_Epd_NHits!=0 ){ mH1F_Epd_NHits->Draw("hist e"); }
   canv->cd(2);
-  if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Draw("hist e"); }
+  if( mH1F_Epd_NHits_Cut!=0 ){ mH1F_Epd_NHits_Cut->Draw("hist e"); }
   canv->cd(3)->SetLogz(true);
   if( mH2F_HitEpd_nmipVchkey[0]!=0 ){ mH2F_HitEpd_nmipVchkey[0]->Draw("colz"); }
-  canv->cd(4)->SetLogz(true);
+  canv->cd(4);
+  if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Draw("hist e"); }
+  canv->cd(5);
+  if( mH1F_Epd_NHitsWest_Cut!=0 ){ mH1F_Epd_NHitsWest_Cut->Draw("hist e"); }  
+  canv->cd(6)->SetLogz(true);
   if( mH2F_HitEpd_nmipVchkey[1]!=0 ){ mH2F_HitEpd_nmipVchkey[1]->Draw("colz"); }
   canv->Print(savename);
 }

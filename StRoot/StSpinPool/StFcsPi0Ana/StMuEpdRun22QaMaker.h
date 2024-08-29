@@ -10,6 +10,7 @@
 
   LOG
   @[August 14, 2024] > Copied from StMuFcsRun22QaMaker.h into its own class
+  @[August 29, 2023] > Added some histograms to check the correlation between various vertex methods. Added a variable #mEpdVertex to store the found vertex so it can be retrieved outside the maker if needed. Added a draw function for the vertex histograms. Added multiplicity histograms with cuts on nMIP. Some cleanup.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -78,14 +79,14 @@ class StMuEpdRun22QaMaker : public StMaker
   
   void setEpdTacAdcOn(bool value=true) { mEpdTacAdcOn = value; }
 
-  void DrawEpdAllQa(TCanvas* canv, const char* savename);
-  void DrawVertex(TCanvas* canv, const char* savename);
-  void DrawEpdHitQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacCutQa(TCanvas* canv, const char* savename);
-  void DrawEpdDepAdcQa(TCanvas* canv, const char* savename);
-  void DrawEpdDepTacQa(TCanvas* canv, const char* savename);
-  void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);
+  Double_t epdVertex(){ return mEpdVertex; }
+  
+  void DrawEpdAllQa(TCanvas* canv, const char* savename);      //!< Call all the draw functions in same order as below, should be some kind of pdf as it will encompass many pages
+  void DrawVertex(TCanvas* canv, const char* savename);        //!< Draw 2D vertex correlation histograms, single page
+  void DrawEpdHitQa(TCanvas* canv, const char* savename);      //!< Draw Multiplicty and nMIP histograms, single page
+  void DrawEpdTacQa(TCanvas* canv, const char* savename);      //!< Draw the histograms related to the TAC difference, single page
+  void DrawEpdTacCutQa(TCanvas* canv, const char* savename);   //!< Draw the histograms related to the TAC difference with cuts, single page
+  void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);   //!< Draw the TAC vs. ADC histograms for all channels, savename should be some kind of pdf as it will encompass many pages
 
 protected:
   //UInt_t mEvent;  //Keeps track of number of events
@@ -119,8 +120,18 @@ protected:
   */
   TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
 
+  TH1* mH2F_VertexZ_vpdVepd = 0;      //!< Correlation histogram between VPD z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_zdcVepd = 0;      //!< Correlation histogram between ZDC z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_bbcVepd = 0;      //!< Correlation histogram between BBC z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_vpdVbbc = 0;      //!< Correlation histogram between VPD z vertex vs. the BBC z vertex
+  TH1* mH2F_VertexZ_vpdVzdc = 0;      //!< Correlation histogram between VPD z vertex vs. the ZDC z vertex
+  TH1* mH2F_VertexZ_zdcVbbc = 0;      //!< Correlation histogram between ZDC z vertex vs. the BBC z vertex
+
   TH1* mH1F_Epd_NHits = 0;              //!< Number of hits from EPD collection
+  TH1* mH1F_Epd_NHits_Cut = 0;          //!< Number of hits in EPD with nMIP>0.7
   TH1* mH1F_Epd_NHitsWest = 0;          //!< Number of hits from EPD collection only west side
+  TH1* mH1F_Epd_NHitsWest_Cut = 0;      //!< Number of hits from EPD collection only west side with nMIP>0.7
+
   TH1* mH2F_HitEpd_nmipVchkey[2];        //!< Special for checking nmip of a given channel in the EPD. The "chkey" is (supersector-1)*31+(tileid-1)
   TObjArray* mH2F_HitEpd_tacVadcmip[2]; //!< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
 
@@ -137,6 +148,7 @@ private:
   HistManager* mHists = 0;             //!< Manage loading and saving histograms
   bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
   //TFile* mFileOutput = 0;              //!< For saving histograms not loading
+  Double_t mEpdVertex = 0;             //!< Saved vertex from event
 
   double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
 
