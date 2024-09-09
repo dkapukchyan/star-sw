@@ -134,7 +134,7 @@ Int_t StMuEpdRun22QaMaker::Make()
   mMuEpdHits = 0;
   mEpdColl = 0;
   mMuEpdHits = mMuDst->epdHits();
-  if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
+  if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0; } }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
   if( mMuEpdHits==0 ){ LOG_INFO << "StMuEpdRun22QaMaker::Make - No MuEPD hits" << endm;
     mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
     if( mEpdHitMkr==0 ){ LOG_WARN << "StMuEpdRun22QaMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
@@ -151,11 +151,11 @@ Int_t StMuEpdRun22QaMaker::Make()
   }
 
   //Do this after EPD vertex was filled
-  Double_t vpdz = 0;
+  Double_t vpdz = -999;
   if( mMuDst->btofHeader() ){ vpdz = mMuDst->btofHeader()->vpdVz(); }
   Double_t zdcz = mTrigData->zdcVertexZ();
   const float bbcTdiff = mTrigData->bbcTimeDifference() - 4096; //subtract 4096 since 0 means bad event and distribution is Gaussian around 4096
-  Double_t bbcz = 0;
+  Double_t bbcz = -999;
   if( fabs(bbcTdiff)>1.e-6 ){ bbcz = bbcTdiff * -0.2475; }
 
   mH2F_VertexZ_vpdVepd->Fill(mEpdVertex,vpdz);
@@ -260,9 +260,9 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   if( cut_navgtace>0 ){ cut_avgtace = cut_sumtace/static_cast<double>(cut_navgtace); }
   if( cut_navgtacw>0 ){ cut_avgtacw = cut_sumtacw/static_cast<double>(cut_navgtacw); }
 
-  if( mH1F_Epd_NHits_Cut!=0 ){ mH1F_Epd_NHits_Cut->Fill(nhitscut); }
+  if( mH1F_Epd_NHits_Cut!=0 && nhitscut>0 ){ mH1F_Epd_NHits_Cut->Fill(nhitscut); }
   if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
-  if( mH1F_Epd_NHitsWest_Cut!=0 ){ mH1F_Epd_NHitsWest_Cut->Fill(nhitswestcut); }
+  if( mH1F_Epd_NHitsWest_Cut!=0 && nhitswestcut>0 ){ mH1F_Epd_NHitsWest_Cut->Fill(nhitswestcut); }
 
   //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
   if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
@@ -280,13 +280,14 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
 
   //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
   if( cut_avgtace>50 && cut_avgtace>50 ){
-    mEpdVertex = (cut_avgtacw-cut_avgtace) * -0.2475;
+    mEpdVertex = (cut_avgtacw-cut_avgtace) * 0.2475;
     mH1F_VertexEpd->Fill( mEpdVertex );
   }
-  else{ mEpdVertex = 0; }
+  else{ mEpdVertex = -999; }
   //@[Julye 17, 2024] > Using the same logic as BBC since haven't looked at EpdTacDiff histograms, also because EPD has same 15.6ps/TAC as BBC.
   //@[July 21, 2024]>After looking at TAC differences it seems average with no cuts gives actual results and ADC_Nmip cut tac values do not.
   //@[July 23, 2024]>Looking at TAC diff don't need to subtract 4096 like we do for BBC
+  //@[August 29, 2024]>Looking at BBC vs. EPD vertex correlation with EPD vertex scale factor -0.2475 shows negative correlation so make this positive now. My guess is this negative sign has to do with the fact that the BBC time difference needs to be subtracted by 4096 so maybe there you do need the minus sign.
   return kStOk;
 }
 
@@ -326,17 +327,17 @@ void StMuEpdRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   canv->Divide(3,2);
-  canv->cd(1);
+  canv->cd(1)->SetLogz(true);
   if( mH2F_VertexZ_vpdVepd!=0 ){ mH2F_VertexZ_vpdVepd->Draw("colz"); }
-  canv->cd(2);
+  canv->cd(2)->SetLogz(true);
   if( mH2F_VertexZ_zdcVepd!=0 ){ mH2F_VertexZ_zdcVepd->Draw("colz"); }
-  canv->cd(3);
+  canv->cd(3)->SetLogz(true);
   if( mH2F_VertexZ_bbcVepd!=0 ){ mH2F_VertexZ_bbcVepd->Draw("colz"); }
-  canv->cd(4);
+  canv->cd(4)->SetLogz(true);
   if( mH2F_VertexZ_vpdVbbc!=0 ){ mH2F_VertexZ_vpdVbbc->Draw("colz"); }
-  canv->cd(5);
+  canv->cd(5)->SetLogz(true);
   if( mH2F_VertexZ_vpdVzdc!=0 ){ mH2F_VertexZ_vpdVzdc->Draw("colz"); }
-  canv->cd(6);
+  canv->cd(6)->SetLogz(true);
   if( mH2F_VertexZ_zdcVbbc!=0 ){ mH2F_VertexZ_zdcVbbc->Draw("colz"); }
   canv->Print(savename);
 }

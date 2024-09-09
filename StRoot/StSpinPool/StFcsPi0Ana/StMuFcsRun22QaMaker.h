@@ -28,6 +28,10 @@
 
   @[August 20, 2024] > Got rid of EPD related histgrams and draw functions. Uses new #HistManager class to manage histograms.
   
+  @[September 5, 2024] > Made default vertex -999.
+
+  @[September 6, 2024] > Made changes to add all vertex information to a TGraph but resulted in plots that were hard to read. After finding out only triggers with ID greater than 890000 are production triggers; modfied #mH1F_Triggers to be large enough to hold all these triggers. Each new production trigger increases by 40 from the original number.
+  
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
@@ -46,6 +50,7 @@
 #include "TTree.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TGraphErrors.h"
 
 //STAR Headers
 #include "StEnumerations.h"
@@ -153,6 +158,7 @@ protected:
   virtual Int_t FillFcsInfo();
   
   TH1* mH1F_Entries = 0;              //!< Number of events processed no cuts (i.e. "Make" calls)
+  //TGraphErrors* mG_AllTrigs = 0;              //!< Artically generated with variable bins after filling mTrig map
   TH1* mH1F_Triggers = 0;             //!< Triggers in the events
   TH1* mH1F_VertexPrimZ = 0;          //!< Vertex histograms from Primary Vertex
   TH1* mH1F_VertexVpd = 0;            //!< Vertex histograms from VPD
@@ -217,6 +223,9 @@ private:
   bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
   //TFile* mFileOutput = 0;              //!< For saving histograms not loading
   TRandom3 mSpinRndm;
+  //std::map<unsigned int,long long> mTrigs;        //!< map where key is trigger id and value is the number of times that trigger was fired
+  //void MakeTrigHist();
+  //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that
 
   //Version 2 is when EPD and FCS functionality was separated and is no longer backward compabitible with older generated files. 
   ClassDef(StMuFcsRun22QaMaker,2)

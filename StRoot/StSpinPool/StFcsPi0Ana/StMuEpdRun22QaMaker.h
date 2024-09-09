@@ -10,8 +10,9 @@
 
   LOG
   @[August 14, 2024] > Copied from StMuFcsRun22QaMaker.h into its own class
-  @[August 29, 2023] > Added some histograms to check the correlation between various vertex methods. Added a variable #mEpdVertex to store the found vertex so it can be retrieved outside the maker if needed. Added a draw function for the vertex histograms. Added multiplicity histograms with cuts on nMIP. Some cleanup.
-  
+  @[August 29, 2024] > Added some histograms to check the correlation between various vertex methods. Added a variable #mEpdVertex to store the found vertex so it can be retrieved outside the maker if needed. Added a draw function for the vertex histograms. Added multiplicity histograms with cuts on nMIP. Some cleanup.
+  @[August 30, 2024] > Changed default vertex for all detectors to -999. Modified some drawing options. Small fixes
+   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
@@ -148,7 +149,7 @@ private:
   HistManager* mHists = 0;             //!< Manage loading and saving histograms
   bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
   //TFile* mFileOutput = 0;              //!< For saving histograms not loading
-  Double_t mEpdVertex = 0;             //!< Saved vertex from event
+  Double_t mEpdVertex = -999;             //!< Saved vertex from event
 
   double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
 
