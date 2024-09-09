@@ -12,7 +12,8 @@
   @[August 14, 2024] > Copied from StMuFcsRun22QaMaker.h into its own class
   @[August 29, 2024] > Added some histograms to check the correlation between various vertex methods. Added a variable #mEpdVertex to store the found vertex so it can be retrieved outside the maker if needed. Added a draw function for the vertex histograms. Added multiplicity histograms with cuts on nMIP. Some cleanup.
   @[August 30, 2024] > Changed default vertex for all detectors to -999. Modified some drawing options. Small fixes
-   
+  @[September 9, 2024] > Clean up extraneous code and added #getFileName() for mHists
+  
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
 
@@ -69,14 +70,9 @@ class StMuEpdRun22QaMaker : public StMaker
   virtual Int_t Make();
   virtual Int_t Finish();
 
-  //Machinery to make managing and creating a large number of histograms easier
-  // UInt_t AddH1F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1F(file,h,name,title,nbins,xlow,xhigh); }
-  // UInt_t AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1FArr(file,arr,nobjs,name,title,nbins,xlow,xhigh); }
-  // UInt_t AddH2F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.Add2F(file,h,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
-  // UInt_t AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.AddH2FArr(file,arr,nobjs,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
-
-  virtual UInt_t LoadHists(TFile* file);
+  const char* getFileName(){ if( mHists!=0 ){ return mHists->getFileName(); }else{return 0;} }
   void setHistManager( HistManager* hm );
+  virtual UInt_t LoadHists(TFile* file);
   
   void setEpdTacAdcOn(bool value=true) { mEpdTacAdcOn = value; }
 

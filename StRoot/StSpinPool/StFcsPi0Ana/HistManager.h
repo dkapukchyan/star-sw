@@ -12,7 +12,7 @@
   
   LOG
   @[August 20, 2024] > First instance. It was copied from the relevant parts of #StMuFcsRun22QaMaker.
-
+  @[September 9, 2024] > Added #getFileName()
  */
 
 #ifndef HISTMANAGER_HH
@@ -34,6 +34,7 @@ class HistManager : public TObjArray
 public:
   HistManager();
   virtual ~HistManager();
+  const char* getFileName(){ if( mOutputFile!=0 ){ return mOutputFile->GetName(); }else{return 0;} }
   
   TFile* InitFile(const char* fname = "", Option_t* option = "", const char* ftitle="", Int_t compress=101 ); //!< initialize the file to store all the histograms in
   //Using 101 since *ROOT::RCompressionSetting::EDefaults::kUseCompiledDefault* is not found when including Compression.h and that is what the value is equal to according to ROOT documentation

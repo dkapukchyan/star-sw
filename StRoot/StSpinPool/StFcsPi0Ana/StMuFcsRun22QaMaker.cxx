@@ -18,9 +18,7 @@ ClassImp(StMuFcsRun22QaMaker)
 
 StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 {
-  //mFileName = "";
   mSpinRndm.SetSeed(0);
-  //mAllHists = new TObjArray();
 
   memset(mH2F_Hit_adcVtb,0,sizeof(mH2F_Hit_adcVtb));
   memset(mH2F_Hit_enVid,0,sizeof(mH2F_Hit_enVid));
@@ -52,7 +50,6 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 StMuFcsRun22QaMaker::~StMuFcsRun22QaMaker()
 {
   if( mInternalHists ){ delete mHists; }
-  //delete mFileOutput;
 }
 
 void StMuFcsRun22QaMaker::setHistManager( HistManager* hm )
@@ -87,11 +84,6 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;TrigId",2000,890000,892000);
   //@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that. Loooking at STAR's RunLog Browser I don't see any triggers larger than 892000. For this reason trigger histogram is only showing these Ids.
-  /*if( file!=0 ){
-    mG_AllTrigs = (TGraphErrors*)file->Get("GE_AllTrigs");
-    //mHists->Add(mH1F_AllTrigs);
-    //++loaded;
-    }*/
   
   loaded += mHists->AddH1F(file,mH1F_VertexPrimZ,"H1F_VertexPrimZ","Primary Vertex (z);cm",201,-100.5,100.5);
   loaded += mHists->AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",50,-200,200);
@@ -216,7 +208,6 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 Int_t StMuFcsRun22QaMaker::Init()
 {
   //LOG_INFO << "StMuFcsRun22QaMaker::Init()" << endm;
-  //if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
   if( mHists==0 ){
     LOG_INFO << "StMuFcsRun22QaMaker::Init() - No HistManager specified. Creating a new one with file name StMuFcsRun22Qa.root. Potential conflicts exist if a HistManager exists with same file name" << endm;
     mHists = new HistManager();
@@ -224,7 +215,6 @@ Int_t StMuFcsRun22QaMaker::Init()
     mHists->InitFile("StMuFcsRun22Qa.root");
   }
   
-  //mFileOutput = mHists->InitFile(); //new TFile(mFileName.Data(), "RECREATE");
   UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
   mHists->SetOwner(kTRUE);
   LOG_INFO << "StMuFcsRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
@@ -328,9 +318,6 @@ Int_t StMuFcsRun22QaMaker::FillEventInfo()
   for( Int_t i=0; i<ntrig; ++i ){
     unsigned int trig = trgIDs.triggerId(i);
     mH1F_Triggers->Fill(trig);
-    //std::map<unsigned int,long long>::iterator itr = mTrigs.find(trig);
-    //if( itr==mTrigs.end() ){ std::cout << "|!TrigFound:"<<trig << std::endl; mTrigs[trig]=1; }
-    //else{ itr->second += 1; std::cout << "|TrigFound:"<<trig<< "|Count:"<<itr->second << std::endl; }
   }
 
   //Vertex Information
@@ -593,97 +580,16 @@ Int_t StMuFcsRun22QaMaker::Finish()
   if( file!=0 ){
     LOG_INFO << "StMuFcsRun22QaMaker::Finish() - Writing to file:" << file->GetName() << endm;
     //std::cout << "Writing to File" << std::endl;
-    //MakeTrigHist();
-    //mG_AllTrigs->Write();
     file->cd();
     mHists->Write();
     return kStOk;
   }
-  /*
-  if( mFileOutput!=0 ){
-    mFileOutput->cd();
-    mAllHists->Write();
-    return kStOk;
-    }*/
   else{
     LOG_WARN << "StMuFcsRun22QaMaker::Finish() - No file created because pointer is null" << endm;
     return kStWarn;
   }
 }
 
-/*
-void StMuFcsRun22QaMaker::MakeTrigHist()
-{
-  if( mG_AllTrigs!=0 ){ return; }
-  mG_AllTrigs = new TGraphErrors();
-  mG_AllTrigs->SetNameTitle("GE_AllTrigs","AllTrig;TrigId;Counts");
-  int ipoint = 0;
-  for( std::map<unsigned int,long long>::iterator itr=mTrigs.begin(); itr!=mTrigs.end(); ++itr ){
-    mG_AllTrigs->SetPoint(ipoint,itr->first,itr->second);
-    mG_AllTrigs->SetPointError(ipoint,0,sqrt(itr->second));
-    ++ipoint;
-    }*/
-  /*
-  if( mH1F_AllTrigs!=0 ){ return; }
-  //const int ntrigs = mTrigs.size();
-  std::vector<double> trigs;
-  std::map<int,double> counts; //Bin number to count mapping
-  //std::cout << "|ntrig:"<<ntrigs << std::endl;
-  int tagbin = 1;
-  for( std::map<unsigned int,long long>::iterator itr=mTrigs.begin(); itr!=mTrigs.end(); ++itr ){
-    unsigned int trig = itr->first;
-    //if( trig < 890000 ){ continue; }
-    double dtrig = itr->first;
-    //std::cout << "|trig:"<<itr->first<< "|Count:"<<itr->second << std::endl;
-    if( itr!=mTrigs.begin() ){
-      std::map<unsigned int,long long>::iterator previtr = std::prev(itr);
-      unsigned int prevtrig = previtr->first;
-      std::cout << "|prevtrig:"<<prevtrig << std::endl;
-      if( prevtrig==(trig-1) ){
-	//since last trigger was one less; only need to add the +0.5, since the -0.5 already exists
-	trigs.push_back(dtrig+0.5);
-	//std::cout << "Inside condition "<<tagbin << std::endl;
-	++tagbin; //Intermediate bin is a valid bin
-	counts[tagbin] = itr->second;
-
-	continue;
-      }
-      else{ tagbin+=2; }    //Ignore intermediate bin between new trigger and previous trigger
-    }
-    trigs.push_back(dtrig-0.5);
-    trigs.push_back(dtrig+0.5);
-    //counts[tagbin] = itr->first;
-    counts[tagbin] = itr->second;
-  }
-  trigs.push_back(trigs.back()+1);
-  //std::cout << "|trigsize:"<<trigs.size() << std::endl;
-  //for( unsigned int i=0; i<trigs.size(); ++i ){ printf("i:%i|trig:%.2f\n",i,trigs.at(i)); }
-  if( trigs.size()>0 ){
-    mH1F_AllTrigs = new TH1F( "H1F_AllTrigs","AllTrig;TrigId;Counts", trigs.size()-1, &trigs[0] );
-    mH1F_AllTrigs->Sumw2();
-    mHists->Add(mH1F_AllTrigs);
-    //std::cout << "|nbinsx:"<<mH1F_AllTrigs->GetNbinsX() << std::endl;
-  }
-  //for( std::map<int,double>::iterator itr=counts.begin(); itr!=counts.end(); ++itr ){
-    //std::cout << "|ibin:"<<itr->first << "|counts:"<<itr->second << std::endl;
-  //  for( int j=0; j<itr->second; ++j ){
-  //    mH1F_AllTrigs->Fill();
-  //  }
-    //mH1F_AllTrigs->SetBinContent(itr->first,itr->second);
-    //std::cout << "|Entries:"<<mH1F_AllTrigs->GetEntries() << std::endl;
-  //  }
-  for( std::map<unsigned int,long long>::iterator itr=mTrigs.begin(); itr!=mTrigs.end(); ++itr ){
-    //if( itr->first < 890000 ){ continue; }
-    for( int j=0; j<itr->second; j++ ){
-      mH1F_AllTrigs->Fill(itr->first);
-    }
-  }
-  for( int ibin=0; ibin<=mH1F_AllTrigs->GetNbinsX(); ++ibin ){
-    //printf("ibin:%i|LowEdge:%.2f:Count:%f\n",ibin,mH1F_AllTrigs->GetBinLowEdge(ibin),mH1F_AllTrigs->GetBinContent(ibin));
-    //std::cout <<"|ibin:"<<ibin << "|LowEdge:"<< << std::endl;
-  }
-}
-*/
 void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 {
   canv->Clear();
@@ -693,10 +599,7 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   canv->cd(2);
   mH1F_Triggers->Draw("hist e p");
   canv->cd(3);
-  /*if( mG_AllTrigs!=0 ){
-    //mH1F_AllTrigs->SetStats(0);
-    mG_AllTrigs->Draw("APL*");
-    }*/
+  mH2F_Mult_tofVref->Draw("colz");
   canv->cd(4);
   mH1F_VertexPrimZ->Draw("hist e");
   canv->cd(5);
@@ -707,11 +610,9 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   mH1F_BbcTimeDiff->Draw("hist e");
   canv->cd(8);
   mH1F_VertexZdc->Draw("hist e");
-  //mH1F_VertexEpd->Draw("hist e");
   canv->cd(9);
   mH2F_BxId_7V48->Draw("colz");
   canv->cd(10);
-  //mH2F_Mult_tofVref->Draw("colz");
   TH1* tofmult = ((TH2*)mH2F_Mult_tofVecal)->ProjectionY("tofmult");
   tofmult->SetTitle("TOF Multiplicty");
   tofmult->Draw("hist e");
@@ -730,10 +631,6 @@ void StMuFcsRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
   mH1F_VertexVpd->Draw("hist e");
   canv->cd(2)->SetLogy();
   mH1F_VertexZdc->Draw("hist e");
-  /*if( mH1F_VertexEpd!=0 ){
-    canv->cd(3);
-    mH1F_VertexEpd->Draw("hist e");
-    }*/
   canv->cd(3);
   mH1F_VertexBbc->Draw("hist e");
   canv->cd(4);

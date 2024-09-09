@@ -15,22 +15,15 @@
 
 ClassImp(StMuEpdRun22QaMaker)
 
-
 StMuEpdRun22QaMaker::StMuEpdRun22QaMaker(const char* name):StMaker(name)
 {
-  //mFileName = "";
-  //mAllHists = new TObjArray();
   memset(mH2F_HitEpd_nmipVchkey,0,sizeof(mH2F_HitEpd_nmipVchkey));
-  memset(mH2F_HitEpd_tacVadcmip,0,sizeof(mH2F_HitEpd_tacVadcmip));
-
-  
+  memset(mH2F_HitEpd_tacVadcmip,0,sizeof(mH2F_HitEpd_tacVadcmip));  
 }
 
 StMuEpdRun22QaMaker::~StMuEpdRun22QaMaker()
 {
   if( mInternalHists ){ delete mHists; }
-  //delete mAllHists;
-  //delete mFileOutput;
 }
 
 void StMuEpdRun22QaMaker::setHistManager( HistManager* hm )
@@ -83,16 +76,12 @@ UInt_t StMuEpdRun22QaMaker::LoadHists(TFile* file)
 Int_t StMuEpdRun22QaMaker::Init()
 {
   //LOG_INFO << "StMuEpdRun22QaMaker::Init()" << endm;
-  //if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
   if( mHists==0 ){
     LOG_INFO << "StMuEpdRun22QaMaker::Init() - No HistManager specified. Creating a new one with file name StMuEpdRun22Qa.root. Potential conflicts exist if a HistManager exists with same file name" << endm;
     mHists = new HistManager();
     mInternalHists = true;
     mHists->InitFile("StMuEpdRun22Qa.root");
   }
-
-  //if( mFileName.Length() == 0){ mFileName="test.root"; } //Ensure a TFile is always created
-  //mFileOutput = new TFile(mFileName.Data(), "RECREATE");
   UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
   mHists->SetOwner(kTRUE);
   LOG_INFO << "StMuEpdRun22QaMaker::Init() - Loaded " << totalhists << " histograms" << endm;
@@ -217,9 +206,7 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
     int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
     int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
     //int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
-    float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();
-    //float adcnmip = 0;
-    //if( nmip>0.0001 ){ adcnmip = static_cast<float>(adc)/nmip; }
+    float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();         //The ADC value of the hit divided by the MIP peak position; e.g. if nmip==1 then adc value sits at the MIP peak
     int tac = muepdhit!=0 ? muepdhit->tac() : epdhit->tac();
     //std::cout << "|ew:"<<ew << "|pp:"<<epdpp << "|tt:"<<epdtt << "|adc:"<<adc << "|nmip:"<<nmip <<"tac:"<<tac << std::endl
     if( nmip>0.7 ){ ++nhitscut; }
@@ -267,15 +254,11 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   //std::cout << "|earlye:"<<earliesttace << "|earlyw:"<<earliesttacw << "|avge:"<<avgtace << "|avgw:"<<avgtacw << std::endl;
   if( mH2F_Epd_avgwVavge!=0 )    { mH2F_Epd_avgwVavge->Fill( avgtace,avgtacw  ); }
   if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Fill(earliesttace,earliesttacw); }
-  //if( mH1F_EpdTacDiff_Early!=0 ) { mH1F_EpdTacDiff_Early->Fill( earliesttacw - earliesttace ); }
-  //if( mH1F_EpdTacDiff_Avg!=0 )   { mH1F_EpdTacDiff_Avg->Fill( avgtacw - avgtace ); }
   if( mH2F_EpdTacDiff_avgVearly!=0 ){ mH2F_EpdTacDiff_avgVearly->Fill( earliesttacw-earliesttace, avgtacw - avgtace ); }
 
   //std::cout << "|cut_earlye:"<<cut_earliesttace << "|cut_earlyw:"<<cut_earliesttacw << "|cut_avge:"<<cut_avgtace << "|cut_avgw:"<<cut_avgtacw << std::endl;
   if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( cut_avgtace,cut_avgtacw  ); }
   if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(cut_earliesttace,cut_earliesttacw); }
-  //if( mH1F_EpdCutTacDiff_Early!=0 ) { mH1F_EpdCutTacDiff_Early->Fill( cut_earliesttacw - cut_earliesttace ); }
-  //if( mH1F_EpdCutTacDiff_Avg!=0 )   { mH1F_EpdCutTacDiff_Avg->Fill( cut_avgtacw - cut_avgtace ); }
   if( mH2F_EpdCutTacDiff_avgVearly!=0 ){ mH2F_EpdCutTacDiff_avgVearly->Fill( cut_earliesttacw-cut_earliesttace, cut_avgtacw-cut_avgtace ); }
 
   //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
@@ -301,13 +284,6 @@ Int_t StMuEpdRun22QaMaker::Finish()
     mHists->Write();
     return kStOk;
   }
-  /*
-  if( mFileOutput!=0 ){
-    mFileOutput->cd();
-    mAllHists->Write();
-    return kStOk;
-  }
-  */
   else{
     LOG_WARN << "StMuEpdRun22QaMaker::Finish() - No file created because pointer is null" << endm;
     return kStWarn;
@@ -409,38 +385,6 @@ void StMuEpdRun22QaMaker::DrawEpdTacCutQa(TCanvas* canv, const char* savename)
   canv->Print(savename);
 }
 
-/*
-void StMuEpdRun22QaMaker::DrawEpdDepAdcQa(TCanvas* canv, const char* savename)
-{
-  if( mEpdAdcQaOn || (mH2F_HitPres_depVqt[0]!=0 && mH2F_HitPres_depVqt[1]!=0) ){
-    canv->Clear();
-    canv->Divide(5,5);
-    for( UInt_t i=0; i<2; ++i ){
-      for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_depVqt[i]->GetEntriesFast(); ++ich,++ipad ){
-	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	canv->cd(ipad)->SetLogz(true);
-	((TH1*)mH2F_HitPres_depVqt[i]->UncheckedAt(ich))->Draw("colz");
-      }
-    }
-    canv->Print(savename);
-  }  
-}
-
-void StMuEpdRun22QaMaker::DrawEpdDepTacQa(TCanvas* canv, const char* savename)
-{
-  if( mEpdTacQaOn || (mH2F_HitPres_peakVtac[0]!=0 && mH2F_HitPres_peakVtac[1]!=0) ){
-    canv->Clear();
-    canv->Divide(5,5);
-    for( UInt_t i=0; i<2; ++i ){
-      for( Int_t ich=0, ipad=1; ich<mH2F_HitPres_peakVtac[i]->GetEntriesFast(); ++ich,++ipad ){
-	if( ipad>25 ){ ipad=1; canv->Print(savename); canv->Clear(); canv->Divide(5,5); }
-	canv->cd(ipad);
-	((TH1*)mH2F_HitPres_peakVtac[i]->UncheckedAt(ich))->Draw("colz");
-      }
-    }
-  }
-}
-*/
 void StMuEpdRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
 {
   if( mEpdTacAdcOn || (mH2F_HitEpd_tacVadcmip[0]!=0 && mH2F_HitEpd_tacVadcmip[1]!=0) ){

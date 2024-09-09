@@ -31,6 +31,8 @@
   @[September 5, 2024] > Made default vertex -999.
 
   @[September 6, 2024] > Made changes to add all vertex information to a TGraph but resulted in plots that were hard to read. After finding out only triggers with ID greater than 890000 are production triggers; modfied #mH1F_Triggers to be large enough to hold all these triggers. Each new production trigger increases by 40 from the original number.
+
+  @[September 9, 2024] > Clean up extraneous code and added #getFileName() for #mHists
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -88,23 +90,13 @@ class StMuFcsRun22QaMaker : public StMaker
   virtual Int_t Make();
   virtual Int_t Finish();
 
-  /*
-  //Machinery to make managing and creating a large number of histograms easier
-  UInt_t AddH1F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1F(file,h,name,title,nbins,xlow,xhigh); }
-  UInt_t AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh){ return mHists.AddH1FArr(file,arr,nobjs,name,title,nbins,xlow,xhigh); }
-  UInt_t AddH2F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.Add2F(file,h,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
-  UInt_t AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh){ return mHists.AddH2FArr(file,arr,nobjs,name,title,nbinsx,xlow,xhigh,nbinsy,ylow,yhigh); }
-  */
-
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
   Short_t getRandomSpin(); //!< If <0.5 spin down, if >=0.5 spin up
   static void spinFrom4BitSpin( int spin4bit, int& bpol, int& ypol ); //@[June 3, 2024] > Taken from https://drupal.star.bnl.gov/STAR/blog/oleg/spin-patterns-and-polarization-direction
-  //const char* getFileName(){ return mFileName.Data(); }
   
-  //void setOutFileName(const char* name){ mFileName = name; }
+  const char* getFileName(){ if( mHists!=0 ){ return mHists->getFileName(); }else{return 0;} }
   void setHistManager( HistManager* hm );
-  //TFile* makeFile(const char* fname, Option_t* option = "RECREATE",const char* ftitle="",Int_t compress=ROOT::RCompressionSetting::EDefaults::kUseCompiledDefault){ if( mHists!=0 ){ return mHists->InitFile(fname,option,ftitle,compress); } else{ return 0; } }
   virtual UInt_t LoadHists(TFile* file);
 
   void setFcsAdcTbOn(bool value=true)  { mFcsAdcTbOn = value; }
@@ -133,9 +125,7 @@ class StMuFcsRun22QaMaker : public StMaker
   void DrawFcsPointPi0(TCanvas* canv, const char* savename);
   
 protected:
-  //UInt_t mEvent;  //Keeps track of number of events
-  //int mTrig = -1;   //Found trigger index in vector 'mTargetTrig'
-  //int mXing = 0;    //Bunch Crossing Id
+  //UInt_t mEvent;  //!< Keeps track of number of events
   StMuDstMaker* mMuDstMkr = 0;
   StMuDst* mMuDst = 0;
   StMuEvent* mMuEvent = 0;
@@ -150,22 +140,17 @@ protected:
   StEpdHitMaker* mEpdHitMkr = 0;
   StEpdCollection* mEpdColl = 0;
   
-  //Data to save
-  //TString mFileName;
-  //TFile* mFile_Output = 0; //!< TFile to save all the data
 
   virtual Int_t FillEventInfo();
   virtual Int_t FillFcsInfo();
   
   TH1* mH1F_Entries = 0;              //!< Number of events processed no cuts (i.e. "Make" calls)
-  //TGraphErrors* mG_AllTrigs = 0;              //!< Artically generated with variable bins after filling mTrig map
   TH1* mH1F_Triggers = 0;             //!< Triggers in the events
   TH1* mH1F_VertexPrimZ = 0;          //!< Vertex histograms from Primary Vertex
   TH1* mH1F_VertexVpd = 0;            //!< Vertex histograms from VPD
   TH1* mH1F_VertexBbc = 0;            //!< Vertex histograms from BBC
   TH1* mH1F_BbcTimeDiff = 0;          //!< BBC Time difference used to compute the vertex
   TH1* mH1F_VertexZdc = 0;            //!< Vertex from ZDC
-  //TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
   TH1* mH2F_BxId_7V48 = 0;            //!< Bunch crossing Id 7 bit vs. 48 bit
   TH1* mH2F_Mult_tofVref = 0;         //!< Tof multiplicty vs. Reference multiplicity
   TH1* mH2F_Mult_tofVecal = 0;        //!< Tof multiplicity vs. Fcs Ecal multiplicity
@@ -221,11 +206,7 @@ protected:
 private:
   HistManager* mHists = 0;             //!< Manage loading and saving histograms
   bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
-  //TFile* mFileOutput = 0;              //!< For saving histograms not loading
   TRandom3 mSpinRndm;
-  //std::map<unsigned int,long long> mTrigs;        //!< map where key is trigger id and value is the number of times that trigger was fired
-  //void MakeTrigHist();
-  //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that
 
   //Version 2 is when EPD and FCS functionality was separated and is no longer backward compabitible with older generated files. 
   ClassDef(StMuFcsRun22QaMaker,2)
