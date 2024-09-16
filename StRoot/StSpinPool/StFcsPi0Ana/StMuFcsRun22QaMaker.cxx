@@ -80,10 +80,23 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
   if( mHists==0 ){ return 0; }
   UInt_t loaded = 0;
   loaded += mHists->AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
-  
-  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;TrigId",2000,890000,892000);
+
+  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers",65,0,65);
   //@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that. Loooking at STAR's RunLog Browser I don't see any triggers larger than 892000. For this reason trigger histogram is only showing these Ids.
+  //@[September 13, 2024] > There are a total number of 64 triggers in Run 22. Add an extra bin for any not found
+  //@[September 16, 2024] > Note that if loading this histogram from a file the bin names should already be set so there is no need to set them again
+  if( mFcsTrigMap!=0 ){
+    int trigsize = mFcsTrigMap->sizeOfTriggers();
+    //std::cout << "|trigsize:"<<trigsize << std::endl;
+    if( trigsize==64 ){ //Check to make sure all triggers are in the map and it matches the bin size
+      for( int i=0; i<trigsize; ++i ){
+	//std::cout << "|itrig:"<<i << "|trigname:"<< mFcsTrigMap->triggerName(i) << std::endl;
+	mH1F_Triggers->GetXaxis()->SetBinLabel(i+1,mFcsTrigMap->triggerName(i)); //Bin numbers are offset by 1
+      }
+    }
+    mH1F_Triggers->GetXaxis()->SetBinLabel(65,"NF");  //Last bin is named "NF" for not found which is what nameFromId() returns if trigger is not in the map. This way if no map was loaded but an StFcsRun22TriggerMap was found, searching for triggers will return "NF"
+  }
   
   loaded += mHists->AddH1F(file,mH1F_VertexPrimZ,"H1F_VertexPrimZ","Primary Vertex (z);cm",201,-100.5,100.5);
   loaded += mHists->AddH1F(file,mH1F_VertexVpd,"H1F_VertexVpd","Vpd Vertex (z);cm",50,-200,200);
@@ -208,6 +221,9 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 Int_t StMuFcsRun22QaMaker::Init()
 {
   //LOG_INFO << "StMuFcsRun22QaMaker::Init()" << endm;
+  mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap");
+  if( mFcsTrigMap==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - No Trigger Map found" << endm; }
+  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - Trigger Map is empty" << endm; } }
   if( mHists==0 ){
     LOG_INFO << "StMuFcsRun22QaMaker::Init() - No HistManager specified. Creating a new one with file name StMuFcsRun22Qa.root. Potential conflicts exist if a HistManager exists with same file name" << endm;
     mHists = new HistManager();
@@ -317,7 +333,9 @@ Int_t StMuFcsRun22QaMaker::FillEventInfo()
   Int_t ntrig = trgIDs.triggerIds().size();
   for( Int_t i=0; i<ntrig; ++i ){
     unsigned int trig = trgIDs.triggerId(i);
-    mH1F_Triggers->Fill(trig);
+    //std::cout << "|i:"<<i << "|trig:"<<trig << "|runnum:"<<mMuEvent->runNumber() << "|name:"<<mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber()) << std::endl;
+    if( mFcsTrigMap!=0 ){ mH1F_Triggers->Fill( mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber()),1 ); }
+    else{ mH1F_Triggers->Fill(trig); }
   }
 
   //Vertex Information
@@ -620,6 +638,14 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   mH2F_Mult_tofVecal->Draw("colz");
   canv->cd(12);
   mH1F_Spin->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawTrigger(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->cd()->SetLogy();
+  mH1F_Triggers->Draw("hist e");
   canv->Print(savename);
 }
 

@@ -33,6 +33,8 @@
   @[September 6, 2024] > Made changes to add all vertex information to a TGraph but resulted in plots that were hard to read. After finding out only triggers with ID greater than 890000 are production triggers; modfied #mH1F_Triggers to be large enough to hold all these triggers. Each new production trigger increases by 40 from the original number.
 
   @[September 9, 2024] > Clean up extraneous code and added #getFileName() for #mHists
+
+  @[September 16, 2024] > Added #StFcsRun22TriggerMap to manage looking up Fcs triggers and for generating histogram with named bin labels. Also fills trigger histogram by name not Id. There were 64 FCS triggers in Run 22 and I added a 65th bin called "NF" which is for trigger Ids that are not one of those 64. Also added #DrawTrigger() which just draws the trigger histogram since with the bin names the font is too small in the "Event" histogram
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -78,6 +80,7 @@
 
 //Custom headers in this folder
 #include "HistManager.h"
+#include "StFcsRun22TriggerMap.h"
 
 class StMuFcsRun22QaMaker : public StMaker
 {
@@ -106,6 +109,7 @@ class StMuFcsRun22QaMaker : public StMaker
   //virtual void Paint(Option_t opt="");
   void DrawEventInfo(TCanvas* canv, const char* savename);
 
+  void DrawTrigger(TCanvas* canv, const char* savename);
   void DrawVertex(TCanvas* canv, const char* savename);
   void DrawBxId(TCanvas* canv, const char* savename);
   void DrawFcsHitSingle(TCanvas* canv, unsigned int det, const char* savename);
@@ -134,6 +138,7 @@ protected:
 
   StFcsDb* mFcsDb = 0;
   StMuFcsCollection* mMuFcsColl = 0;
+  StFcsRun22TriggerMap* mFcsTrigMap = 0;
   StSpinDbMaker* mSpinDbMkr = 0;     //!< @[May 27, 2024] > Doesn't have proper spin database simply a placeholder
   //StEpdGeom* mEpdGeo=0;
   TClonesArray* mMuEpdHits = 0;
