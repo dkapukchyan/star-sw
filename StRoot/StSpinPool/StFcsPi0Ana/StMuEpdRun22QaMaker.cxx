@@ -184,8 +184,6 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   double sumtacw = 0;     //Sum of TAC values for EPD West
   double sumtace = 0;     //Sum of TAC values for EPD East
 
-  int cut_earliesttace  = 0;  //Stores the largest TAC value in EPD East
-  int cut_earliesttacw  = 0;  //Stores the largest TAC value in EPD West
   int cut_navgtacw   = 0;     //Number of TAC values summed for EPD West
   int cut_navgtace   = 0;     //Number of TAC values summed for EPD East
   double cut_sumtacw = 0;     //Sum of TAC values for EPD West
@@ -219,7 +217,7 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
       if( 1<nmip && nmip<15 && tac>50){
 	cut_sumtace += tac;
 	++cut_navgtace;
-	if( tac > cut_earliesttace ){ cut_earliesttace = tac; }
+	if( tac > mCutEarliestTacE ){ mCutEarliestTacE = tac; }
       }
     }
     if( ew==1 ){ //This is west side
@@ -233,19 +231,17 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
       if( 1<nmip && nmip<15 && tac>50 ){
 	cut_sumtacw += tac;
 	++cut_navgtacw;
-	if( tac > cut_earliesttacw ){ cut_earliesttacw = tac; }
+	if( tac > mCutEarliestTacW ){ mCutEarliestTacW = tac; }
       }
     }
   }// EPD hit loop
   
   double avgtace = 0;
   double avgtacw = 0;
-  double cut_avgtace = 0;
-  double cut_avgtacw = 0;
   if( navgtace>0 )    { avgtace = sumtace/static_cast<double>(navgtace); }
   if( navgtacw>0 )    { avgtacw = sumtacw/static_cast<double>(navgtacw); }
-  if( cut_navgtace>0 ){ cut_avgtace = cut_sumtace/static_cast<double>(cut_navgtace); }
-  if( cut_navgtacw>0 ){ cut_avgtacw = cut_sumtacw/static_cast<double>(cut_navgtacw); }
+  if( cut_navgtace>0 ){ mCutAvgTacE = cut_sumtace/static_cast<double>(cut_navgtace); }
+  if( cut_navgtacw>0 ){ mCutAvgTacW = cut_sumtacw/static_cast<double>(cut_navgtacw); }
 
   if( mH1F_Epd_NHits_Cut!=0 && nhitscut>0 ){ mH1F_Epd_NHits_Cut->Fill(nhitscut); }
   if( mH1F_Epd_NHitsWest!=0 ){ mH1F_Epd_NHitsWest->Fill(nhitwest); }
@@ -256,14 +252,14 @@ Int_t StMuEpdRun22QaMaker::FillEpdInfo()
   if( mH2F_Epd_earlywVearlye!=0 ){ mH2F_Epd_earlywVearlye->Fill(earliesttace,earliesttacw); }
   if( mH2F_EpdTacDiff_avgVearly!=0 ){ mH2F_EpdTacDiff_avgVearly->Fill( earliesttacw-earliesttace, avgtacw - avgtace ); }
 
-  //std::cout << "|cut_earlye:"<<cut_earliesttace << "|cut_earlyw:"<<cut_earliesttacw << "|cut_avge:"<<cut_avgtace << "|cut_avgw:"<<cut_avgtacw << std::endl;
-  if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( cut_avgtace,cut_avgtacw  ); }
-  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(cut_earliesttace,cut_earliesttacw); }
-  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){ mH2F_EpdCutTacDiff_avgVearly->Fill( cut_earliesttacw-cut_earliesttace, cut_avgtacw-cut_avgtace ); }
+  //std::cout << "|cut_earlye:"<<mCutEarliestTacE << "|cut_earlyw:"<<mCutEarliestTacW << "|cut_avge:"<<mCutAvgTacE << "|cut_avgw:"<<mCutAvgTacW << std::endl;
+  if( mH2F_EpdCut_avgwVavge!=0 )    { mH2F_EpdCut_avgwVavge->Fill( mCutAvgTacE,mCutAvgTacW  ); }
+  if( mH2F_EpdCut_earlywVearlye!=0 ){ mH2F_EpdCut_earlywVearlye->Fill(mCutEarliestTacE,mCutEarliestTacW); }
+  if( mH2F_EpdCutTacDiff_avgVearly!=0 ){ mH2F_EpdCutTacDiff_avgVearly->Fill( mCutEarliestTacW-mCutEarliestTacE, mCutAvgTacW-mCutAvgTacE ); }
 
   //For vertex only fill if the average TAC is >50 which is determined by eye for Run 22
-  if( cut_avgtace>50 && cut_avgtace>50 ){
-    mEpdVertex = (cut_avgtacw-cut_avgtace) * 0.2475;
+  if( mCutAvgTacE>50 && mCutAvgTacE>50 ){
+    mEpdVertex = (mCutAvgTacW-mCutAvgTacE) * 0.2475;
     mH1F_VertexEpd->Fill( mEpdVertex );
   }
   else{ mEpdVertex = -999; }

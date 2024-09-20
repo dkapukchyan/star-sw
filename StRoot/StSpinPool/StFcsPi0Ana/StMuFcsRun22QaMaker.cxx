@@ -81,7 +81,7 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
   UInt_t loaded = 0;
   loaded += mHists->AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
 
-  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers",65,0,65);
+  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;;",65,0,65);
   //@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that. Loooking at STAR's RunLog Browser I don't see any triggers larger than 892000. For this reason trigger histogram is only showing these Ids.
   //@[September 13, 2024] > There are a total number of 64 triggers in Run 22. Add an extra bin for any not found
@@ -614,8 +614,8 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
   canv->Divide(4,3);
   canv->cd(1);
   mH1F_Entries->Draw("hist e");
-  canv->cd(2);
-  mH1F_Triggers->Draw("hist e p");
+  canv->cd(2)->SetLogy();
+  mH1F_Triggers->Draw("hist e");
   canv->cd(3);
   mH2F_Mult_tofVref->Draw("colz");
   canv->cd(4);
@@ -644,7 +644,11 @@ void StMuFcsRun22QaMaker::DrawEventInfo(TCanvas* canv, const char* savename)
 void StMuFcsRun22QaMaker::DrawTrigger(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->cd()->SetLogy();
+  canv->cd();
+  TPad* pad = new TPad("PAD_DRAWTRIGGER","",0,0.08,1,1);
+  pad->SetFillStyle(4000); //Make this pad fully transparent
+  pad->Draw();
+  pad->cd()->SetLogy();
   mH1F_Triggers->Draw("hist e");
   canv->Print(savename);
 }

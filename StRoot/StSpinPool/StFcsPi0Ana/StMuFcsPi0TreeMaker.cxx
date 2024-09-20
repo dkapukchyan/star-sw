@@ -27,37 +27,129 @@
 
 #include "StMuFcsPi0TreeMaker.h"
 
-ClassImp(FcsPi0Info)
+ClassImp(FcsEventInfo);
 
-FcsPi0Info::FcsPi0Info()
+FcsEventInfo::FcsEventInfo()
 {}
 
-FcsPi0Info::~FcsPi0Info()
+FcsEventInfo::~FcsEventInfo()
 {}
+
+/*Not sure if needed below code is not right
+Double_t FcsEventInfo::EpdTacDiffEarly()const
+{
+  if( mEpdEarlyW>50 && mEpdEarlyE>0 ){ return mEpdEarlyW-mEpdEarlyE;}
+  else{ return -999; }
+}
+Double_t FcsEventInfo::EpdTacDiffAvg()const{ return mEpdAvgW-mEpdAvgE; }  
+*/
+
+ClassImp(FcsPhotonCandidate)
+
+FcsPhotonCandidate::FcsPhotonCandidate()
+{}
+
+FcsPhotonCandidate::~FcsPhotonCandidate()
+{}
+
+TLorentzVector FcsPhotonCandidate::lvRaw()
+{
+  TLorentzVector v;
+  v.SetPxPyPzE(mPxRaw,mPyRaw,mPzRaw,mEn);
+  return v;
+}
+
+TLorentzVector FcsPhotonCandidate::lvVert()
+{
+  TLorentzVector v;
+  v.SetPxPyPzE(mPxVert,mPyVert,mPzVert,mEn);
+  return v;
+}
+
+Double_t FcsPhotonCandidate::magPosition()
+{ return sqrt( mX*mX + mY*mY + mZ*mZ ); }
+
+ClassImp(FcsPi0Candidate)
+
+FcsPi0Candidate::FcsPi0Candidate()
+{}
+
+FcsPi0Candidate::~FcsPi0Candidate()
+{}
+
+Double_t FcsPi0Candidate::eta()
+{ if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
+
+Double_t FcsPi0Candidate::phi()
+{ return atan2(mPy,mPx); }
+
+Double_t FcsPi0Candidate::pt()
+{ return sqrt( mPx*mPx + mPy*mPy ); }
+
+Double_t FcsPi0Candidate::ptot()
+{ return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
+
+Double_t FcsPi0Candidate::theta()
+{ return 2.0*atan(exp(-1.0*eta())); }
+
+Double_t FcsPi0Candidate::mass()
+{ return sqrt(mEn*mEn - ptot()*ptot()); }
+
+Double_t FcsPi0Candidate::zgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
+{return fabs(ph1.mEn-ph2.mEn)/(ph1.mEn+ph2.mEn);}
+
+Double_t FcsPi0Candidate::dgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
+{ return sqrt( (ph1.mX-ph2.mX)*(ph1.mX-ph2.mX) + (ph1.mY-ph2.mY)*(ph1.mY-ph2.mY) + (ph1.mZ-ph2.mZ)*(ph1.mZ-ph2.mZ) ); }
+
+Double_t FcsPi0Candidate::alpha(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
+{
+  Double_t ph1dotph2 = ph1.mX*ph2.mX + ph1.mY*ph2.mY + ph1.mZ*ph2.mZ; //dot product of vectors for the current cluster position and cluster j position
+  Double_t ph1mag = ph1.magPosition(); //magnitude of position vector for candidate 1
+  Double_t ph2mag = ph2.magPosition(); //magnitude of position vector for candidate 2
+  return acos( ph1dotph2 / (ph1mag*ph2mag) );
+}
 
 ClassImp(StMuFcsPi0TreeMaker)
 
 StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
-{}
+{
+  mSpinRndm.SetSeed(0);
+  memset(mTriggers,0,sizeof(mTriggers));
+}
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
 {
   delete mH1F_Entries;
+  delete mEvtInfo;
+  delete mPhArr;
   delete mPi0Tree;
   delete mPi0Arr;
+  if( mFile_Output!=0 ){ mFile_Output->Close(); }
   delete mFile_Output;
 }
 
 Int_t StMuFcsPi0TreeMaker::Init()
 {
   if( mFilename.Length() == 0){ mFilename="test.root"; } //Ensure a TFile is always created
-  mFile_Output = new TFile(mFilename.Data(), "RECRATE");
-  mPi0Tree = new TTree("Pi0Tree","Tree with FcsPi0Info");
-  mPi0Arr = new TClonesArray("FcsPi0Info");
+  mFile_Output = new TFile(mFilename.Data(), "RECREATE");
+  mPi0Tree     = new TTree("Pi0Tree","Tree with FcsPi0Candidate");
+  mEvtInfo     = new TClonesArray("FcsEventInfo");
+  mPhArr       = new TClonesArray("FcsPhotonCandidate");
+  mPi0Arr      = new TClonesArray("FcsPi0Candidate");
+
+  mPi0Tree->Branch("EventInfo",&mEvtInfo);
+  mPi0Tree->Branch("TriggerInfo",0,"NTrig/I:Trig[NTrig]/I");
+  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
+  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
+  mPi0Tree->Branch("Photon",&mPhArr);
   mPi0Tree->Branch("Pi0",&mPi0Arr);
   
   mH1F_Entries = new TH1F("H1_Entries", "Number of entries;", 3,-0.5, 2.5);
   mH1F_Entries->Sumw2();
+
+  mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap");
+  if( mFcsTrigMap==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - No Trigger Map found" << endm; }
+  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - Trigger Map is empty" << endm; } }
 
   return kStOk;
 }
@@ -69,7 +161,7 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file, TTree* tree, TClonesArra
   tree = (TTree*)file->Get("Pi0Tree");
   if( tree==0 ){ std::cout << "LoadDataFromFile - ERROR:Pi0Tree not found in file" << std::endl; return; }
   if( arr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TClonesArray pointer" << std::endl; }
-  arr = new TClonesArray("FcsPi0Info");
+  arr = new TClonesArray("FcsPi0Candidate");
   tree->SetBranchAddress("Pi0",&arr);
   if( hist!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TH1 pointer" << std::endl; }
   hist = (TH1*)file->Get("H1_Entries");
@@ -88,18 +180,23 @@ Int_t StMuFcsPi0TreeMaker::InitRun(int runnumber) {
   else{
     LOG_ERROR << "StMuFcsPi0TreeMaker::InitRun - StEpdGeom Exists!" << endm;
     return kStFatal;
-  }  
+  }
+  mEpdQaMkr = (StMuEpdRun22QaMaker*) GetMaker("FcsEpdRun22Qa");
+  if( mEpdQaMkr==0 ){
+    LOG_WARN << "StMuFcsPi0TreeMaker::InitRun - No StMuEpdRun22QaMaker found, EPD vertex information may be missing" << endm;
+  }
   return kStOK;
 }
 
 //-----------------------
-Int_t StMuFcsPi0TreeMaker::Finish() {
-
-  mFile_Output->cd();
-  mPi0Tree->Write();
-  mH1F_Entries->Write();
-  mFile_Output->Close();
-  
+Int_t StMuFcsPi0TreeMaker::Finish()
+{
+  if( mFile_Output!=0 ){
+    mFile_Output->cd();
+    mPi0Tree->Write();
+    mH1F_Entries->Write();
+    //mFile_Output->Close();
+  }
   return kStOK;
 }
 
@@ -117,211 +214,246 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   mRunInfo = &(mMuEvent->runInfo());
   if( mRunInfo==0 ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::Make - !RunInfo" <<endm; return kStErr; }
 
+  mH1F_Entries->Fill(1); //This is just counting valid make calls
+  
+  //Filter with Trigger Information first
+  bool validtrigfound = false;
+  if( mIgnoreTrig ){ validtrigfound = true; } //If ignoring triggers then set validtrigfound to true so event is not skipped
+  StMuTriggerIdCollection* TrigMuColl = &(mMuEvent->triggerIdCollection());
+  if( !TrigMuColl ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
+  const StTriggerId& trgIDs = TrigMuColl->nominal();
+  mNTrig = trgIDs.triggerIds().size();
+  for( Int_t i=0; i<mNTrig; ++i ){
+    unsigned int trig = trgIDs.triggerId(i);
+    mTriggers[i] = trig;
+    if( !mIgnoreTrig ){
+      if( mFcsTrigMap!=0 ){
+	std::string thistrig = mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber());
+	for( unsigned int j=0; j<mTargetTrig.size(); ++j ){
+	  if( mTargetTrig.at(j)==thistrig ){ validtrigfound=true; }
+	}
+      }
+    }
+  }
+  if( !validtrigfound ){ return kStSkip; }
+
+  //Get EPD collection and/or hits
+  mMuEpdHits = 0;
+  mEpdColl = 0;
+  mMuEpdHits = mMuDst->epdHits();
+  if( mMuEpdHits!=0 ){ if( mMuEpdHits->GetEntriesFast()==0 ){mMuEpdHits=0;} }//If mMuEpdHits is not zero but has no hits set it to zero so rest of code processes from StEpdHitMaker
+  if( mMuEpdHits==0 ){ LOG_INFO << "StMuFcsPi0TreeMaker::Make - No MuEPD hits" << endm;
+    mEpdHitMkr = (StEpdHitMaker*)GetMaker("epdHit");
+    if( mEpdHitMkr==0 ){ LOG_WARN << "StMuFcsPi0TreeMaker::Make - No StEpdHitMaker(\"epdHit\")" << endm; }
+    else{ mEpdColl = mEpdHitMkr->GetEpdCollection(); }
+    if( mEpdColl==0 ){ LOG_WARN << "StMuEpdRun22QaMaker::FillFcsInfo - No Epd hit information found" << endm; mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
+  }
+
+  //Fcs Collection
   mMuFcsColl = mMuDst->muFcsCollection();
   if (!mMuFcsColl) { LOG_ERROR << "StMuFcsPi0TreeMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
 
-  mH1F_Entries->Fill(1);
-  /*
-  //TOF mult cut
-  int tofMult = 0;
-  //const StTriggerData* trgdata = event->triggerData();
-  //if(!trgdata && StMuDst::event()) trgdata = StMuDst::event()->triggerData();
-  if(mTrigData){
-    tofMult = mTrigData->tofMultiplicity();
-    LOG_DEBUG<<"TOF mult="<<tofMult<<endm;
-    if (tofMult > 100) return kStOK;
-  }else{
-    LOG_WARN << "No TriggerData found in Mudst. No TOFMult cut"<<endm;
-  }
-
-  //ZVERTEX
-  Double_t zTPC=-999.0;
-  StMuPrimaryVertex* tpcvtx = mMuDst->primaryVertex();
-  if(tpcvtx){ zTPC=tpcvtx->position().z(); }
-  Double_t zVPD = -999.0;     
-  if(mMuDst->btofHeader()){ zVPD=mMuDst->btofHeader()->vpdVz(); }
-  Double_t zBBC=-999.0;
-  if(mTrigData){ zBBC = (4096 - mTrigData->bbcTimeDifference())*0.016*30.0/2.0; }  
+  FcsEventInfo* evtinfo = (FcsEventInfo*) mEvtInfo->ConstructedAt(0);  
+  evtinfo->mRunTime         = mMuEvent->eventInfo().time();
+  evtinfo->mRunNum          = mMuEvent->runNumber();
+  evtinfo->mFill            = mRunInfo->beamFillNumber(StBeamDirection::east);//Yellow beam
+  evtinfo->mEvent           = mMuEvent->eventId();
+  evtinfo->mBx48Id          = mTrigData->bunchId48Bit();
+  evtinfo->mBx7Id           = mTrigData->bunchId7Bit();
+  evtinfo->mTofMultiplicity = mTrigData->tofMultiplicity();
   
-  for (int det = 0; det < 2; det++) {
-    TClonesArray* clusters = mMuFcsColl->getClusterArray();
-    if( clusters!=0 ){
-      int nc = mMuFcsColl->numberOfClusters(det);
-    }
-        
-    for( int iclus=mMuFcsColl->indexOfFirstCluster(det); iclus<nc; iclus++) {
-      if( i == nc-1 ){ break; }
-      StMuFcsCluster* clu = (StMuFcsCluster*)clusters->At(iclus);
-      float clu_energy = clu->energy();
-      float clu_x = clu->x();
-      float clu_y = clu->y();
-      StThreeVectorD cluPos = mFcsDb->getStarXYZfromColumnRow(det, clu_x, clu_y);
-      float cluPos_x = cluPos.x();
-      float cluPos_y = cluPos.y();
-      StThreeVectorD xyz = mFcsDb->getStarXYZfromColumnRow(det, clu_x, clu_y);
-      StLorentzVectorD p = mFcsDb->getLorentzVector((xyz), clu_energy, 0);
-      
-      for( int jclus=iclus+1; jclus<nc; jclus++) {
-	StMuFcsCluster* cluj = (StMuFcsCluster*)clusters->At(jclus);
-	float cluj_energy = cluj->energy();
-	float cluj_x = cluj->x();
-	float cluj_y = cluj->y();
-	StThreeVectorD clujPos = mFcsDb->getStarXYZfromColumnRow(det, cluj_x, cluj_y);
-	
-	float zgg = (fabs(clu_energy - cluj_energy)) / (clu_energy + cluj_energy);
-	StThreeVectorD xyzj = mFcsDb->getStarXYZfromColumnRow(det, cluj->x(), cluj->y());
-	StLorentzVectorD pj = mFcsDb->getLorentzVector((xyzj), cluj->energy(), 0);
-	
-	if ((clu_energy + cluj_energy) > bestclu_totalE) {
-	  check_fillclu = 1;
-	  bestclu_invmass = ((p + pj).m());
-	  
-	  if (zTPC > -999) 
-	    {
-	      StThreeVectorD xyzj_Vtpc = xyzj;
-	      StLorentzVectorD pj_Vtpc = mFcsDb->getLorentzVector((xyzj_Vtpc), cluj_energy, zTPC);
-	      StThreeVectorD xyz_Vtpc = xyz;
-	      StLorentzVectorD p_Vtpc = mFcsDb->getLorentzVector((xyz_Vtpc), clu_energy, zTPC);
-	      bestclu_invmass_Vtpc = ((p_Vtpc + pj_Vtpc).m());
-	      bestclu_invmass_Vz0tpc = bestclu_invmass;
-	    }
-	  if (zBBC > -999) 
-	    {
-	      StThreeVectorD xyzj_Vbbc = xyzj;
-	      StLorentzVectorD pj_Vbbc = mFcsDb->getLorentzVector((xyzj_Vbbc), cluj_energy, zBBC);
-	      StThreeVectorD xyz_Vbbc = xyz;
-	      StLorentzVectorD p_Vbbc = mFcsDb->getLorentzVector((xyz_Vbbc), clu_energy, zBBC);
-	      bestclu_invmass_Vbbc = ((p_Vbbc + pj_Vbbc).m());
-	      if (zTPC > -999) {bestclu_invmass_Vbbctpc = bestclu_invmass_Vbbc;}
-	    }
-	  if (zVPD > -999) 
-	    {
-	      StThreeVectorD xyzj_Vvpd = xyzj;
-	      StLorentzVectorD pj_Vvpd = mFcsDb->getLorentzVector((xyzj_Vvpd), cluj_energy, zVPD);
-	      StThreeVectorD xyz_Vvpd = xyz;
-	      StLorentzVectorD p_Vvpd = mFcsDb->getLorentzVector((xyz_Vvpd), clu_energy, zVPD);
-	      bestclu_invmass_Vvpd = ((p_Vvpd + pj_Vvpd).m());
-	      if (zTPC > -999) {bestclu_invmass_Vvpdtpc = bestclu_invmass_Vvpd;}
-	    }
-	  
-	  bestclu_totalE = (clu_energy + cluj_energy);
-	  bestclu_dgg = (sqrt((xyz[0] - xyzj[0]) * (xyz[0] - xyzj[0]) + (xyz[1] - xyzj[1]) * (xyz[1] - xyzj[1]) + (xyz[2] - xyzj[2]) * (xyz[2] - xyzj[2])));
-	  bestclu_Zgg = fabs((clu_energy - cluj_energy) / (clu_energy + cluj_energy));
-	  bestclu_opening_angle = acos((xyz[0] * xyzj[0] + xyz[1] * xyzj[1] + xyz[2] * xyzj[2]) / (sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) * sqrt(xyzj[0] * xyzj[0] + xyzj[1] * xyzj[1] + xyzj[2] * xyzj[2])));
-	  
-	    int pnti_nTowers = clu->nTowers();
-	    int pntj_nTowers = cluj->nTowers();
-	    TRefArray* clui_hits = clu->hits();
-	    TRefArray* cluj_hits = cluj->hits();
-	    float max_energy_tower = -1;
-	    unsigned short tower_id = 0;
-	    for( int k=0; k<pnti_nTowers; k++ ){
-	      StMuFcsHit* clushit = (StMuFcsHit*)clui_hits->At(k);
-	      if( clushit->energy() > max_energy_tower ){
-		max_energy_tower = clushit->energy();
-		tower_id = clushit->id();
-		best_tower_det_cluster = det;
-	      }
-	    }
-	    best_tower_id1_cluster = tower_id;
-	    max_energy_tower = -1;
-	    for( int k = 0; k<pntj_nTowers; k++){
-	      StMuFcsHit* clushit = (StMuFcsHit*)cluj_hits->At(k);
-	      if( clushit->energy() > max_energy_tower) {
-		max_energy_tower = clushit->energy();
-		tower_id = clushit->id();
-	      }
-	    }
-	    best_tower_id2_cluster = tower_id;
-	  }
-	}
+  //Spin information
+  if( mSpinDbMkr==0 ){
+    Double_t rndm = mSpinRndm.Rndm(); //random number between 0 and 1
+    //The numbers below are chosen for their bit representation as described and correspond to the source polarization. Need to flip to convert it to STAR polarization direction because of the Siberian Snakes; i.e. '+' -> '-' and '-' -> '+'
+    if( rndm<=0.25 ){ evtinfo->mSpin = 5; }                    //Bits 0101 is B+ and Y+
+    else if( 0.25<rndm && rndm<=0.5 ){ evtinfo->mSpin = 6; }   //Bits 0110 is B+ and Y-
+    else if( 0.5<rndm && rndm<=0.75 ){ evtinfo->mSpin = 9; }   //Bits 1001 is B- and Y+
+    else{ evtinfo->mSpin = 10; }                               //Bits 1010 is B- and Y-
+  }
+  else{
+    evtinfo->mSpin = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() ); //This is also source polarization
+  }
+  
+
+  //Vertex Information
+  evtinfo->mVpdVz = -999;
+  if( mMuDst->btofHeader() ){ evtinfo->mVpdVz = mMuDst->btofHeader()->vpdVz(); }
+  //@[April 7, 2021] > No Slewing correction for BBC yet, see StFmsJetMaker2015 in BrightSTAR??
+  evtinfo->mBbcTacDiff = mTrigData->bbcTimeDifference() - 4096; //subtract 4096 since 0 means bad event and distribution is Gaussian around 4096
+  evtinfo->mBbcVz = -999;
+  if( fabs(evtinfo->mBbcTacDiff)>1.e-6 ){ evtinfo->mBbcVz = evtinfo->mBbcTacDiff * -0.2475; } //0.2475 = 0.0165*30/2x
+  //StZdcTriggerDetector& zdc = mMuEvent->zdcTriggerDetector();
+  //std::cout <<"|ZdcV:"<<zdc.vertexZ() << std::endl;
+  evtinfo->mZdcVz =  mTrigData->zdcVertexZ();
+
+  if( mEpdQaMkr!=0 ){
+    evtinfo->mEpdTacEarlyE = mEpdQaMkr->epdTacEarlyE();
+    evtinfo->mEpdTacEarlyW = mEpdQaMkr->epdTacEarlyW();
+    evtinfo->mEpdAvgE = mEpdQaMkr->epdTacAvgE();
+    evtinfo->mEpdAvgW = mEpdQaMkr->epdTacAvgW();
+    evtinfo->mEpdVz = mEpdQaMkr->epdVertex();
+  }
+  else{
+    evtinfo->mEpdVz = -999;
+  }
+
+  short foundvertex = 0;   //Bit vectorfor knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
+  if( evtinfo->mVpdVz > -998){ foundvertex |= 0x001; }
+  else if( evtinfo->mEpdVz > -998 ){ foundvertex |= 0x010; }
+  else if( evtinfo->mBbcVz > -998 ){ foundvertex |= 0x100; }
+  else{ foundvertex = 0; } //Redundant but don't want a dangling "else if" statement
+  evtinfo->mFoundVertex = foundvertex;
+
+  //TClonesArray* hits = mMuFcsColl->getHitArray();
+  //if( hits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
+  TClonesArray* clusters = mMuFcsColl->getClusterArray();
+  if( clusters==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS clusters" << endm; }
+  TClonesArray* points = mMuFcsColl->getPointArray();
+  if( points==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS points" << endm; }
+  
+  //std::cout << "|hits:"<<hits << "|clusters:"<<clusters << "|points:"<<points << std::endl;
+  Int_t ncandidates = 0;
+  if( clusters!=0 ){
+    for( UInt_t idet=0; idet<=kFcsEcalSouthDetId; ++idet ){
+      //std::cout << "+ |idet:"<<idet << "|maxdet:"<<kFcsNDet;
+      unsigned int nc = mMuFcsColl->numberOfClusters(idet);
+      unsigned int iclus=mMuFcsColl->indexOfFirstCluster(idet);
+      nc += iclus;
+      for( ; iclus<nc; ++iclus){
+	StMuFcsCluster* clu = (StMuFcsCluster*)clusters->At(iclus);
+	float iclu_x = clu->x();
+	float iclu_y = clu->y();
+	float iclu_energy = clu->energy();
+	if( iclu_energy<mEnCut ){ continue; }
+
+	StThreeVectorD iclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
+	StLorentzVectorD iclu_p = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
+
+	FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ncandidates++);
+	ph->mFromCluster = true;
+	ph->mDetId = idet;
+	ph->mX = iclu_pos[0];
+	ph->mY = iclu_pos[1];
+	ph->mZ = iclu_pos[2];
+
+	ph->mEn = iclu_energy;
+	ph->mPxRaw = iclu_p.px();
+	ph->mPyRaw = iclu_p.py();
+	ph->mPzRaw = iclu_p.pz();
+
+	StLorentzVectorD iclu_p_withz;
+	if( foundvertex == 0x001 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mVpdVz ); }
+	if( foundvertex == 0x010 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mEpdVz ); }
+	if( foundvertex == 0x100 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mBbcVz ); }
+	ph->mPxVert = foundvertex!=0 ? iclu_p_withz.px() : 0;
+	ph->mPyVert = foundvertex!=0 ? iclu_p_withz.py() : 0;
+	ph->mPzVert = foundvertex!=0 ? iclu_p_withz.pz() : 0;
       }
-    TClonesArray* points = mMuFcsColl->getPointArray();
-    if( points!=0 ){
-      int np = mMuFcsColl->numberOfPoints(det);
-
-      
-      for (int i = mMuFcsColl->indexOfFirstPoint(det); i < np; i++) {
-	StMuFcsPoint* pnt = (StMuFcsPoint*)points->At(i);
-	float pnt_x = pnt->x();
-	float pnt_y = pnt->y();
-	float pnt_energy = pnt->energy();
-	if( pnt_energy > E_min ){ n_EcalPoint_cut++; }
-	StThreeVectorD poiPos = mFcsDb->getStarXYZfromColumnRow(det, pnt_x, pnt_y);
-	float poiPos_x = poiPos.x();
-	float poiPos_y = poiPos.y();
-	h2_point_position->Fill(poiPos_x, poiPos_y);
-	h1_each_point_energy->Fill(pnt_energy);
-	StThreeVectorD xyz = mFcsDb->getStarXYZfromColumnRow(det, pnt_x, pnt_y);
-	StLorentzVectorD p = mFcsDb->getLorentzVector((xyz), pnt_energy, 0);
-	if (i == np - 1) continue;
-	for (int j = i + 1; j < np; j++) {
-	  StMuFcsPoint* pntj = (StMuFcsPoint*)points->At(j);
-	  float pntj_energy = pntj->energy();
-
-	  h1_two_point_energy_nocut->Fill(pnt_energy + pntj_energy);
-	  float zgg = (fabs(pnt_energy - pntj_energy)) / (pnt_energy + pntj_energy);
-	  h1_Zgg_nocut_point->Fill(zgg);
-	  StThreeVectorD xyzj = mFcsDb->getStarXYZfromColumnRow(det, pntj->x(), pntj->y());
-	  StLorentzVectorD pj = mFcsDb->getLorentzVector((xyzj), pntj->energy(), 0);
-	  h1_inv_mass_point_nocut->Fill((p + pj).m());
-
-	  if( pntj->energy() < E_min ){ continue; }
-	  if( zgg >= 0.7 ){ continue; }
-	  if ((pnt_energy + pntj_energy) > bestpnt_totalE) {
-	    check_fillpnt = 1;
-	    bestpnt_invmass = ((p + pj).m());
-	    bestpnt_totalE = (pnt_energy + pntj_energy);
-	    bestpnt_dgg = (sqrt((xyz[0] - xyzj[0]) * (xyz[0] - xyzj[0]) + (xyz[1] - xyzj[1]) * (xyz[1] - xyzj[1]) + (xyz[2] - xyzj[2]) * (xyz[2] - xyzj[2])));
-	    bestpnt_Zgg = fabs((pnt_energy - pntj_energy) / (pnt_energy + pntj_energy));
-	    bestpnt_opening_angle = acos((xyz[0] * xyzj[0] + xyz[1] * xyzj[1] + xyz[2] * xyzj[2]) / (sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) * sqrt(xyzj[0] * xyzj[0] + xyzj[1] * xyzj[1] + xyzj[2] * xyzj[2])));
-	  }
-	}
-      }
-    }
-
-    h1_nCluster->Fill(total_nc);
-    h1_nclu_good->Fill(n_EcalClust_cut);
-    h1_nPoint->Fill(total_np);
-    h1_npoi_good->Fill(n_EcalPoint_cut);
-    h2_EcalMult_vs_TofMult->Fill(tofMult, n_Ecal_cut);
-    if (n_Ecal_cut > 40) { return kStOK; }
-    if (check_fillclu == 1) {
-      h1_inv_mass_cluster->Fill(bestclu_invmass);
-      h1_two_cluster_energy_allcut->Fill(bestclu_totalE);
-      h2_cluster_invmass_vs_dgg->Fill(bestclu_dgg, bestclu_invmass);
-      h2_cluster_invmass_vs_Zgg->Fill(bestclu_Zgg, bestclu_invmass);
-      h1_Zgg_cluster->Fill(bestclu_Zgg);
-      h1_opening_angle_cluster->Fill(bestclu_opening_angle);
-      h1_dgg_cluster->Fill(bestclu_dgg);
-      h2_cluster_dgg_vs_E1pE2->Fill(bestclu_totalE, bestclu_dgg);
-      if (best_tower_det_cluster == 0) {
-	h1list_mass_by_Ntower[best_tower_id1_cluster]->Fill(bestclu_invmass);
-	h1list_mass_by_Ntower[best_tower_id2_cluster]->Fill(bestclu_invmass);
-      }
-      if (best_tower_det_cluster == 1) {
-	h1list_mass_by_Stower[best_tower_id1_cluster]->Fill(bestclu_invmass);
-	h1list_mass_by_Stower[best_tower_id2_cluster]->Fill(bestclu_invmass);
-      }
-      if (bestclu_invmass_Vbbc > -1) {h1_inv_mass_cluster_Vbbc->Fill(bestclu_invmass_Vbbc);}
-      if (bestclu_invmass_Vtpc > -1) {h1_inv_mass_cluster_Vtpc->Fill(bestclu_invmass_Vtpc);}
-      if (bestclu_invmass_Vvpd > -1) {h1_inv_mass_cluster_Vvpd->Fill(bestclu_invmass_Vvpd);}
-      if (bestclu_invmass_Vbbctpc > -1) {h1_inv_mass_cluster_Vbbctpc->Fill(bestclu_invmass_Vbbctpc);}
-      if (bestclu_invmass_Vz0tpc > -1) {h1_inv_mass_cluster_Vz0tpc->Fill(bestclu_invmass_Vz0tpc);}
-      if (bestclu_invmass_Vvpdtpc > -1) {h1_inv_mass_cluster_Vvpdtpc->Fill(bestclu_invmass_Vvpdtpc);}
-    }
-
-    if (check_fillpnt == 1) {
-      h1_inv_mass_point->Fill(bestpnt_invmass);
-      h1_two_point_energy_allcut->Fill(bestpnt_totalE);
-      h2_point_invmass_vs_dgg->Fill(bestpnt_dgg, bestpnt_invmass);
-      h2_point_invmass_vs_Zgg->Fill(bestpnt_Zgg, bestpnt_invmass);
-      h1_Zgg_point->Fill(bestpnt_Zgg);
-      h1_opening_angle_point->Fill(bestpnt_opening_angle);
-      h1_dgg_point->Fill(bestpnt_dgg);
-      h2_point_dgg_vs_E1pE2->Fill(bestpnt_totalE, bestpnt_dgg);
     }
   }
-*/
-  return kStOK;
+  
+  evtinfo->mClusterSize = ncandidates;
+  Int_t clustersize = ncandidates; //local copy of evtinfo->mClusterSize
+  
+  if( points!=0 ){
+    for( UInt_t idet=0; idet<=kFcsEcalSouthDetId; ++idet ){
+      unsigned int np = mMuFcsColl->numberOfPoints(idet);
+      unsigned int ipoint=mMuFcsColl->indexOfFirstPoint(idet);
+      np += ipoint;
+      for( ; ipoint<np; ++ipoint ){
+	StMuFcsPoint* point = (StMuFcsPoint*)points->At(ipoint);
+	float ipoi_x = point->x();
+	float ipoi_y = point->y();
+	float ipoi_energy = point->energy();
+	if( ipoi_energy<mEnCut ){ continue; }
+
+	StThreeVectorD ipoi_pos = mFcsDb->getStarXYZfromColumnRow( idet, ipoi_x, ipoi_y );
+	StLorentzVectorD ipoi_p = mFcsDb->getLorentzVector(ipoi_pos, ipoi_energy, 0);
+
+	FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ncandidates++);
+	ph->mFromCluster = false;
+	ph->mDetId = idet;
+	ph->mX = ipoi_pos[0];
+	ph->mY = ipoi_pos[1];
+	ph->mZ = ipoi_pos[2];
+
+	ph->mEn = ipoi_energy;
+	ph->mPxRaw = ipoi_p.px();
+	ph->mPyRaw = ipoi_p.py();
+	ph->mPzRaw = ipoi_p.pz();
+
+	StLorentzVectorD ipoi_p_withz;
+	if( foundvertex == 0x001 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mVpdVz ); }
+	if( foundvertex == 0x010 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mEpdVz ); }
+	if( foundvertex == 0x100 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mBbcVz ); }
+	ph->mPxVert = foundvertex!=0 ? ipoi_p_withz.px() : 0;
+	ph->mPyVert = foundvertex!=0 ? ipoi_p_withz.py() : 0;
+	ph->mPzVert = foundvertex!=0 ? ipoi_p_withz.pz() : 0;
+	
+      }//i point
+    }//fcs dets
+  }
+
+  Int_t npi0candidate = 0;
+  for( Int_t ic = 0; ic<clustersize; ++ic ){
+    FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ic);
+    if( ! iclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
+    if( ic==(clustersize-1) ){ continue; }
+    for( Int_t jc=ic+1; jc<evtinfo->mClusterSize; jc++ ){
+      FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jc);
+      if( ! jclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
+      FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+      pi0c->mFromCluster = true;
+      pi0c->mPhoton1Idx = ic;
+      pi0c->mPhoton2Idx = jc;
+
+      TLorentzVector pi0Vert_LV = iclus->lvVert() + jclus->lvVert();
+      pi0c->mPx = pi0Vert_LV.Px();
+      pi0c->mPy = pi0Vert_LV.Py();
+      pi0c->mPz = pi0Vert_LV.Pz();
+      pi0c->mEn = pi0Vert_LV.E();
+
+      pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+      pi0c->mDgg     = FcsPi0Candidate::dgg(*iclus,*jclus);
+      pi0c->mZgg     = FcsPi0Candidate::zgg(*iclus,*jclus);
+      pi0c->mAlpha   = FcsPi0Candidate::alpha(*iclus,*jclus);
+      pi0c->mInvMass = pi0Vert_LV.Mag();
+    }
+  }
+  for( Int_t ip = clustersize; ip<mPhArr->GetEntriesFast(); ++ip ){
+    FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ip);
+    if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
+    if( ip==(clustersize-1) ){ continue; }
+    for( Int_t jp=ip+1; jp<evtinfo->mClusterSize; jp++ ){
+      FcsPhotonCandidate* jpoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jp);
+      if( jpoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
+      FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+      pi0c->mFromCluster = false;
+      pi0c->mPhoton1Idx = ip;
+      pi0c->mPhoton2Idx = jp;
+
+      TLorentzVector pi0Vert_LV = ipoi->lvVert() + jpoi->lvVert();
+      pi0c->mPx = pi0Vert_LV.Px();
+      pi0c->mPy = pi0Vert_LV.Py();
+      pi0c->mPz = pi0Vert_LV.Pz();
+      pi0c->mEn = pi0Vert_LV.E();
+
+      pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+      pi0c->mDgg     = FcsPi0Candidate::dgg(*ipoi,*jpoi);
+      pi0c->mZgg     = FcsPi0Candidate::zgg(*ipoi,*jpoi);
+      pi0c->mAlpha   = FcsPi0Candidate::alpha(*ipoi,*jpoi);
+      pi0c->mInvMass = pi0Vert_LV.Mag();
+    }
+  }
+
+  mPi0Tree->Fill();
+
+  mEvtInfo->Clear();
+  mNTrig = 0; //Since ROOT only writes up to the size of mNTrig then only need to reset this back to zero and next loop will overwrite array as neccessary
+  mPhArr->Clear();
+  mPi0Arr->Clear();
+    
+  return kStOk;
 }
+

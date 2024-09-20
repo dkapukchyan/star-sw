@@ -13,6 +13,7 @@
   @[August 29, 2024] > Added some histograms to check the correlation between various vertex methods. Added a variable #mEpdVertex to store the found vertex so it can be retrieved outside the maker if needed. Added a draw function for the vertex histograms. Added multiplicity histograms with cuts on nMIP. Some cleanup.
   @[August 30, 2024] > Changed default vertex for all detectors to -999. Modified some drawing options. Small fixes
   @[September 9, 2024] > Clean up extraneous code and added #getFileName() for mHists
+  @[September 18, 2024] > Made the variables related to computing the vertex members of the class and added get functions for them
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -76,7 +77,11 @@ class StMuEpdRun22QaMaker : public StMaker
   
   void setEpdTacAdcOn(bool value=true) { mEpdTacAdcOn = value; }
 
-  Double_t epdVertex(){ return mEpdVertex; }
+  Int_t epdTacEarlyE(){ return mCutEarliestTacE; }
+  Int_t epdTacEarlyW(){ return mCutEarliestTacW; }
+  Double_t epdTacAvgE()  { return mCutAvgTacE; }
+  Double_t epdTacAvgW()  { return mCutAvgTacW; }
+  Double_t epdVertex()   { return mEpdVertex; }
   
   void DrawEpdAllQa(TCanvas* canv, const char* savename);      //!< Call all the draw functions in same order as below, should be some kind of pdf as it will encompass many pages
   void DrawVertex(TCanvas* canv, const char* savename);        //!< Draw 2D vertex correlation histograms, single page
@@ -86,9 +91,6 @@ class StMuEpdRun22QaMaker : public StMaker
   void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);   //!< Draw the TAC vs. ADC histograms for all channels, savename should be some kind of pdf as it will encompass many pages
 
 protected:
-  //UInt_t mEvent;  //Keeps track of number of events
-  //int mTrig = -1;   //Found trigger index in vector 'mTargetTrig'
-  //int mXing = 0;    //Bunch Crossing Id
   StMuDstMaker* mMuDstMkr = 0;
   StMuDst* mMuDst = 0;
   StMuEvent* mMuEvent = 0;
@@ -142,10 +144,14 @@ protected:
   bool mEpdTacAdcOn = true;            //!< For turning on/off TAC vs. ADC histograms for all EPD channels
 
 private:
-  HistManager* mHists = 0;             //!< Manage loading and saving histograms
+  HistManager* mHists = 0;            //!< Manage loading and saving histograms
   bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
-  //TFile* mFileOutput = 0;              //!< For saving histograms not loading
-  Double_t mEpdVertex = -999;             //!< Saved vertex from event
+  //TFile* mFileOutput = 0;           //!< For saving histograms not loading
+  Double_t mEpdVertex = -999;         //!< Saved vertex from event
+  Int_t mCutEarliestTacE  = 0;        //!< Stores the largest found TAC value in EPD East with cuts
+  Int_t mCutEarliestTacW  = 0;        //!< Stores the largest found TAC value in EPD West with cuts
+  Double_t mCutAvgTacE = 0;           //!< Stores the average TAC value in EPD East with cuts
+  Double_t mCutAvgTacW = 0;           //!< Stores the average TAC value in EPD West with cuts
 
   double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
 
