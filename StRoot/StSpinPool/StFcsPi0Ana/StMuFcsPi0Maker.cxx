@@ -330,9 +330,9 @@ Int_t StMuFcsPi0Maker::Make() {
 
       TClonesArray* hits = mMuFcsColl->getHitArray();
       int nh = mMuFcsColl->numberOfHits(det);
-      std::cout << " - Number of hits:" << nh << std::endl;
-      std::cout << " + Number of clusters:" << nc <<"|total_nc:"<<total_nc << std::endl;
-      std::cout << " + Number of number of points:" << np << std::endl;
+      //std::cout << " - Number of hits:" << nh << std::endl;
+      //std::cout << " + Number of clusters:" << nc <<"|total_nc:"<<total_nc << std::endl;
+      //std::cout << " + Number of number of points:" << np << std::endl;
       if (mDebug > 0) LOG_INFO << Form("StFcsEventDisplay Det=%1d nhit=%4d nclu=%3d", det, nh, nc) << endm;
 
       for (int i = mMuFcsColl->indexOfFirstHit(det); i < nh; i++) {

@@ -27,88 +27,6 @@
 
 #include "StMuFcsPi0TreeMaker.h"
 
-ClassImp(FcsEventInfo);
-
-FcsEventInfo::FcsEventInfo()
-{}
-
-FcsEventInfo::~FcsEventInfo()
-{}
-
-/*Not sure if needed below code is not right
-Double_t FcsEventInfo::EpdTacDiffEarly()const
-{
-  if( mEpdEarlyW>50 && mEpdEarlyE>0 ){ return mEpdEarlyW-mEpdEarlyE;}
-  else{ return -999; }
-}
-Double_t FcsEventInfo::EpdTacDiffAvg()const{ return mEpdAvgW-mEpdAvgE; }  
-*/
-
-ClassImp(FcsPhotonCandidate)
-
-FcsPhotonCandidate::FcsPhotonCandidate()
-{}
-
-FcsPhotonCandidate::~FcsPhotonCandidate()
-{}
-
-TLorentzVector FcsPhotonCandidate::lvRaw()
-{
-  TLorentzVector v;
-  v.SetPxPyPzE(mPxRaw,mPyRaw,mPzRaw,mEn);
-  return v;
-}
-
-TLorentzVector FcsPhotonCandidate::lvVert()
-{
-  TLorentzVector v;
-  v.SetPxPyPzE(mPxVert,mPyVert,mPzVert,mEn);
-  return v;
-}
-
-Double_t FcsPhotonCandidate::magPosition()
-{ return sqrt( mX*mX + mY*mY + mZ*mZ ); }
-
-ClassImp(FcsPi0Candidate)
-
-FcsPi0Candidate::FcsPi0Candidate()
-{}
-
-FcsPi0Candidate::~FcsPi0Candidate()
-{}
-
-Double_t FcsPi0Candidate::eta()
-{ if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
-
-Double_t FcsPi0Candidate::phi()
-{ return atan2(mPy,mPx); }
-
-Double_t FcsPi0Candidate::pt()
-{ return sqrt( mPx*mPx + mPy*mPy ); }
-
-Double_t FcsPi0Candidate::ptot()
-{ return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
-
-Double_t FcsPi0Candidate::theta()
-{ return 2.0*atan(exp(-1.0*eta())); }
-
-Double_t FcsPi0Candidate::mass()
-{ return sqrt(mEn*mEn - ptot()*ptot()); }
-
-Double_t FcsPi0Candidate::zgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
-{return fabs(ph1.mEn-ph2.mEn)/(ph1.mEn+ph2.mEn);}
-
-Double_t FcsPi0Candidate::dgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
-{ return sqrt( (ph1.mX-ph2.mX)*(ph1.mX-ph2.mX) + (ph1.mY-ph2.mY)*(ph1.mY-ph2.mY) + (ph1.mZ-ph2.mZ)*(ph1.mZ-ph2.mZ) ); }
-
-Double_t FcsPi0Candidate::alpha(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
-{
-  Double_t ph1dotph2 = ph1.mX*ph2.mX + ph1.mY*ph2.mY + ph1.mZ*ph2.mZ; //dot product of vectors for the current cluster position and cluster j position
-  Double_t ph1mag = ph1.magPosition(); //magnitude of position vector for candidate 1
-  Double_t ph2mag = ph2.magPosition(); //magnitude of position vector for candidate 2
-  return acos( ph1dotph2 / (ph1mag*ph2mag) );
-}
-
 ClassImp(StMuFcsPi0TreeMaker)
 
 StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
@@ -119,10 +37,10 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
 {
+  delete mPi0Tree;
   delete mH1F_Entries;
   delete mEvtInfo;
   delete mPhArr;
-  delete mPi0Tree;
   delete mPi0Arr;
   if( mFile_Output!=0 ){ mFile_Output->Close(); }
   delete mFile_Output;
@@ -143,6 +61,8 @@ Int_t StMuFcsPi0TreeMaker::Init()
   ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
   mPi0Tree->Branch("Photon",&mPhArr);
   mPi0Tree->Branch("Pi0",&mPi0Arr);
+
+  //std::cout << "|mEvtInfo:"<<mEvtInfo << "|bEvtInfo:"<< mPi0Tree->GetBranch("EventInfo")->GetAddress() << std::endl;
   
   mH1F_Entries = new TH1F("H1_Entries", "Number of entries;", 3,-0.5, 2.5);
   mH1F_Entries->Sumw2();
@@ -195,14 +115,12 @@ Int_t StMuFcsPi0TreeMaker::Finish()
     mFile_Output->cd();
     mPi0Tree->Write();
     mH1F_Entries->Write();
-    //mFile_Output->Close();
   }
   return kStOK;
 }
 
 //----------------------
 Int_t StMuFcsPi0TreeMaker::Make() {
-
   mMuDstMkr = (StMuDstMaker*)GetInputDS("MuDst");
   if( mMuDstMkr==0 ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::Make - !MuDstMkr" <<endm; return kStErr; }
   mMuDst = mMuDstMkr->muDst();
@@ -261,6 +179,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   evtinfo->mBx48Id          = mTrigData->bunchId48Bit();
   evtinfo->mBx7Id           = mTrigData->bunchId7Bit();
   evtinfo->mTofMultiplicity = mTrigData->tofMultiplicity();
+
+  //std::cout << "|runtime:"<<evtinfo->mRunTime << "|runnum:"<<evtinfo->mRunNum << "|event:"<<evtinfo->mEvent << std::endl;
   
   //Spin information
   if( mSpinDbMkr==0 ){
@@ -342,6 +262,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mPyRaw = iclu_p.py();
 	ph->mPzRaw = iclu_p.pz();
 
+	//std::cout << "Cluster|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
+
 	StLorentzVectorD iclu_p_withz;
 	if( foundvertex == 0x001 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mVpdVz ); }
 	if( foundvertex == 0x010 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mEpdVz ); }
@@ -390,11 +312,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mPxVert = foundvertex!=0 ? ipoi_p_withz.px() : 0;
 	ph->mPyVert = foundvertex!=0 ? ipoi_p_withz.py() : 0;
 	ph->mPzVert = foundvertex!=0 ? ipoi_p_withz.pz() : 0;
+
+	//std::cout << "Point|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
 	
       }//i point
     }//fcs dets
   }
 
+  //std::cout << "|ncandidates:"<<ncandidates <<"|clustersize:"<<clustersize <<"|Size:"<<mPhArr->GetEntriesFast() << std::endl;
   Int_t npi0candidate = 0;
   for( Int_t ic = 0; ic<clustersize; ++ic ){
     FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ic);
@@ -419,13 +344,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       pi0c->mZgg     = FcsPi0Candidate::zgg(*iclus,*jclus);
       pi0c->mAlpha   = FcsPi0Candidate::alpha(*iclus,*jclus);
       pi0c->mInvMass = pi0Vert_LV.Mag();
+      //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|clustermass:"<<pi0c->mInvMass <<  std::endl;
     }
   }
   for( Int_t ip = clustersize; ip<mPhArr->GetEntriesFast(); ++ip ){
     FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ip);
     if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
-    if( ip==(clustersize-1) ){ continue; }
-    for( Int_t jp=ip+1; jp<evtinfo->mClusterSize; jp++ ){
+    if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
+    for( Int_t jp=ip+1; jp<mPhArr->GetEntriesFast(); jp++ ){
       FcsPhotonCandidate* jpoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jp);
       if( jpoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
       FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
@@ -444,6 +370,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       pi0c->mZgg     = FcsPi0Candidate::zgg(*ipoi,*jpoi);
       pi0c->mAlpha   = FcsPi0Candidate::alpha(*ipoi,*jpoi);
       pi0c->mInvMass = pi0Vert_LV.Mag();
+      //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
     }
   }
 
