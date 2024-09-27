@@ -10,7 +10,7 @@ StFcsRun22TriggerMap::TrigRange::TrigRange()
   mEndRun = 0;
 }
 
-StFcsRun22TriggerMap::TrigRange::TrigRange(const char* name, UInt_t trigid, Int_t startrun, Int_t endrun)
+StFcsRun22TriggerMap::TrigRange::TrigRange(const char* name, Int_t trigid, Int_t startrun, Int_t endrun)
 {
   mName = name;
   mOfflineTrigId = trigid;
@@ -60,7 +60,7 @@ void StFcsRun22TriggerMap::readTxtFile(const char* filename)
   }
 }
 
-const char* StFcsRun22TriggerMap::nameFromId(UInt_t trigidtomatch, Int_t runnumber) const
+const char* StFcsRun22TriggerMap::nameFromId(Int_t trigidtomatch, Int_t runnumber) const
 {
   auto founditr = mAllTrigRanges.find(trigidtomatch);
   if( founditr==mAllTrigRanges.end() ){ return "NF"; }

@@ -13,6 +13,8 @@
 
   @[September 21, 2024] > Changed the comment style from Doxygen friendly to ROOT friendly so that the variables show up in the dictionary. This means changing __//!<__  to __///<__ according to [here](https://root.cern/for_developers/doxygen/)
 
+  @[September 26, 2024] > Added #BlueSpin() and #YellowSpin() to #FcsEventInfo to correctly get the blue and yellow beam polarization from the #mSpin. Implemented #FcsEventInfo::Clear() and #FcsEventInfo::Print() as well as #FcsPhotonCandidate::Clear(), #FcsPhotonCandidate::Print(), #FcsPi0Candidate::Clear(), and #FcsPi0Candidate::Print(). Also added comparison functions to #FcsPi0Candidate so that they can be sorted in the #TClonesArray in #StMuFcsPi0TreeMaker. They will be sorted by their distance to the known pi0 mass; e.g. a pi0 candidate with mass 0.14 is less than a candidate with mass 0.1 because 0.14 is closer to the knwon pi0 mass. Added static const #FcsPi0Candidate::Pi0Mass() to just return the mass of the pi0 particle.
+
 */
 
 
@@ -44,7 +46,9 @@ public:
   Int_t mBx48Id = -1;        ///< 48 bit bunch Id for event
   Int_t mBx7Id = -1;         ///< 7 bit bunch Id for event
   UShort_t mSpin = 0;        ///< [Spin bit, this is source polarization](https://drupal.star.bnl.gov/STAR/blog/oleg/spin-patterns-and-polarization-direction)
-  Short_t spinFrom4BitSpin(); ///< Correctly accounts for the spin flip when working with STAR data
+  //Short_t spinFrom4BitSpin(); ///< Correctly accounts for the spin flip when working with STAR data
+  Short_t BlueSpin();        ///< Blue beam polarization at STAR +1 for B+ and -1 for B-
+  Short_t YellowSpin();      ///< Yelllow beam polarization at STAR +1 for Y+ and -1 for Y-
 
   Int_t mTofMultiplicity = -1; ///< TOF Multiplicity
   
@@ -63,8 +67,9 @@ public:
 
   //This will be used to indicate how many clusters are in the #TClonesArray of #FcsPhotonCandidate. Everything from this number to the size of the array will be points for a given detector Id. I did it this way so I don't have to create a separate branch holding these two numbers and there should only be one #FcsEventInfo object. Also, didn't want a seperate class for clusters and points since they will store the same information. It is kind of a hack since I know that I am only looping up to detector id 2.
   Int_t mClusterSize = 0;       ///< Size of clusters in #mPhArr in #StMuFcsPi0TreeMaker. This means 0 to <#mClusterSize is cluster photon candidates
-  //Int_t mPointSizeDet0   = 0;   ///< Size of points for detectorid 0.This means from (including) #mClusterSizeDet0 to <#mPointSizeDet0 is points for detector id 0
-  //Int_t mClusterSizeDet1 = 0;   ///< Size of clusters for detector id 1 (Ecal South). This means from (including) #mPointSizeDet0 to <#ClusterSizeDet1 is clusters for detector id 1.
+
+  virtual void Clear(Option_t* opt="");          ///< Resets all variables to default
+  virtual void Print(Option_t* opt="") const;    ///< Prints all values no options
 
   ClassDef( FcsEventInfo, 1 )
 };
@@ -97,6 +102,9 @@ public:
   TLorentzVector lvRaw();        ///< TLorentz vector for this condidate with 0,0,0 vertex momentum
   TLorentzVector lvVert();       ///< TLorentz vector for this candidate with vertex momentum
   Double_t magPosition();        ///< Magnitude of postiion vector i.e. sqrt(#mX^2+#mY^2+#mZ^2)
+
+  virtual void Clear(Option_t* opt="");          ///< Resets all variables to defaults
+  virtual void Print(Option_t* opt="") const;    ///< Print all variables no options
 
   ClassDef( FcsPhotonCandidate, 1 )
 };
@@ -137,6 +145,16 @@ public:
   static Double_t zgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2);        ///< Energy asymmetry of pi0
   static Double_t dgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2);        ///< Distance between the two particles (cm)
   static Double_t alpha(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2);      ///< Opening angle of the two photons
+
+  static const Double_t Pi0Mass(){ return 0.13498; }
+
+  //@[September 26, 2024] > [Need these three functions so that TClonesArray can sort your object](https://root-forum.cern.ch/t/sort-a-tclonesarray/38056)
+  virtual Bool_t IsSortable() const {return kTRUE; }  ///< I guess this is flag to indicate to ROOT that object is sortable
+  virtual Bool_t IsEqual(const TObject* obj) const;   ///< if both are equal to pi0 mass then return true otherwise false 
+  virtual Int_t Compare(const TObject* obj) const;    ///< -1 if distance to pi0 mass of this object is less than the other's distance, 1 if it is greater than, 0 otherwise
+
+  virtual void Clear(Option_t* option="");            ///< Resets all variables to defaults
+  virtual void Print(Option_t* option="") const;      ///< Print all variables no options
 
   ClassDef( FcsPi0Candidate, 1 )
 };

@@ -17,6 +17,8 @@
 
   @[September 21, 2024] > Moved #FcsEventInfo, #FcsPhotonCandidate, and #FcsPi0Candidate classes to their own file in *StSpinPool/StFcsTreeManager* so that I can load that library without having to load other STAR libraries; I would have to load the STAR libraries If I had to load this one instead. Mainly, this simplifies the rootmap file I would need write. Fixed how points are being used to make Pi0s. Also changed comments to ROOT friendly style.
 
+  @[September 26, 2024] > Couldn't get the variable argument function to work so just made a singular #AddTrig() function. Added accessor functions for the internal #TTree and #TClonesArrays. Implemented #LoadDataFromFile() in order to open and fill this object's data members with the data from the file. Added a #Print() function to print the information in #mPi0Tree. Got rid of the #TClonesArray for #FcsEventInfo and instead created a single pointer #mEvtInfo; because all I need is a single instance so I made just made a single branch for #FcsEventInfo pointing to #mEvtInfo in #mPi0Tree and related changes. Properly reseting #mNTrig in event if trigger was not found in #TargetTrig.
+
 */
 
 
@@ -72,12 +74,33 @@ public:
   void setEnergyCut(Double_t val){ mEnCut = val; }
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
-  #ifndef __CINT__
-  template<typename T, typename... Args>
-  void SetTrigs(const char* trigname, Args... restargs){ mTargetTrig.emplace_back(trigname); return SetTrigs(restargs...); } //function to set trigger ids to use. Does not check for repetition so need to be a good user
-  #endif
+  
+  TTree* getPi0Tree()const{ return mPi0Tree; }
+
+  FcsEventInfo* getEvtInfo()const{ return mEvtInfo; }
+  Int_t getTreeEntries()const{ return mPi0Tree->GetEntriesFast(); }
+  Int_t getEntry(Int_t ientry){ return mPi0Tree->GetEntry(ientry); }
+  Int_t getNTrig()const{ return mNTrig; }
+  const Int_t* getTrig()const{ return mTriggers; }
+  Int_t getTrig(Int_t itrig)const{ return mTriggers[itrig]; }
+
+  TClonesArray* getPhArr()const{ return mPhArr; }
+  Int_t getNPhoton()const{ return mPhArr->GetEntriesFast(); }
+  FcsPhotonCandidate* getPhoton(Int_t iph)const{ return dynamic_cast<FcsPhotonCandidate*>(mPhArr->At(iph)); }
+
+  TClonesArray* getPi0Arr()const{ return mPi0Arr; }
+  Int_t getNPi0()const{ return mPi0Arr->GetEntriesFast(); }
+  FcsPi0Candidate* getPi0(Int_t ipi0)const{ return dynamic_cast<FcsPi0Candidate*>(mPi0Arr->At(ipi0)); }
+  //#ifndef __CINT__
+  //void SetTrigs(const char* trigname,...);//{ mTargetTrig.emplace_back(trigname); }
+  //template<typename... Args>
+  //void SetTrigs(Args... restargs){ SetTrigs(restargs...); } //function to set trigger ids to use. Does not check for repetition so need to be a good user
+  //#endif
+  void AddTrig(const char* trigname ){ mTargetTrig.emplace_back(trigname); }  //function to set trigger ids to use. Does not check for repetition so need to be a good user
   void IgnoreTrig(bool value=true){ mIgnoreTrig = value; }
-  static void LoadDataFromFile(TFile* file, TTree* tree, TClonesArray* arr, TH1* hist=0);
+  void LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
+
+  virtual void Print(Option_t* opt="") const; //"e" for event, "t" for trigger, "g" for photon, "p" for pi0, "a" for all
   
 protected:  
   StMuDstMaker* mMuDstMkr        = 0;
@@ -106,7 +129,7 @@ protected:
   TString mFilename = "";
   TFile* mFile_Output = 0;              ///< #TFile to save all the data
   TTree* mPi0Tree = 0;                  ///< #TTree with desired branches
-  TClonesArray* mEvtInfo = 0;           ///< #TClonesArray of #FcsEventInfo
+  FcsEventInfo* mEvtInfo = 0;           ///< #FcsEventInfo object for TTree
   //For trigger branch of tree 
   static const UShort_t mMaxTrigs = 65; ///< 64 FCS triggers + 1 for any other not found
   Int_t mNTrig  = 0;                    ///< Total triggers in the event

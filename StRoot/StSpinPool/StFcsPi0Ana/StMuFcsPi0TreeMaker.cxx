@@ -37,32 +37,43 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
 {
-  delete mPi0Tree;
   delete mH1F_Entries;
   delete mEvtInfo;
   delete mPhArr;
   delete mPi0Arr;
+  delete mPi0Tree;
   if( mFile_Output!=0 ){ mFile_Output->Close(); }
   delete mFile_Output;
 }
+
+/*#ifndef __CINT__
+void StMuFcsPi0TreeMaker::SetTrigs(const char* trigname,...)
+{
+  va_list args;
+  va_start(args,trigname);
+  
+  char* name = va_arg(args,char*);
+  mTargetTrig.emplace_back(name);
+
+  va_end(args);
+}
+#endif*/
 
 Int_t StMuFcsPi0TreeMaker::Init()
 {
   if( mFilename.Length() == 0){ mFilename="test.root"; } //Ensure a TFile is always created
   mFile_Output = new TFile(mFilename.Data(), "RECREATE");
   mPi0Tree     = new TTree("Pi0Tree","Tree with FcsPi0Candidate");
-  mEvtInfo     = new TClonesArray("FcsEventInfo");
+  mEvtInfo     = new FcsEventInfo();
   mPhArr       = new TClonesArray("FcsPhotonCandidate");
   mPi0Arr      = new TClonesArray("FcsPi0Candidate");
 
-  mPi0Tree->Branch("EventInfo",&mEvtInfo);
+  mPi0Tree->Branch("EventInfo","FcsEventInfo",&mEvtInfo);
   mPi0Tree->Branch("TriggerInfo",0,"NTrig/I:Trig[NTrig]/I");
   ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
   ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
   mPi0Tree->Branch("Photon",&mPhArr);
   mPi0Tree->Branch("Pi0",&mPi0Arr);
-
-  //std::cout << "|mEvtInfo:"<<mEvtInfo << "|bEvtInfo:"<< mPi0Tree->GetBranch("EventInfo")->GetAddress() << std::endl;
   
   mH1F_Entries = new TH1F("H1_Entries", "Number of entries;", 3,-0.5, 2.5);
   mH1F_Entries->Sumw2();
@@ -74,18 +85,46 @@ Int_t StMuFcsPi0TreeMaker::Init()
   return kStOk;
 }
 
-void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file, TTree* tree, TClonesArray* arr, TH1* hist)
+void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist)
 {
   if( file==0 || file->IsZombie() ){ std::cout << "LoadDataFromFile - ERROR:Unable to load from null file or zombie file" << std::endl; return; }
-  if( tree!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TTree pointer" << std::endl; }
-  tree = (TTree*)file->Get("Pi0Tree");
-  if( tree==0 ){ std::cout << "LoadDataFromFile - ERROR:Pi0Tree not found in file" << std::endl; return; }
-  if( arr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TClonesArray pointer" << std::endl; }
-  arr = new TClonesArray("FcsPi0Candidate");
-  tree->SetBranchAddress("Pi0",&arr);
-  if( hist!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TH1 pointer" << std::endl; }
-  hist = (TH1*)file->Get("H1_Entries");
-  if( hist==0 ){ std::cout << "LoadDataFromFile - WARNING:Entries histogram not found in file" << std::endl; }
+  mFile_Output = file;
+  //if( tree!=0 ){ std::cout << "LoadDataFromFile - WARNING:Overwriting TTree pointer" << std::endl; }
+  if( mPi0Tree!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal TTree pointer not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Tree; mPi0Tree=0; }
+  mPi0Tree = (TTree*)file->Get("Pi0Tree");
+  //tree = mPi0Tree;
+  if( mPi0Tree==0 ){ std::cout << "LoadDataFromFile - ERROR:Pi0Tree not found in file" << std::endl; return; }
+
+  //Set event branches
+  if( mEvtInfo!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsEventInfo not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mEvtInfo; mEvtInfo=0; }
+  mEvtInfo     = new FcsEventInfo();
+  mPi0Tree->SetBranchAddress("EventInfo",&mEvtInfo);
+
+  //Set trigger branches
+  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
+  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
+
+  if( mPhArr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPhotonCandidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPhArr; mPhArr=0; }
+  mPhArr       = new TClonesArray("FcsPhotonCandidate");
+  mPi0Tree->SetBranchAddress("Photon",&mPhArr);
+
+  if( mPi0Arr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPi0Candidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Arr; mPi0Arr=0; }
+  mPi0Arr      = new TClonesArray("FcsPi0Candidate");  
+  mPi0Tree->SetBranchAddress("Pi0",&mPi0Arr);
+
+  if( mH1F_Entries!=0 ){ std::cout << "LoadDataFromFile - WARNING:Histogram of Entries pointer not zero\n -> Deleting old data for new one" << std::endl; }
+  mH1F_Entries = (TH1*)file->Get("H1_Entries");
+  if( mH1F_Entries==0 ){ std::cout << "LoadDataFromFile - WARNING:Entries histogram not found in file" << std::endl; }
+
+
+  mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap"); //Don't use GetMaker since it doesn't use the right name when searching
+  if( mFcsTrigMap==0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
+  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - Trigger Map is empty" << std::endl; } }
+
+  //std::cout << "DUMB CHECK "<<mFcsTrigMap << std::endl;
+  //std::string name(mFcsTrigMap->nameFromId(45,22349011));
+  //std::cout << name << std::endl;
+  
   return;
 }
 
@@ -140,20 +179,21 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   StMuTriggerIdCollection* TrigMuColl = &(mMuEvent->triggerIdCollection());
   if( !TrigMuColl ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
   const StTriggerId& trgIDs = TrigMuColl->nominal();
-  mNTrig = trgIDs.triggerIds().size();
-  for( Int_t i=0; i<mNTrig; ++i ){
+  Int_t ntrig = trgIDs.triggerIds().size();
+  for( Int_t i=0; i<ntrig; ++i ){
     unsigned int trig = trgIDs.triggerId(i);
     mTriggers[i] = trig;
     if( !mIgnoreTrig ){
       if( mFcsTrigMap!=0 ){
 	std::string thistrig = mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber());
 	for( unsigned int j=0; j<mTargetTrig.size(); ++j ){
-	  if( mTargetTrig.at(j)==thistrig ){ validtrigfound=true; }
+	  if( mTargetTrig.at(j)==thistrig ){ mNTrig++; validtrigfound=true; }
 	}
       }
     }
+    else{ mNTrig = ntrig; }
   }
-  if( !validtrigfound ){ return kStSkip; }
+  if( !validtrigfound ){ mNTrig=0; return kStSkip; } //Reset trigger array size before going to next event
 
   //Get EPD collection and/or hits
   mMuEpdHits = 0;
@@ -171,59 +211,59 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   mMuFcsColl = mMuDst->muFcsCollection();
   if (!mMuFcsColl) { LOG_ERROR << "StMuFcsPi0TreeMaker::Make did not find MuFcsCollection" << endm; return kStErr; }
 
-  FcsEventInfo* evtinfo = (FcsEventInfo*) mEvtInfo->ConstructedAt(0);  
-  evtinfo->mRunTime         = mMuEvent->eventInfo().time();
-  evtinfo->mRunNum          = mMuEvent->runNumber();
-  evtinfo->mFill            = mRunInfo->beamFillNumber(StBeamDirection::east);//Yellow beam
-  evtinfo->mEvent           = mMuEvent->eventId();
-  evtinfo->mBx48Id          = mTrigData->bunchId48Bit();
-  evtinfo->mBx7Id           = mTrigData->bunchId7Bit();
-  evtinfo->mTofMultiplicity = mTrigData->tofMultiplicity();
+  //FcsEventInfo* evtinfo = (FcsEventInfo*) mEvtInfo->ConstructedAt(0);  
+  mEvtInfo->mRunTime         = mMuEvent->eventInfo().time();
+  mEvtInfo->mRunNum          = mMuEvent->runNumber();
+  mEvtInfo->mFill            = mRunInfo->beamFillNumber(StBeamDirection::east);//Yellow beam
+  mEvtInfo->mEvent           = mMuEvent->eventId();
+  mEvtInfo->mBx48Id          = mTrigData->bunchId48Bit();
+  mEvtInfo->mBx7Id           = mTrigData->bunchId7Bit();
+  mEvtInfo->mTofMultiplicity = mTrigData->tofMultiplicity();
 
-  //std::cout << "|runtime:"<<evtinfo->mRunTime << "|runnum:"<<evtinfo->mRunNum << "|event:"<<evtinfo->mEvent << std::endl;
+  //std::cout << "|runtime:"<<mEvtInfo->mRunTime << "|runnum:"<<mEvtInfo->mRunNum << "|event:"<<mEvtInfo->mEvent << std::endl;
   
   //Spin information
   if( mSpinDbMkr==0 ){
     Double_t rndm = mSpinRndm.Rndm(); //random number between 0 and 1
     //The numbers below are chosen for their bit representation as described and correspond to the source polarization. Need to flip to convert it to STAR polarization direction because of the Siberian Snakes; i.e. '+' -> '-' and '-' -> '+'
-    if( rndm<=0.25 ){ evtinfo->mSpin = 5; }                    //Bits 0101 is B+ and Y+
-    else if( 0.25<rndm && rndm<=0.5 ){ evtinfo->mSpin = 6; }   //Bits 0110 is B+ and Y-
-    else if( 0.5<rndm && rndm<=0.75 ){ evtinfo->mSpin = 9; }   //Bits 1001 is B- and Y+
-    else{ evtinfo->mSpin = 10; }                               //Bits 1010 is B- and Y-
+    if( rndm<=0.25 ){ mEvtInfo->mSpin = 5; }                    //Bits 0101 is B+ and Y+
+    else if( 0.25<rndm && rndm<=0.5 ){ mEvtInfo->mSpin = 6; }   //Bits 0110 is B+ and Y-
+    else if( 0.5<rndm && rndm<=0.75 ){ mEvtInfo->mSpin = 9; }   //Bits 1001 is B- and Y+
+    else{ mEvtInfo->mSpin = 10; }                               //Bits 1010 is B- and Y-
   }
   else{
-    evtinfo->mSpin = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() ); //This is also source polarization
+    mEvtInfo->mSpin = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() ); //This is also source polarization
   }
   
 
   //Vertex Information
-  evtinfo->mVpdVz = -999;
-  if( mMuDst->btofHeader() ){ evtinfo->mVpdVz = mMuDst->btofHeader()->vpdVz(); }
+  mEvtInfo->mVpdVz = -999;
+  if( mMuDst->btofHeader() ){ mEvtInfo->mVpdVz = mMuDst->btofHeader()->vpdVz(); }
   //@[April 7, 2021] > No Slewing correction for BBC yet, see StFmsJetMaker2015 in BrightSTAR??
-  evtinfo->mBbcTacDiff = mTrigData->bbcTimeDifference() - 4096; //subtract 4096 since 0 means bad event and distribution is Gaussian around 4096
-  evtinfo->mBbcVz = -999;
-  if( fabs(evtinfo->mBbcTacDiff)>1.e-6 ){ evtinfo->mBbcVz = evtinfo->mBbcTacDiff * -0.2475; } //0.2475 = 0.0165*30/2x
+  mEvtInfo->mBbcTacDiff = mTrigData->bbcTimeDifference() - 4096; //subtract 4096 since 0 means bad event and distribution is Gaussian around 4096
+  mEvtInfo->mBbcVz = -999;
+  if( fabs(mEvtInfo->mBbcTacDiff)>1.e-6 ){ mEvtInfo->mBbcVz = mEvtInfo->mBbcTacDiff * -0.2475; } //0.2475 = 0.0165*30/2x
   //StZdcTriggerDetector& zdc = mMuEvent->zdcTriggerDetector();
   //std::cout <<"|ZdcV:"<<zdc.vertexZ() << std::endl;
-  evtinfo->mZdcVz =  mTrigData->zdcVertexZ();
+  mEvtInfo->mZdcVz =  mTrigData->zdcVertexZ();
 
   if( mEpdQaMkr!=0 ){
-    evtinfo->mEpdTacEarlyE = mEpdQaMkr->epdTacEarlyE();
-    evtinfo->mEpdTacEarlyW = mEpdQaMkr->epdTacEarlyW();
-    evtinfo->mEpdAvgE = mEpdQaMkr->epdTacAvgE();
-    evtinfo->mEpdAvgW = mEpdQaMkr->epdTacAvgW();
-    evtinfo->mEpdVz = mEpdQaMkr->epdVertex();
+    mEvtInfo->mEpdTacEarlyE = mEpdQaMkr->epdTacEarlyE();
+    mEvtInfo->mEpdTacEarlyW = mEpdQaMkr->epdTacEarlyW();
+    mEvtInfo->mEpdAvgE = mEpdQaMkr->epdTacAvgE();
+    mEvtInfo->mEpdAvgW = mEpdQaMkr->epdTacAvgW();
+    mEvtInfo->mEpdVz = mEpdQaMkr->epdVertex();
   }
   else{
-    evtinfo->mEpdVz = -999;
+    mEvtInfo->mEpdVz = -999;
   }
 
   short foundvertex = 0;   //Bit vectorfor knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
-  if( evtinfo->mVpdVz > -998){ foundvertex |= 0x001; }
-  else if( evtinfo->mEpdVz > -998 ){ foundvertex |= 0x010; }
-  else if( evtinfo->mBbcVz > -998 ){ foundvertex |= 0x100; }
+  if( mEvtInfo->mVpdVz > -998){ foundvertex |= 0x0001; }
+  else if( mEvtInfo->mEpdVz > -998 ){ foundvertex |= 0x0010; }
+  else if( mEvtInfo->mBbcVz > -998 ){ foundvertex |= 0x0100; }
   else{ foundvertex = 0; } //Redundant but don't want a dangling "else if" statement
-  evtinfo->mFoundVertex = foundvertex;
+  mEvtInfo->mFoundVertex = foundvertex;
 
   //TClonesArray* hits = mMuFcsColl->getHitArray();
   //if( hits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
@@ -265,9 +305,9 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	//std::cout << "Cluster|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
 
 	StLorentzVectorD iclu_p_withz;
-	if( foundvertex == 0x001 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mVpdVz ); }
-	if( foundvertex == 0x010 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mEpdVz ); }
-	if( foundvertex == 0x100 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, evtinfo->mBbcVz ); }
+	if( foundvertex == 0x0001 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mVpdVz ); }
+	if( foundvertex == 0x0010 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mEpdVz ); }
+	if( foundvertex == 0x0100 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mBbcVz ); }
 	ph->mPxVert = foundvertex!=0 ? iclu_p_withz.px() : 0;
 	ph->mPyVert = foundvertex!=0 ? iclu_p_withz.py() : 0;
 	ph->mPzVert = foundvertex!=0 ? iclu_p_withz.pz() : 0;
@@ -275,8 +315,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
   }
   
-  evtinfo->mClusterSize = ncandidates;
-  Int_t clustersize = ncandidates; //local copy of evtinfo->mClusterSize
+  mEvtInfo->mClusterSize = ncandidates;
+  Int_t clustersize = ncandidates; //local copy of mEvtInfo->mClusterSize
   
   if( points!=0 ){
     for( UInt_t idet=0; idet<=kFcsEcalSouthDetId; ++idet ){
@@ -306,9 +346,9 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mPzRaw = ipoi_p.pz();
 
 	StLorentzVectorD ipoi_p_withz;
-	if( foundvertex == 0x001 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mVpdVz ); }
-	if( foundvertex == 0x010 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mEpdVz ); }
-	if( foundvertex == 0x100 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, evtinfo->mBbcVz ); }
+	if( foundvertex == 0x0001 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mVpdVz ); }
+	if( foundvertex == 0x0010 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mEpdVz ); }
+	if( foundvertex == 0x0100 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mBbcVz ); }
 	ph->mPxVert = foundvertex!=0 ? ipoi_p_withz.px() : 0;
 	ph->mPyVert = foundvertex!=0 ? ipoi_p_withz.py() : 0;
 	ph->mPzVert = foundvertex!=0 ? ipoi_p_withz.pz() : 0;
@@ -325,7 +365,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ic);
     if( ! iclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
     if( ic==(clustersize-1) ){ continue; }
-    for( Int_t jc=ic+1; jc<evtinfo->mClusterSize; jc++ ){
+    for( Int_t jc=ic+1; jc<mEvtInfo->mClusterSize; jc++ ){
       FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jc);
       if( ! jclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
       FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
@@ -382,5 +422,35 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   mPi0Arr->Clear();
     
   return kStOk;
+}
+
+void StMuFcsPi0TreeMaker::Print(Option_t* opt) const
+{
+  TString option(opt);
+  option.ToLower();
+  if( option.Contains("a") ){ option = "etgp"; }
+  if( mEvtInfo!=0 && option.Contains("e") ){ mEvtInfo->Print(); }
+  if( option.Contains("t") ){
+    std::cout << "## Trigger Information|NTrig:"<<mNTrig << std::endl;
+    for( int i=0; i<mNTrig; ++i ){
+      std::cout << " + |TrigId:"<<mTriggers[i];
+      if( mFcsTrigMap!=0 && mEvtInfo!=0 ){ std::cout << "|TrigName:"<< mFcsTrigMap->nameFromId(mTriggers[i],mEvtInfo->mRunNum); }
+      std::cout << std::endl;
+    }
+  }
+  if( option.Contains("g") ){
+    std::cout << "## Photon Information|Size:"<<mPhArr->GetEntriesFast() << std::endl;
+    for( int i=0; i<mPhArr->GetEntriesFast(); ++i ){
+      std::cout << " + ";
+      mPhArr->At(i)->Print();
+    }
+  }
+  if( option.Contains("p") ){
+    std::cout << "## Pi0 Information|Size:"<<mPi0Arr->GetEntriesFast() << std::endl;
+    for( int i=0; i<mPi0Arr->GetEntriesFast(); ++i ){
+      std::cout << " + ";
+      mPi0Arr->At(i)->Print();
+    }
+  }
 }
 

@@ -10,6 +10,8 @@
 
   LOG
   @[September 13, 2024] > First instance
+
+  @[September 24, 2024] > Changed offline trigger Id in #TrigRange from unsigned int to int and related to changes of all corresponding data to int.
  */
 
 #ifndef STFCSRUN22TRIGGERMAP_HH
@@ -29,22 +31,22 @@ class StFcsRun22TriggerMap : public StMaker
   virtual void readTxtFile(const char* filename);                      //!< Process the text file and fill #mListOfTriggers and #mAllTrigRanges
   int sizeOfTriggers() const;                                          //!< Return size of #mListOfTriggers
   const char* triggerName(int idx) const;                              //!< Return the trigger name in #mListOfTriggers for a given index (#idx)
-  const char* nameFromId(UInt_t trigidtomatch, Int_t runnumber) const; //!< Check #mAllTrigRanges for a key #trigidtomatch to find any #TrigRange matches. If not found return "NF" (not found) and if found then check if #runnumber is valid, if so return the name of the trigger; otherwise return "NF".
+  const char* nameFromId(Int_t trigidtomatch, Int_t runnumber) const; //!< Check #mAllTrigRanges for a key #trigidtomatch to find any #TrigRange matches. If not found return "NF" (not found) and if found then check if #runnumber is valid, if so return the name of the trigger; otherwise return "NF".
 
 protected:
   //Simple struct to hold the tigger ranges when reading the file
   struct TrigRange{
     TrigRange();
-    TrigRange(const char* name, UInt_t trigid, Int_t startrun, Int_t endrun);
+    TrigRange(const char* name, Int_t trigid, Int_t startrun, Int_t endrun);
     std::string mName;                 //!< Name of the trigger
-    UInt_t mOfflineTrigId;             //!< Offline trigger id
+    Int_t mOfflineTrigId;             //!< Offline trigger id
     Int_t mStartRun;                   //!< Starting run number (inclusive)
     Int_t mEndRun;                     //!< Ending run number (inclusive)
     bool ValidRun(Int_t runnum) const; //!< check if a given runnum falls into the range
   };
 
   std::vector<std::string> mListOfTriggers;       //!< All found names of the triggers. This just makes it easier to recall unique trigger namesz
-  std::map<UInt_t,TrigRange> mAllTrigRanges;      //!< Map of the unique offline trigger Ids to all the found ranges for those triggers
+  std::map<Int_t,TrigRange> mAllTrigRanges;      //!< Map of the unique offline trigger Ids to all the found ranges for those triggers
   
   ClassDef(StFcsRun22TriggerMap,1)
 };
