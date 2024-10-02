@@ -19,6 +19,8 @@
 
   @[September 26, 2024] > Couldn't get the variable argument function to work so just made a singular #AddTrig() function. Added accessor functions for the internal #TTree and #TClonesArrays. Implemented #LoadDataFromFile() in order to open and fill this object's data members with the data from the file. Added a #Print() function to print the information in #mPi0Tree. Got rid of the #TClonesArray for #FcsEventInfo and instead created a single pointer #mEvtInfo; because all I need is a single instance so I made just made a single branch for #FcsEventInfo pointing to #mEvtInfo in #mPi0Tree and related changes. Properly reseting #mNTrig in event if trigger was not found in #TargetTrig.
 
+  @[September 27, 2024] > Added a function #ProjectToEpd() that will project an x,y,z position on the fcs and a zvertex onto the EPD plane. Used this function to fill FcsPhotonCandidate::mEpdHitNmip Changed found vertex from the hex to integer representation.
+
 */
 
 
@@ -101,6 +103,8 @@ public:
   void LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
 
   virtual void Print(Option_t* opt="") const; //"e" for event, "t" for trigger, "g" for photon, "p" for pi0, "a" for all
+
+  static std::vector<Double_t> ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex);
   
 protected:  
   StMuDstMaker* mMuDstMkr        = 0;

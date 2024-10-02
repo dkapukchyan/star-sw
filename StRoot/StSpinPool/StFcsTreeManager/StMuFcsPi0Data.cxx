@@ -91,6 +91,36 @@ TLorentzVector FcsPhotonCandidate::lvVert()
 Double_t FcsPhotonCandidate::magPosition()
 { return sqrt( mX*mX + mY*mY + mZ*mZ ); }
 
+Bool_t FcsPhotonCandidate::IsEqual(const TObject* obj) const
+{
+  FcsPhotonCandidate* other = (FcsPhotonCandidate*) obj;
+  if( obj==0 ){ return kFALSE; }
+  //else{ return (this->mInvMass==other->mInvMass); }
+  else{
+    if( this->mFromCluster!=other->mFromCluster ){ return kFALSE; }
+    else{ return ( this->mEn==other->mEn ); }
+  }
+}
+
+Int_t FcsPhotonCandidate::Compare(const TObject* obj) const
+{
+  FcsPhotonCandidate* other = 0;
+  other = (FcsPhotonCandidate*)obj;
+  if( other==0 ){ std::cout << "ERROR - Not an FcsPi0Candidate" << std::endl; return 0; }
+  if( this->mFromCluster==other->mFromCluster ){
+    //if( this->mFromCluster < other->mFromCluster ){ return -1; }
+    //if( this->mFromCluster==other->mFromCluster ){
+    if(      this->mEn < other->mEn ){ return -1; }
+    else if( this->mEn > other->mEn ){ return  1; }
+    else{ return 0; }
+  }
+  else{
+    return 1;
+    //if( this->mFromCluster==false ){ return 1; } //points are greater than clusters
+    //else{ this->mFromCluster==true ){ return -1; }
+  }
+}
+
 void FcsPhotonCandidate::Clear(Option_t* opt)
 {
   mFromCluster = false;
@@ -113,7 +143,7 @@ void FcsPhotonCandidate::Clear(Option_t* opt)
 
 void FcsPhotonCandidate::Print(Option_t* opt) const
 {
-  std::cout << "|Clus:"<<mFromCluster << "|Pos:("<<mX<<","<<mY<<","<<mZ<<")|En:"<<mEn << "|PRaw:"<<mPxRaw<<","<<mPyRaw<<","<<mPzRaw<<","<<"|PVert:"<<mPxVert<<","<<mPyVert<<","<<mPzVert << std::endl;
+  std::cout << "|Clus:"<<mFromCluster << "|Pos:("<<mX<<","<<mY<<","<<mZ<<")|En:"<<mEn << "|PRaw:"<<mPxRaw<<","<<mPyRaw<<","<<mPzRaw<<","<<"|PVert:"<<mPxVert<<","<<mPyVert<<","<<mPzVert << "|EpdNmip:"<<mEpdHitNmip << std::endl;
 }
 
 ClassImp(FcsPi0Candidate)

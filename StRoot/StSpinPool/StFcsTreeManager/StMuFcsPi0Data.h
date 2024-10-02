@@ -15,6 +15,8 @@
 
   @[September 26, 2024] > Added #BlueSpin() and #YellowSpin() to #FcsEventInfo to correctly get the blue and yellow beam polarization from the #mSpin. Implemented #FcsEventInfo::Clear() and #FcsEventInfo::Print() as well as #FcsPhotonCandidate::Clear(), #FcsPhotonCandidate::Print(), #FcsPi0Candidate::Clear(), and #FcsPi0Candidate::Print(). Also added comparison functions to #FcsPi0Candidate so that they can be sorted in the #TClonesArray in #StMuFcsPi0TreeMaker. They will be sorted by their distance to the known pi0 mass; e.g. a pi0 candidate with mass 0.14 is less than a candidate with mass 0.1 because 0.14 is closer to the knwon pi0 mass. Added static const #FcsPi0Candidate::Pi0Mass() to just return the mass of the pi0 particle.
 
+  @[September 30, 2024] > Added #FcsPhotonCandidate::IsSortable() and #FcsPhotonCandidate::IsEqual() and #FcsPhotonCandidate::Compare() to be able to sort photon candidates by cluster and energy. Also #FcsPhotonCandidate::Print() now prints #FcsPhotonCandidate::mEpdHitNmip value.
+
 */
 
 
@@ -102,6 +104,10 @@ public:
   TLorentzVector lvRaw();        ///< TLorentz vector for this condidate with 0,0,0 vertex momentum
   TLorentzVector lvVert();       ///< TLorentz vector for this candidate with vertex momentum
   Double_t magPosition();        ///< Magnitude of postiion vector i.e. sqrt(#mX^2+#mY^2+#mZ^2)
+
+  virtual Bool_t IsSortable() const {return kTRUE; }  ///< I guess this is flag to indicate to ROOT that object is sortable
+  virtual Bool_t IsEqual(const TObject* obj) const;   ///< if both are equal to pi0 mass then return true otherwise false 
+  virtual Int_t Compare(const TObject* obj) const;    ///< -1 if distance to pi0 mass of this object is less than the other's distance, 1 if it is greater than, 0 otherwise
 
   virtual void Clear(Option_t* opt="");          ///< Resets all variables to defaults
   virtual void Print(Option_t* opt="") const;    ///< Print all variables no options

@@ -258,11 +258,12 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     mEvtInfo->mEpdVz = -999;
   }
 
-  short foundvertex = 0;   //Bit vectorfor knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
-  if( mEvtInfo->mVpdVz > -998){ foundvertex |= 0x0001; }
-  else if( mEvtInfo->mEpdVz > -998 ){ foundvertex |= 0x0010; }
-  else if( mEvtInfo->mBbcVz > -998 ){ foundvertex |= 0x0100; }
-  else{ foundvertex = 0; } //Redundant but don't want a dangling "else if" statement
+  short foundvertex = 0;     //Bit vectorfor knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
+  Double_t usevertex = -999.0; //Vertex to use
+  if( mEvtInfo->mVpdVz > -998 )     { foundvertex = 1; usevertex = mEvtInfo->mVpdVz; }
+  else if( mEvtInfo->mEpdVz > -998 ){ foundvertex = 2; usevertex = mEvtInfo->mEpdVz; }
+  else if( mEvtInfo->mBbcVz > -998 ){ foundvertex = 4; usevertex = mEvtInfo->mBbcVz; }
+  else{ foundvertex = 0; usevertex = -999; } //Redundant but don't want a dangling "else if" statement
   mEvtInfo->mFoundVertex = foundvertex;
 
   //TClonesArray* hits = mMuFcsColl->getHitArray();
@@ -304,13 +305,17 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 
 	//std::cout << "Cluster|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
 
-	StLorentzVectorD iclu_p_withz;
-	if( foundvertex == 0x0001 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mVpdVz ); }
-	if( foundvertex == 0x0010 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mEpdVz ); }
-	if( foundvertex == 0x0100 ){ iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, mEvtInfo->mBbcVz ); }
-	ph->mPxVert = foundvertex!=0 ? iclu_p_withz.px() : 0;
-	ph->mPyVert = foundvertex!=0 ? iclu_p_withz.py() : 0;
-	ph->mPzVert = foundvertex!=0 ? iclu_p_withz.pz() : 0;
+	if( foundvertex > 0 ){
+	  StLorentzVectorD iclu_p_withz = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, usevertex );
+	  ph->mPxVert = iclu_p_withz.px();
+	  ph->mPyVert = iclu_p_withz.py();
+	  ph->mPzVert = iclu_p_withz.pz();
+	}
+	else{
+	  ph->mPxVert = 0;
+	  ph->mPyVert = 0;
+	  ph->mPzVert = 0;
+	}
       }
     }
   }
@@ -345,19 +350,57 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mPyRaw = ipoi_p.py();
 	ph->mPzRaw = ipoi_p.pz();
 
-	StLorentzVectorD ipoi_p_withz;
-	if( foundvertex == 0x0001 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mVpdVz ); }
-	if( foundvertex == 0x0010 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mEpdVz ); }
-	if( foundvertex == 0x0100 ){ ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, mEvtInfo->mBbcVz ); }
-	ph->mPxVert = foundvertex!=0 ? ipoi_p_withz.px() : 0;
-	ph->mPyVert = foundvertex!=0 ? ipoi_p_withz.py() : 0;
-	ph->mPzVert = foundvertex!=0 ? ipoi_p_withz.pz() : 0;
 
-	//std::cout << "Point|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
-	
+	if( foundvertex > 0 ){ 	StLorentzVectorD ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, usevertex );
+	  ph->mPxVert = ipoi_p_withz.px();
+	  ph->mPyVert = ipoi_p_withz.py();
+	  ph->mPzVert = ipoi_p_withz.pz();
+	}
+	else{
+	  ph->mPxVert = 0;
+	  ph->mPyVert = 0;
+	  ph->mPzVert = 0;
+	}
+	//std::cout << "Point|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;	
       }//i point
     }//fcs dets
   }
+
+  //Check photon candidates if they have any hits in the EPD. Use a separate loop so that this information could be used in the pi0 checking loop if needed. In future may also want to check against FCS preshower (EPD) hits
+  for( Int_t iph = 0; iph<mPhArr->GetEntriesFast(); ++iph ){
+    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->At(iph);
+    std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex));
+    //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
+    //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
+
+    unsigned int nepdhits = 0;
+    StSPtrVecEpdHit* epdhits = 0;
+    if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+    else if( mEpdColl!=0 ){
+      epdhits = &(mEpdColl->epdHits());
+      nepdhits = epdhits->size();
+    }
+    else{ LOG_ERROR << "StMuEpdRun22QaMaker::FillEpdinfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return kStErr; }
+    StMuEpdHit* muepdhit = 0;
+    StEpdHit* epdhit = 0;
+    for(unsigned int i=0; i<nepdhits; ++i ){
+      if( mMuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
+      else if( epdhits!=0 ){ epdhit = (StEpdHit*)((*epdhits)[i]); }
+      else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; } 
+      //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
+      int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
+      if( ew==-1 ){ continue; }
+      int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
+      int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
+      if( mEpdGeo->IsInTile(epdpp,epdtt,ew, epdproj.at(0),epdproj.at(1)) ){
+	//int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+	float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();         //The ADC value of the hit divided by the MIP peak position; e.g. if nmip==1 then adc value sits at the MIP peak
+	ph->mEpdHitNmip = nmip;
+	//std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
+      }
+    }
+  }
+
 
   //std::cout << "|ncandidates:"<<ncandidates <<"|clustersize:"<<clustersize <<"|Size:"<<mPhArr->GetEntriesFast() << std::endl;
   Int_t npi0candidate = 0;
@@ -452,5 +495,20 @@ void StMuFcsPi0TreeMaker::Print(Option_t* opt) const
       mPi0Arr->At(i)->Print();
     }
   }
+}
+
+std::vector<Double_t> StMuFcsPi0TreeMaker::ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex)
+{
+  //Assume x,y=0 at vertex so only need zvertex as origin and is the initial point for the direction
+  Double_t linedirection[3] = {xfcs,yfcs,zfcs-zvertex}; //This is the direction vector from the origin to the fcs point (FcsXYZ-Vertex)
+  Double_t EpdZ = 375.0;   //Need a point on epd plane so picking x,y=0 is valid and formula below reflects this. Also only care about West EPD which is along positive z-axis
+  //Tiles are parallel to z-axis so normal vector is {0,0,1}. The formula below reflects this
+  //Solution of intersection of line and plane where line has direction {xdir,ydir,zdir}*t and starts at {0,0,zvertex} and a plane with a normal that points along the z-axis and has a point on the plane at {0,0,EpdZ}; "t" is the free parameter in the parametric equation of the line.
+  double tintersection = (EpdZ-zvertex) / (linedirection[2]);
+  std::vector<Double_t> intersection;
+  intersection.emplace_back(linedirection[0]*tintersection);
+  intersection.emplace_back(linedirection[1]*tintersection);
+  intersection.emplace_back(linedirection[2]*tintersection+zvertex);
+  return intersection;
 }
 
