@@ -195,6 +195,7 @@ Int_t FcsPi0Candidate::Compare(const TObject* obj) const
 void FcsPi0Candidate::Clear(Option_t* opt)
 {
   mFromCluster = false;
+  mFromPh = 0;
   mPhoton1Idx = -1;
   mPhoton2Idx = -1;
   mPx = 0;
@@ -210,7 +211,7 @@ void FcsPi0Candidate::Clear(Option_t* opt)
 
 void FcsPi0Candidate::Print(Option_t* opt) const
 {
-  std::cout << "|Clus:"<<mFromCluster << "|Ph1Idx:"<<mPhoton1Idx << "|Ph2Idx:"<<mPhoton2Idx << "|En:"<<mEn << "|P:("<<mPx<<","<<mPy<<","<<mPz<<")|Eta:"<<mEta << "|Dgg:"<<mDgg << "|Zgg:"<<mZgg << "|Alpha:"<<mAlpha << "|InvMass:"<<mInvMass << std::endl;
+  std::cout << "|Clus:"<<mFromCluster <<"|PhCut:"<<mFromPh << "|Ph1Idx:"<<mPhoton1Idx << "|Ph2Idx:"<<mPhoton2Idx << "|En:"<<mEn << "|P:("<<mPx<<","<<mPy<<","<<mPz<<")|Eta:"<<mEta << "|Dgg:"<<mDgg << "|Zgg:"<<mZgg << "|Alpha:"<<mAlpha << "|InvMass:"<<mInvMass << std::endl;
 }
 
 Double_t FcsPi0Candidate::zgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)

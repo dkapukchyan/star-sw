@@ -37,6 +37,7 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
 {
+  if( mInternalHists ){ delete mHists; }
   delete mH1F_Entries;
   delete mEvtInfo;
   delete mPhArr;
@@ -59,10 +60,103 @@ void StMuFcsPi0TreeMaker::SetTrigs(const char* trigname,...)
 }
 #endif*/
 
+void StMuFcsPi0TreeMaker::setHistManager( HistManager* hm )
+{
+  if( mInternalHists ){ delete mHists; mHists = 0; }
+  mInternalHists = false;
+  if( mHists!=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::setHistManager() - HistManager exists and is external - no changes made" << endm; return; }
+  else{ mHists = hm; }
+}
+
+UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
+{
+  if( mHists==0 ){ return 0; }
+  UInt_t loaded = 0;
+  loaded += mHists->AddH1F(file,mH1F_Entries,"H1_Entries", "Number of entries;", 3,-0.5, 2.5);
+  //Below trigger histogram copied from StMuFcsRun22QaMaker
+  loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;;",65,0,65);
+  if( mFcsTrigMap!=0 ){
+    int trigsize = mFcsTrigMap->sizeOfTriggers();
+    //std::cout << "|trigsize:"<<trigsize << std::endl;
+    if( trigsize==64 ){ //Check to make sure all triggers are in the map and it matches the bin size
+      for( int i=0; i<trigsize; ++i ){
+	//std::cout << "|itrig:"<<i << "|trigname:"<< mFcsTrigMap->triggerName(i) << std::endl;
+	mH1F_Triggers->GetXaxis()->SetBinLabel(i+1,mFcsTrigMap->triggerName(i)); //Bin numbers are offset by 1
+      }
+    }
+    mH1F_Triggers->GetXaxis()->SetBinLabel(65,"NF");  //Last bin is named "NF" for not found which is what nameFromId() returns if trigger is not in the map. This way if no map was loaded but an StFcsRun22TriggerMap was found, searching for triggers will return "NF"
+  }
+  loaded += mHists->AddH2F(file,mH2F_foundVvertex,"H2F_foundVvertex", "Used vertex bit vs. Vertex that was used in Pi0 Reconstruction;Vertex (cm);found (bit) 0=NA,1=VPD,2=EPD,4=BBC", 50,-200,200, 5,0,5);
+
+  loaded += mHists->AddH2F(file,mH2F_PhotonHeatMap,"H2F_PhotonHeatMap","Distribution of photons in STAR x,y space;x (cm);y (cm)", 400,-200,200, 300,-150,150);
+  loaded += mHists->AddH2F(file,mH2F_PhotonHeatMapG,"H2F_PhotonHeatMapG","Distribution of photons in STAR x,y space (No Spike);x (cm);y (cm)", 400,-200,200, 300,-150,150);
+  loaded += mHists->AddH2F(file,mH2F_PhotonHeatMapB,"H2F_PhotonHeatMapB","Distribution of photons in STAR x,y space (Spike);x (cm);y (cm)", 400,-200,200, 300,-150,150);
+  loaded += mHists->AddH2F(file,mH2F_EpdProjHitMap,"H2F_EpdProjHitMap","Distribution of x,y projections of photon candidates onto STAR EPD plane;x (cm);y (cm)", 300,-150,150, 200,-100,100);
+  //loaded += mHists->AddH2F(file,mH2F_EpdProjHitMap_Vcut,"H2F_EpdProjHitMap","Distribution of x,y projections of photon candidates onto STAR EPD plane with |vertex|<150cm;x (cm);y (cm)", 300,-150,150, 200,-100,100);
+  loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","Distribution of nmip values from matching projected clusters and points;;Nmip",2,0,2, 70,0,7);
+  mH2F_EpdNmip->GetXaxis()->SetBinLabel(1,"Clusters");
+  mH2F_EpdNmip->GetXaxis()->SetBinLabel(2,"Points");
+
+  loaded += mHists->AddH1F(file,mH1F_ClusterEnergy,"H1F_ClusterEnergy","Energy of FCS Clusters;Energy (GeV);", 1000,0,200);
+  loaded += mHists->AddH1F(file,mH1F_PointEnergy,"H1F_PointEnergy","Energy of FCS Points;Energy (GeV);", 1000,0,200);
+  loaded += mHists->AddH2F(file,mH2F_Energy_ph1Vph2,"H2F_Energy_ph1Vph2","Energy of photon 1 vs. photon 2 no EPD cuts;Energy Highest Photon (GeV);Energy Next Highest (GeV)", 1000,0,200, 1000,0,200);
+  
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Mass,"H1F_BestPi0Mass","Pi0s with photon combination of two highest energy pairs;Invariant Mass (GeV);", 500,0,1);
+  //loaded += mHists->AddH2F(file,mH2F_Pi0HeatMap,"H2F_Pi0HeatMap","STAR x,y locations for Pi0s;x (cm);y (cm)", 500,-250,250, 500,-250,250);
+  loaded += mHists->AddH1F(file,mH1F_PointMult,"H1F_PointMult","Point Multiplicity with only an energy cut;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Zgg,"H1F_BestPi0Zgg","Zgg of Pi0s with photon combination using highest energy pairs;Zgg;", 100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Phi,"H1F_BestPi0Phi","Phi of Pi0s with photon combination using highest energy pairs;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Eta,"H1F_BestPi0Eta","Eta of Pi0s with photon combination using highest energy pairs;Eta;", 100,1,5.5);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0En,"H1F_BestPi0En","Energy of Pi0s with photon combination using highest energy pairs;Energy (GeV)", 1000,0,100);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Pt,"H1F_BestPi0Pt","Pt of Pi0s with photon combination using highest energy pairs;Pt (GeV)", 100,0,10);
+  loaded += mHists->AddH1F(file,mH1F_AllPointPairMass,"H1F_AllPointsPi0Mass","Invariant mass of all point pair combinations;Invariant Mass (GeV);", 500,0,1);
+  
+  loaded += mHists->AddH1F(file,mH1F_EpdPhInvMass,"H1F_EpdPhInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 500,0,1);
+  //loaded += mHists->AddH2F(file,mH2F_EpdPhHeatMap,"H2F_EpdPhHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhPointMult,"H1F_EpdPhPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhZgg,"H1F_EpdPhZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Photons;Zgg;", 100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhPhi,"H1F_EpdPhPhi","Phi of Pi0s using highest energy pairs and Epd Cut Photons;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhEta,"H1F_EpdPhEta","Eta of Pi0s using highest energy pairs and Epd Cut Photons;Eta;", 100,1,5.5);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhEn,"H1F_EpdPhEn","Energy of Pi0s using highest energy pairs and Epd Cut Photons;Energy (GeV)", 1000,0,100);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhPt,"H1F_EpdPhPt","Pt of Pi0s using highest energy pairs and Epd Cut Photons;Pt (GeV)", 100,0,10);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhAllPoints,"H1F_EpdPhAllPoints","Invariant mass of all point pair combinations with Epd Cut Photons;Invariant Mass (GeV);", 500,0,1);
+
+
+  loaded += mHists->AddH1F(file,mH1F_EpdChInvMass,"H1F_EpdChInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 1000,0,5);
+  //loaded += mHists->AddH2F(file,mH2F_EpdChHeatMap,"H2F_EpdChHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
+  loaded += mHists->AddH1F(file,mH1F_EpdChPointMult,"H1F_EpdChPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdChZgg,"H1F_EpdChZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Charged;Zgg;", 100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_EpdChPhi,"H1F_EpdChPhi","Phi of Pi0s using highest energy pairs and Epd Cut Charged;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_EpdChEta,"H1F_EpdChEta","Eta of Pi0s using highest energy pairs and Epd Cut Charged;Eta;", 100,1,5.5);
+  loaded += mHists->AddH1F(file,mH1F_EpdChEn,"H1F_EpdChEn","Energy of Pi0s using highest energy pairs and Epd Cut Charged;Energy (GeV)", 1000,0,100);
+  loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
+  loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 1000,0,5);
+
+  //loaded += mHists->AddH1F(file,mH1F_2ndBestPi0Mass,"H1F_2ndBestPi0Mass", "Second best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
+  //loaded += mHists->AddH1F(file,mH1F_3rdBestPi0Mass,"H1F_3rdBestPi0Mass", "Third best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
+  //loaded += mHists->AddH1F(file,mH1F_LowPointMult,"H1F_LowPointMult", "Using best pi0 mass with point multiplicity (<4);Invariant Mass (GeV)", 500,0,1);
+
+  //loaded += mHists->AddH1F(file,mH1F_GoodPointMult,"H1F_GoodPointMult","Point Multiplicity used for pi0 candidate pairs from photons with EPD cut;Point Multiplicity", 30,0,30);
+  //loaded += mHists->AddH1F(file,mH1F_PointsEpd,"H1F_PointsEpd","Number of points with EPD nmip cut;Point Multiplicty",30,0,30);
+
+  //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5); 
+  return loaded;
+}
+
 Int_t StMuFcsPi0TreeMaker::Init()
 {
-  if( mFilename.Length() == 0){ mFilename="test.root"; } //Ensure a TFile is always created
-  mFile_Output = new TFile(mFilename.Data(), "RECREATE");
+  if( mFilename.Length() == 0){ mFilename="StMuFcsPi0Ana.root"; } //Ensure a TFile is always created
+  if( mHists==0 ){
+    LOG_INFO << "StMuFcsPi0TreeMaker::Init() - No HistManager specified. Creating a new one with file name " << mFilename << ". Potential conflicts exist if a HistManager exists with same file name" << endm;
+    mHists = new HistManager();
+    mInternalHists = true;
+    mFile_Output = mHists->InitFile(mFilename.Data(),"RECREATE");//new TFile(mFilename.Data(), "RECREATE");
+  }
+  else{
+    mFile_Output = mHists->InitFile(); //No arguments just returns the internal file pointer
+    mInternalHists = false;
+  }
+  mFile_Output->cd(); //File expected to be nonzero here if everything initialized correctly
   mPi0Tree     = new TTree("Pi0Tree","Tree with FcsPi0Candidate");
   mEvtInfo     = new FcsEventInfo();
   mPhArr       = new TClonesArray("FcsPhotonCandidate");
@@ -75,12 +169,14 @@ Int_t StMuFcsPi0TreeMaker::Init()
   mPi0Tree->Branch("Photon",&mPhArr);
   mPi0Tree->Branch("Pi0",&mPi0Arr);
   
-  mH1F_Entries = new TH1F("H1_Entries", "Number of entries;", 3,-0.5, 2.5);
-  mH1F_Entries->Sumw2();
-
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap");
-  if( mFcsTrigMap==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - No Trigger Map found" << endm; }
-  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - Trigger Map is empty" << endm; } }
+  
+  if( mFcsTrigMap==0 ){ LOG_WARN << "StMuFcsPi0TreeMaker::Init() - No Trigger Map found" << endm; }
+  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ LOG_WARN << "StMuFcsPi0TreeMaker::Init() - Trigger Map is empty" << endm; } }
+
+  UInt_t totalhists = this->LoadHists(0); //This is total of histograms loaded from a file not created. Don't use mFileOutput as you are not trying to load from #mFileOutput
+  mHists->SetOwner(kTRUE);
+  LOG_INFO << "StMuFcsPi0TreeMaker::Init() - Loaded " << totalhists << " histograms" << endm;
 
   return kStOk;
 }
@@ -112,15 +208,13 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
   mPi0Arr      = new TClonesArray("FcsPi0Candidate");  
   mPi0Tree->SetBranchAddress("Pi0",&mPi0Arr);
 
-  if( mH1F_Entries!=0 ){ std::cout << "LoadDataFromFile - WARNING:Histogram of Entries pointer not zero\n -> Deleting old data for new one" << std::endl; }
-  mH1F_Entries = (TH1*)file->Get("H1_Entries");
-  if( mH1F_Entries==0 ){ std::cout << "LoadDataFromFile - WARNING:Entries histogram not found in file" << std::endl; }
-
-
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap"); //Don't use GetMaker since it doesn't use the right name when searching
   if( mFcsTrigMap==0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
   else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - Trigger Map is empty" << std::endl; } }
 
+  if( mHists==0 ){ mHists = new HistManager(); }
+  UInt_t totalhists = this->LoadHists(file);
+  std::cout << "|TotalHistsLoaded:"<<totalhists << std::endl;
   //std::cout << "DUMB CHECK "<<mFcsTrigMap << std::endl;
   //std::string name(mFcsTrigMap->nameFromId(45,22349011));
   //std::cout << name << std::endl;
@@ -153,7 +247,7 @@ Int_t StMuFcsPi0TreeMaker::Finish()
   if( mFile_Output!=0 ){
     mFile_Output->cd();
     mPi0Tree->Write();
-    mH1F_Entries->Write();
+    mHists->Write();
   }
   return kStOK;
 }
@@ -187,7 +281,11 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       if( mFcsTrigMap!=0 ){
 	std::string thistrig = mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber());
 	for( unsigned int j=0; j<mTargetTrig.size(); ++j ){
-	  if( mTargetTrig.at(j)==thistrig ){ mNTrig++; validtrigfound=true; }
+	  if( mTargetTrig.at(j)==thistrig ){
+	    mNTrig++;
+	    validtrigfound=true;
+	    mH1F_Triggers->Fill( thistrig.c_str(), 1);
+	  }
 	}
       }
     }
@@ -265,6 +363,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   else if( mEvtInfo->mBbcVz > -998 ){ foundvertex = 4; usevertex = mEvtInfo->mBbcVz; }
   else{ foundvertex = 0; usevertex = -999; } //Redundant but don't want a dangling "else if" statement
   mEvtInfo->mFoundVertex = foundvertex;
+  mH2F_foundVvertex->Fill(usevertex,foundvertex);
 
   //TClonesArray* hits = mMuFcsColl->getHitArray();
   //if( hits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
@@ -302,6 +401,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mPxRaw = iclu_p.px();
 	ph->mPyRaw = iclu_p.py();
 	ph->mPzRaw = iclu_p.pz();
+	mH1F_ClusterEnergy->Fill(iclu_energy);
 
 	//std::cout << "Cluster|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
 
@@ -344,12 +444,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	ph->mX = ipoi_pos[0];
 	ph->mY = ipoi_pos[1];
 	ph->mZ = ipoi_pos[2];
+	mH2F_PhotonHeatMap->Fill(ipoi_pos[0],ipoi_pos[1]);
+	if( 78.2<=ipoi_energy && ipoi_energy<79.4 ){ mH2F_PhotonHeatMapB->Fill(ipoi_pos[0],ipoi_pos[1]); } //Region with spike
+	if( 76.8<=ipoi_energy && ipoi_energy<78.0 ){ mH2F_PhotonHeatMapG->Fill(ipoi_pos[0],ipoi_pos[1]); } //Region near spike
 
 	ph->mEn = ipoi_energy;
 	ph->mPxRaw = ipoi_p.px();
 	ph->mPyRaw = ipoi_p.py();
 	ph->mPzRaw = ipoi_p.pz();
-
+	mH1F_PointEnergy->Fill(ipoi_energy);
 
 	if( foundvertex > 0 ){ 	StLorentzVectorD ipoi_p_withz = mFcsDb->getLorentzVector( ipoi_pos, ipoi_energy, usevertex );
 	  ph->mPxVert = ipoi_p_withz.px();
@@ -368,11 +471,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 
   //Check photon candidates if they have any hits in the EPD. Use a separate loop so that this information could be used in the pi0 checking loop if needed. In future may also want to check against FCS preshower (EPD) hits
   for( Int_t iph = 0; iph<mPhArr->GetEntriesFast(); ++iph ){
-    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->At(iph);
+    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(iph);
     std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex));
+    if( !(ph->mFromCluster) ){
+      mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
+      //if( fabs(usevertex)<150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
+    }
     //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
     //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
-
+    
     unsigned int nepdhits = 0;
     StSPtrVecEpdHit* epdhits = 0;
     if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
@@ -399,61 +506,262 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	//std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
       }
     }
+    mH2F_EpdNmip->Fill(ph->mFromCluster,ph->mEpdHitNmip);
   }
 
 
   //std::cout << "|ncandidates:"<<ncandidates <<"|clustersize:"<<clustersize <<"|Size:"<<mPhArr->GetEntriesFast() << std::endl;
+  Int_t npoints = ncandidates - clustersize; //Don't need to add 1 since including clustersize but not ncandidates
+  mH1F_PointMult->Fill(npoints);
+  mPhArr->Sort(); //Since this is properly sorted with clusters showing up first clustersize is unchanged. Also sorts by energy
+  
   Int_t npi0candidate = 0;
+  //Filling cluster pi0s and cluster photon/elecron epd nmip cut
+  std::vector<Int_t> goodclusphotonsidx;    //Here I really mean photon candidates below epd cut threshold
+  std::vector<Int_t> goodcluselectronsidx;  //Here I really mean photon candidates above epd cut threshold
   for( Int_t ic = 0; ic<clustersize; ++ic ){
-    FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ic);
-    if( ! iclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
+    FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ic);
+    if( !(iclus->mFromCluster) ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
     if( ic==(clustersize-1) ){ continue; }
-    for( Int_t jc=ic+1; jc<mEvtInfo->mClusterSize; jc++ ){
-      FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jc);
-      if( ! jclus->mFromCluster ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
-      FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
-      pi0c->mFromCluster = true;
-      pi0c->mPhoton1Idx = ic;
-      pi0c->mPhoton2Idx = jc;
 
+    if( iclus->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
+      if( iclus->mEpdHitNmip<mEpdNmipCut ){ goodclusphotonsidx.emplace_back(ic); }
+      else{ goodcluselectronsidx.emplace_back(ic); }
+    }
+    
+    for( Int_t jc=ic+1; jc<clustersize; jc++ ){
+      FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->UncheckedAt(jc);
+      if( !(jclus->mFromCluster) ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
       TLorentzVector pi0Vert_LV = iclus->lvVert() + jclus->lvVert();
-      pi0c->mPx = pi0Vert_LV.Px();
-      pi0c->mPy = pi0Vert_LV.Py();
-      pi0c->mPz = pi0Vert_LV.Pz();
-      pi0c->mEn = pi0Vert_LV.E();
-
-      pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
-      pi0c->mDgg     = FcsPi0Candidate::dgg(*iclus,*jclus);
-      pi0c->mZgg     = FcsPi0Candidate::zgg(*iclus,*jclus);
-      pi0c->mAlpha   = FcsPi0Candidate::alpha(*iclus,*jclus);
-      pi0c->mInvMass = pi0Vert_LV.Mag();
-      //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|clustermass:"<<pi0c->mInvMass <<  std::endl;
+      if( ic==0 ){ //Since we have a sorted photon array highest two energies are the first two entries
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = true;
+	pi0c->mFromPh = 0;
+	pi0c->mPhoton1Idx = ic;
+	pi0c->mPhoton2Idx = jc;
+	
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*iclus,*jclus);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*iclus,*jclus);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*iclus,*jclus);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|clustermass:"<<pi0c->mInvMass <<  std::endl;
+	break;
+      }
+      /*
+	else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_AllPointPairMass->Fill(pi0Vert_LV.Mag());
+	}*/
     }
   }
-  for( Int_t ip = clustersize; ip<mPhArr->GetEntriesFast(); ++ip ){
-    FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(ip);
+
+  //Making pi0s with cluster cut photon candidates
+  for( UInt_t iidx=0; iidx<goodclusphotonsidx.size(); ++iidx ){
+    if( iidx==(goodclusphotonsidx.size()-1) ){ continue; }
+    FcsPhotonCandidate* iepdph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodclusphotonsidx.at(iidx));
+    for( UInt_t jidx=iidx+1; jidx<goodclusphotonsidx.size(); ++jidx ){
+      FcsPhotonCandidate* jepdph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodclusphotonsidx.at(jidx));
+      TLorentzVector pi0Vert_LV = iepdph->lvVert() + jepdph->lvVert();
+      if( iidx==0 ){ //Since we sorted array by index first two indices represent highest energy pairs with epd cut
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = true;
+	pi0c->mFromPh = -1;
+	pi0c->mPhoton1Idx = goodclusphotonsidx.at(iidx);
+	pi0c->mPhoton2Idx = goodclusphotonsidx.at(jidx);
+	
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*iepdph,*jepdph);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*iepdph,*jepdph);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*iepdph,*jepdph);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	break;
+      }
+      /*
+      else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_EpdPhAllPoints->Fill(pi0Vert_LV.Mag());
+	}*/
+    }
+  }
+
+  //Making pi0s with cluster cut electron candidates
+  for( UInt_t iidx=0; iidx<goodcluselectronsidx.size(); ++iidx ){
+    if( iidx==(goodcluselectronsidx.size()-1) ){ continue; }
+    FcsPhotonCandidate* iepdch = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodcluselectronsidx.at(iidx));
+    for( UInt_t jidx=iidx+1; jidx<goodcluselectronsidx.size(); ++jidx ){
+      FcsPhotonCandidate* jepdch = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodcluselectronsidx.at(jidx));
+      if( iidx==0 ){ //Since we sorted array by index first two indices represent highest energy pairs with epd cut
+	TLorentzVector pi0Vert_LV = iepdch->lvVert() + jepdch->lvVert();
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = true;
+	pi0c->mFromPh = 1;
+	pi0c->mPhoton1Idx = goodcluselectronsidx.at(iidx);
+	pi0c->mPhoton2Idx = goodcluselectronsidx.at(jidx);
+	
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*iepdch,*jepdch);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*iepdch,*jepdch);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*iepdch,*jepdch);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	break;
+      }
+      /*
+      else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_EpdChAllPoints->Fill(pi0Vert_LV.Mag());
+	}*/
+    }
+  }
+
+
+  //Filling point pi0s and cluster photon/elecron epd nmip cut
+  std::vector<Int_t> goodpointphotonsidx;      //Here I really mean photon candidates below epd cut threshold
+  std::vector<Int_t> goodpointelectronsidx;    //Here I really mean photon candidates above epd cut threshold
+  for( Int_t ip = clustersize; ip<ncandidates; ++ip ){
+    FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ip);
     if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
     if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
-    for( Int_t jp=ip+1; jp<mPhArr->GetEntriesFast(); jp++ ){
-      FcsPhotonCandidate* jpoi = (FcsPhotonCandidate*) mPhArr->ConstructedAt(jp);
+
+    if( ipoi->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
+      if( ipoi->mEpdHitNmip<mEpdNmipCut ){ goodpointphotonsidx.emplace_back(ip); }
+      else{ goodpointelectronsidx.emplace_back(ip); }
+    }
+    
+    for( Int_t jp=ip+1; jp<ncandidates; ++jp ){
+      FcsPhotonCandidate* jpoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(jp);
       if( jpoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
-      FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
-      pi0c->mFromCluster = false;
-      pi0c->mPhoton1Idx = ip;
-      pi0c->mPhoton2Idx = jp;
-
       TLorentzVector pi0Vert_LV = ipoi->lvVert() + jpoi->lvVert();
-      pi0c->mPx = pi0Vert_LV.Px();
-      pi0c->mPy = pi0Vert_LV.Py();
-      pi0c->mPz = pi0Vert_LV.Pz();
-      pi0c->mEn = pi0Vert_LV.E();
+      if( ip==clustersize ){ //Since we have a sorted photon array highest two energies are the first two entries
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = false;
+	pi0c->mFromPh = 0;
+	pi0c->mPhoton1Idx = ip;
+	pi0c->mPhoton2Idx = jp;
 
-      pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
-      pi0c->mDgg     = FcsPi0Candidate::dgg(*ipoi,*jpoi);
-      pi0c->mZgg     = FcsPi0Candidate::zgg(*ipoi,*jpoi);
-      pi0c->mAlpha   = FcsPi0Candidate::alpha(*ipoi,*jpoi);
-      pi0c->mInvMass = pi0Vert_LV.Mag();
-      //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*ipoi,*jpoi);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*ipoi,*jpoi);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*ipoi,*jpoi);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	mH1F_BestPi0Mass->Fill(pi0c->mInvMass);
+	//mH2F_BestPi0HeatMap->Fill();
+	mH1F_BestPi0Zgg->Fill(pi0c->mZgg);
+	mH1F_BestPi0Phi->Fill(pi0c->phi());
+	mH1F_BestPi0Eta->Fill(pi0c->mEta);
+	mH1F_BestPi0En->Fill(pi0c->mEn);
+	mH1F_BestPi0Pt->Fill(pi0c->pt());
+	mH1F_AllPointPairMass->Fill(pi0Vert_LV.Mag());
+	mH2F_Energy_ph1Vph2->Fill(ipoi->mEn,jpoi->mEn);
+      }
+      else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_AllPointPairMass->Fill(pi0Vert_LV.Mag());
+      }
+    }
+  }
+
+
+  //Making pi0s with point cut photon candidates
+  mH1F_EpdPhPointMult->Fill(goodpointphotonsidx.size());
+  for( UInt_t iidx=0; iidx<goodpointphotonsidx.size(); ++iidx ){
+    if( iidx==(goodpointphotonsidx.size()-1) ){ continue; }
+    FcsPhotonCandidate* iepdph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodpointphotonsidx.at(iidx));
+    for( UInt_t jidx=iidx+1; jidx<goodpointphotonsidx.size(); ++jidx ){
+      FcsPhotonCandidate* jepdph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodpointphotonsidx.at(jidx));
+      TLorentzVector pi0Vert_LV = iepdph->lvVert() + jepdph->lvVert();
+      if( iidx==0 ){ //Since we sorted array by index first two indices represent highest energy pairs with epd cut
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = false;
+	pi0c->mFromPh = -1;
+	pi0c->mPhoton1Idx = goodpointphotonsidx.at(iidx);
+	pi0c->mPhoton2Idx = goodpointphotonsidx.at(jidx);
+	
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*iepdph,*jepdph);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*iepdph,*jepdph);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*iepdph,*jepdph);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	mH1F_EpdPhInvMass->Fill(pi0c->mInvMass);
+	//mH2F_BestPi0HeatMap->Fill();
+	mH1F_EpdPhZgg->Fill(pi0c->mZgg);
+	mH1F_EpdPhPhi->Fill(pi0c->phi());
+	mH1F_EpdPhEta->Fill(pi0c->mEta);
+	mH1F_EpdPhEn->Fill(pi0c->mEn);
+	mH1F_EpdPhPt->Fill(pi0c->pt());
+	mH1F_EpdPhAllPoints->Fill(pi0Vert_LV.Mag());
+      }
+      else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_EpdPhAllPoints->Fill(pi0Vert_LV.Mag());
+      }
+    }
+  }
+
+
+  //Making pi0s with point cut electron candidates
+  mH1F_EpdChPointMult->Fill(goodpointelectronsidx.size());
+  for( UInt_t iidx=0; iidx<goodpointelectronsidx.size(); ++iidx ){
+    if( iidx==(goodpointelectronsidx.size()-1) ){ continue; }
+    FcsPhotonCandidate* iepdch = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodpointelectronsidx.at(iidx));
+    for( UInt_t jidx=iidx+1; jidx<goodpointelectronsidx.size(); ++jidx ){
+      FcsPhotonCandidate* jepdch = (FcsPhotonCandidate*) mPhArr->UncheckedAt(goodpointelectronsidx.at(jidx));
+      TLorentzVector pi0Vert_LV = iepdch->lvVert() + jepdch->lvVert();
+      if( iidx==0 ){ //Since we sorted array by index first two indices represent highest energy pairs with epd cut
+	FcsPi0Candidate* pi0c = (FcsPi0Candidate*) mPi0Arr->ConstructedAt(npi0candidate++);
+	pi0c->mFromCluster = false;
+	pi0c->mFromPh = 1;
+	pi0c->mPhoton1Idx = goodpointelectronsidx.at(iidx);
+	pi0c->mPhoton2Idx = goodpointelectronsidx.at(jidx);
+	
+	pi0c->mPx = pi0Vert_LV.Px();
+	pi0c->mPy = pi0Vert_LV.Py();
+	pi0c->mPz = pi0Vert_LV.Pz();
+	pi0c->mEn = pi0Vert_LV.E();
+	
+	pi0c->mEta     = pi0Vert_LV.PseudoRapidity();
+	pi0c->mDgg     = FcsPi0Candidate::dgg(*iepdch,*jepdch);
+	pi0c->mZgg     = FcsPi0Candidate::zgg(*iepdch,*jepdch);
+	pi0c->mAlpha   = FcsPi0Candidate::alpha(*iepdch,*jepdch);
+	pi0c->mInvMass = pi0Vert_LV.Mag();
+	mH1F_EpdChInvMass->Fill(pi0c->mInvMass);
+	//mH2F_BestPi0HeatMap->Fill();
+	mH1F_EpdChZgg->Fill(pi0c->mZgg);
+	mH1F_EpdChPhi->Fill(pi0c->phi());
+	mH1F_EpdChEta->Fill(pi0c->mEta);
+	mH1F_EpdChEn->Fill(pi0c->mEn);
+	mH1F_EpdChPt->Fill(pi0c->pt());
+	mH1F_EpdChAllPoints->Fill(pi0Vert_LV.Mag());
+      }
+      else{
+	//std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
+	mH1F_EpdChAllPoints->Fill(pi0Vert_LV.Mag());
+      }
     }
   }
 
@@ -511,4 +819,229 @@ std::vector<Double_t> StMuFcsPi0TreeMaker::ProjectToEpd(Double_t xfcs, Double_t 
   intersection.emplace_back(linedirection[2]*tintersection+zvertex);
   return intersection;
 }
+
+void StMuFcsPi0TreeMaker::PaintEventQa(TCanvas* canv,  const char* savename) const
+{
+  canv->Clear();
+
+  canv->Divide(2,2);
+  canv->cd(1);
+  mH1F_Entries->Draw("hist e");
+  canv->cd(2)->SetLogy();
+  mH1F_Triggers->Draw("hist e");
+  canv->cd(3)->SetLogz();
+  mH2F_foundVvertex->Draw("colz");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintPhotonQa(TCanvas* canv, const char* savename)   const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+  canv->cd(1)->SetLogz();
+  mH2F_PhotonHeatMap->Draw("colz");
+  canv->cd(2)->SetLogz();
+  mH2F_EpdProjHitMap->Draw("colz");
+  canv->cd(3)->SetLogz();
+  //mH2F_EpdProjHitMap_Vcut->Draw("colz");
+  canv->cd(4)->SetLogz();
+  mH2F_EpdNmip->Draw("colz");
+  canv->cd(5)->SetLogy();
+  mH1F_ClusterEnergy->Draw("hist e");
+  canv->cd(6)->SetLogy();
+  mH1F_PointEnergy->Draw("hist e");
+  canv->cd(7)->SetLogz();
+  mH2F_Energy_ph1Vph2->Draw("colz");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintBestPi0(TCanvas* canv,  const char* savename)  const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+  canv->cd(1);
+  mH1F_PointMult->Draw("hist e");
+  canv->cd(2);
+  mH1F_BestPi0Zgg->Draw("hist e");
+  canv->cd(3);
+  mH1F_BestPi0Phi->Draw("hist e");
+  canv->cd(4);
+  mH1F_BestPi0Eta->Draw("hist e");
+  canv->cd(5);
+  mH1F_BestPi0En->Draw("hist e");
+  canv->cd(6);
+  mH1F_BestPi0Mass->Draw("hist e");
+  canv->cd(7);
+  mH1F_AllPointPairMass->Draw("hist e");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintEpdPhPi0(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+  canv->cd(1);
+  mH1F_EpdPhPointMult->Draw("hist e");
+  canv->cd(2);
+  mH1F_EpdPhZgg->Draw("hist e");
+  canv->cd(3);
+  mH1F_EpdPhPhi->Draw("hist e");
+  canv->cd(4);
+  mH1F_EpdPhEta->Draw("hist e");
+  canv->cd(5);
+  mH1F_EpdPhEn->Draw("hist e");
+  canv->cd(6);
+  mH1F_EpdPhInvMass->Draw("hist e");
+  canv->cd(7);
+  mH1F_EpdPhAllPoints->Draw("hist e");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintEpdChPi0(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+  canv->cd(1);
+  mH1F_EpdChPointMult->Draw("hist e");
+  canv->cd(2);
+  mH1F_EpdChZgg->Draw("hist e");
+  canv->cd(3);
+  mH1F_EpdChPhi->Draw("hist e");
+  canv->cd(4);
+  mH1F_EpdChEta->Draw("hist e");
+  canv->cd(5)->SetLogy();
+  mH1F_EpdChEn->Draw("hist e");
+  canv->cd(6)->SetLogy();
+  mH1F_EpdChInvMass->Draw("hist e");
+  canv->cd(7)->SetLogy();
+  mH1F_EpdChAllPoints->Draw("hist e");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+
+  //canv->cd(1);
+  canv->cd(1)->SetLogy();
+  TLegend* legpad1 = new TLegend(0.5,0.5,0.93,0.93,"","nbNDC");
+  TH1* h1pmult = mH1F_PointMult->DrawNormalized("hist e");
+  h1pmult->SetStats(0);
+  h1pmult->SetLineColor(kBlack);
+  AddHistStatsOneline(legpad1,h1pmult,"NoCut");
+  TH1* h1phmult = mH1F_EpdPhPointMult->DrawNormalized("hist e same");
+  h1phmult->SetLineColor(kBlue);
+  AddHistStatsOneline(legpad1,h1phmult,"EpdNmip<0.7");
+  TH1* h1chmult = mH1F_EpdChPointMult->DrawNormalized("hist e same");
+  AddHistStatsOneline(legpad1,h1chmult,"EpdNmip>=0.7");
+  h1chmult->SetLineColor(kGreen);
+  legpad1->Draw();
+  
+  //canv->cd(2);
+  canv->cd(2)->SetLogy();
+  TH1* h1pzgg = mH1F_BestPi0Zgg->DrawNormalized("hist e");
+  h1pzgg->SetLineColor(kBlack);
+  TH1* h1phzgg = mH1F_EpdPhZgg->DrawNormalized("hist e same");
+  h1phzgg->SetLineColor(kBlue);
+  TH1* h1chzgg  = mH1F_EpdChZgg->DrawNormalized("hist e same");
+  h1chzgg->SetLineColor(kGreen);
+  
+  canv->cd(3);
+  //canv->cd(3)->SetLogy();
+  TH1* h1pphi = mH1F_BestPi0Phi->DrawNormalized("hist e");
+  h1pphi->SetLineColor(kBlack);
+  TH1* h1phphi = mH1F_EpdPhPhi->DrawNormalized("hist e same");
+  h1phphi->SetLineColor(kBlue);
+  TH1* h1chphi = mH1F_EpdChPhi->DrawNormalized("hist e same");
+  h1chphi->SetLineColor(kGreen);
+  
+  canv->cd(4);
+  //canv->cd(4)->SetLogy();
+  TH1* h1peta = mH1F_BestPi0Eta->DrawNormalized("hist e");
+  h1peta->SetLineColor(kBlack);
+  TH1* h1pheta = mH1F_EpdPhEta->DrawNormalized("hist e same");
+  h1pheta->SetLineColor(kBlue);
+  TH1* h1cheta = mH1F_EpdChEta->DrawNormalized("hist e same");
+  h1cheta->SetLineColor(kGreen);
+
+  //canv->cd(5);
+  canv->cd(5)->SetLogy();
+  TH1* h1pen = mH1F_BestPi0En->DrawNormalized("hist e");
+  h1pen->SetLineColor(kBlack);
+  TH1* h1phen = mH1F_EpdPhEn->DrawNormalized("hist e same");
+  h1phen->SetLineColor(kBlue);
+  TH1* h1chen = mH1F_EpdChEn->DrawNormalized("hist e same");
+  h1chen->SetLineColor(kGreen);
+
+  canv->cd(6);
+  //canv->cd(6)->SetLogy();
+  TH1* h1chmass = mH1F_EpdChInvMass->DrawNormalized("hist e same");
+  h1chmass->GetXaxis()->SetRangeUser(0,0.3);
+  h1chmass->SetLineColor(kGreen);
+  TH1* h1pmass = mH1F_BestPi0Mass->DrawNormalized("hist e");
+  //h1pmass->GetXaxis()->SetRangeUser(0,0.3);
+  h1pmass->SetLineColor(kBlack);
+  TH1* h1phmass = mH1F_EpdPhInvMass->DrawNormalized("hist e same");
+  h1phmass->SetLineColor(kBlue);
+
+  canv->cd(7);
+  //canv->cd(7)->SetLogy();
+  TH1* h1allmass = mH1F_AllPointPairMass->DrawNormalized("hist e");
+  h1allmass->SetLineColor(kBlack);
+  TH1* h1phallmass = mH1F_EpdPhAllPoints->DrawNormalized("hist e same");
+  h1phallmass->SetLineColor(kBlue);
+  TH1* h1challmass = mH1F_EpdChAllPoints->DrawNormalized("hist e same");
+  h1challmass->SetLineColor(kGreen);
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title )
+{
+  //This function is good for when many histograms are plotted
+  if( HistLeg==0 || h1==0 ){return;}
+  if( h1->GetDimension()==1 ){
+    std::stringstream ss_entry;
+    if( title.size()==0 ){ ss_entry << h1->GetName(); }
+    else{ ss_entry << title; }
+    ss_entry << "|E:"<< h1->GetEntries();
+    ss_entry << "|M:"<< h1->GetMean();
+    ss_entry << "|R:"<< h1->GetRMS();
+    //ss_entry << "|U:"<< h1->GetBinContent(0);
+    //ss_entry << "|O:"<< h1->GetBinContent(h1->GetNbinsX()+1);
+    HistLeg->AddEntry(h1, ss_entry.str().c_str(),"fle" );
+  }
+}
+
+void StMuFcsPi0TreeMaker::PaintEnergyZoom(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+
+  canv->Divide(2,2);
+
+  canv->cd(1);
+  TH1* h1_encopy = (TH1*)mH1F_ClusterEnergy->DrawClone("hist e");
+  h1_encopy->GetXaxis()->SetRangeUser(75,85);
+  h1_encopy->SetLineColor(kBlack);
+
+  canv->cd(2);
+  mH2F_PhotonHeatMapG->Draw("colz");
+
+  canv->cd(3);
+  mH2F_PhotonHeatMapB->Draw("colz");
+  
+  canv->Print(savename);
+}
+
 

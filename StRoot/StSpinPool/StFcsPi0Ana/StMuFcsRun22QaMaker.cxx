@@ -126,8 +126,8 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
       loaded += mHists->AddH2FArr(file,(mH2F_Hit_adcVtb[i]),nchs,histname.Data(),histtitle.Data(),100,0,100,400,0,4000);
     }
     histname = "H2F_Hit_enVid_" + namesuffix[i];
-    histtitle = "Energy vs. Id for " + namesuffix[i] + ";id;energy (GeV)";    
-    loaded += mHists->AddH2F(file,(mH2F_Hit_enVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);
+    histtitle = "Energy vs. Id for " + namesuffix[i] + ";id;energy (GeV)";
+    loaded += mHists->AddH2F(file,(mH2F_Hit_enVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,200,0,200);
     histname = "H2F_Hit_fitpeakVid_" + namesuffix[i];
     histtitle = "Fitted Peak Location vs. Id for " + namesuffix[i] + ";id;tb";
     loaded += mHists->AddH2F(file,(mH2F_Hit_fitpeakVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,100,0,100);

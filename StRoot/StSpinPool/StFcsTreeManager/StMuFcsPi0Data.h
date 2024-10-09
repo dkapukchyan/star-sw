@@ -17,6 +17,8 @@
 
   @[September 30, 2024] > Added #FcsPhotonCandidate::IsSortable() and #FcsPhotonCandidate::IsEqual() and #FcsPhotonCandidate::Compare() to be able to sort photon candidates by cluster and energy. Also #FcsPhotonCandidate::Print() now prints #FcsPhotonCandidate::mEpdHitNmip value.
 
+  @[October 3, 2024] > Added #mFromPh to #FcsPi0Candidate to distinguish pi0s with and without an epd cut.
+
 */
 
 
@@ -123,6 +125,7 @@ public:
   ~FcsPi0Candidate();
 
   bool mFromCluster = false;  ///< Pi0 reconstructed from clusters or points
+  Short_t mFromPh = 0;        ///< Flag to indicate if pi0 constructed using an epd photon cut or not (0=nocut, 1=both charged (>nmip), -1=both neutral(<nmip))
   Int_t mPhoton1Idx = -1;     ///< Index in #TClonesArray of #FcsPhotonCandidate 1 that was used to reconstruct this Pi0
   Int_t mPhoton2Idx = -1;     ///< Index in #TClonesArray of #FcsPhotonCandidate 2 that was used to reconstruct this Pi0
 

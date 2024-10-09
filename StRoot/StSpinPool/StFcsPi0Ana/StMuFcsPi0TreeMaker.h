@@ -21,6 +21,10 @@
 
   @[September 27, 2024] > Added a function #ProjectToEpd() that will project an x,y,z position on the fcs and a zvertex onto the EPD plane. Used this function to fill FcsPhotonCandidate::mEpdHitNmip Changed found vertex from the hex to integer representation.
 
+  @[October 4, 2024] > Added #mEpdNmipCut variable to make it easier to vary the EPD nmip cut. Added and implemented #mHists, a #HistManager, to manage all the histograms from 'AnaPi0Tree.cc' where the histograms were being filled by reading the tree. It was moved here to speed up processing the data. Implemented #LoadHists() to load all the histograms from a file and the tree. Added various "Paint" functions for the histograms. Because of this change the version was upgraded to version 2.
+  
+  @[October 8, 2024] > Found spikes in the point energy distribution and implemented #mH2F_PhotonHeatMapG and #mH2F_PhotonHeatMapB to see if the energy spikes are happening in a particular region. Also implemented #PaintEnergyZoom() to zoom in on the energy region and to plot the "G" and "B" histograms. Also increased the energy range to 200 GeV since the tower maximum was designed to go to 180 GeV.
+
 */
 
 
@@ -36,6 +40,7 @@
 #include "TTree.h"
 #include "TLeaf.h"
 #include "TH1F.h"
+#include "TLegend.h"
 
 //STAR Headers
 #include "StEnumerations.h"
@@ -74,8 +79,10 @@ public:
   virtual Int_t Finish();
   void setOutFileName(const char* name) { mFilename = name; }
   void setEnergyCut(Double_t val){ mEnCut = val; }
+  void setEpdNmipCut(Double_t val ){ mEpdNmipCut = val; }
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
+  void setHistManager( HistManager* hm );
   
   TTree* getPi0Tree()const{ return mPi0Tree; }
 
@@ -88,11 +95,11 @@ public:
 
   TClonesArray* getPhArr()const{ return mPhArr; }
   Int_t getNPhoton()const{ return mPhArr->GetEntriesFast(); }
-  FcsPhotonCandidate* getPhoton(Int_t iph)const{ return dynamic_cast<FcsPhotonCandidate*>(mPhArr->At(iph)); }
+  FcsPhotonCandidate* getPhoton(Int_t iph)const{ return dynamic_cast<FcsPhotonCandidate*>(mPhArr->UncheckedAt(iph)); }
 
   TClonesArray* getPi0Arr()const{ return mPi0Arr; }
   Int_t getNPi0()const{ return mPi0Arr->GetEntriesFast(); }
-  FcsPi0Candidate* getPi0(Int_t ipi0)const{ return dynamic_cast<FcsPi0Candidate*>(mPi0Arr->At(ipi0)); }
+  FcsPi0Candidate* getPi0(Int_t ipi0)const{ return dynamic_cast<FcsPi0Candidate*>(mPi0Arr->UncheckedAt(ipi0)); }
   //#ifndef __CINT__
   //void SetTrigs(const char* trigname,...);//{ mTargetTrig.emplace_back(trigname); }
   //template<typename... Args>
@@ -101,12 +108,23 @@ public:
   void AddTrig(const char* trigname ){ mTargetTrig.emplace_back(trigname); }  //function to set trigger ids to use. Does not check for repetition so need to be a good user
   void IgnoreTrig(bool value=true){ mIgnoreTrig = value; }
   void LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
+  virtual UInt_t LoadHists(TFile* file);
 
   virtual void Print(Option_t* opt="") const; //"e" for event, "t" for trigger, "g" for photon, "p" for pi0, "a" for all
 
   static std::vector<Double_t> ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex);
+
+  void PaintEventQa(TCanvas* canv,  const char* savename="testevent.png")    const;
+  void PaintPhotonQa(TCanvas* canv, const char* savename="testphoton.png")   const;
+  void PaintBestPi0(TCanvas* canv,  const char* savename="testbestpi0.png")  const;
+  void PaintEpdPhPi0(TCanvas* canv, const char* savename="testepdphpi0.png") const;
+  void PaintEpdChPi0(TCanvas* canv, const char* savename="testepdchpi0.png") const;
+  void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
+  void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
+
+  static void AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title="" );
   
-protected:  
+protected:
   StMuDstMaker* mMuDstMkr        = 0;
   StMuDst* mMuDst                = 0;
   StMuEvent* mMuEvent            = 0;
@@ -140,26 +158,67 @@ protected:
   Int_t mTriggers[mMaxTrigs];           ///< Array of Triggers in the event 
   //void ResetTrigs();                    ///< Reset #mTriggers to default values
   TClonesArray* mPhArr = 0;             ///< #TClonesArray of #FcsPhotonCandidate
-  TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the valid pi0 events for analysis  
-  TH1* mH1F_Entries = 0;                ///< Number of events processed no cuts (i.e. "Make" calls)
-
-  Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
+  TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the best pi0 candidates for analysis
   
-  // int mFilter = 0;
-  // int mNEvents = -1;
-  // int mNAccepted = 0;
-  // int mMaxEvents = 30000;
-  // int bins = 150;
-  // float m_low = 0;
-  // float m_up = 0.4;
-  // float E_up = 10;
-  // float E_low = 8;
-  // float E_min = 1;
+  TH1* mH1F_Entries = 0;                ///< Number of events processed no cuts (i.e. "Make" calls)
+  TH1* mH1F_Triggers = 0;               ///< Triggers used in analysis
+  TH1* mH2F_foundVvertex = 0;           ///< found vertex bit vs. Vertex
 
+  TH1* mH2F_PhotonHeatMap = 0;          ///< Distribution of photons in STAR x,y space
+  TH1* mH2F_PhotonHeatMapG = 0;  ///< Distribution of photons in STAR x,y space when energy has a specific value near an energy spike
+  TH1* mH2F_PhotonHeatMapB = 0;  ///< Distribution of photons in STAR x,y space when energy has a specific value on an energy spike
+  TH1* mH2F_EpdProjHitMap = 0;          ///< Distribution of x,y projections of photon candidates onto STAR EPD plane in x,y space
+  //TH1* mH2F_EpdProjHitMap_Vcut = 0;     ///< Distribution of x,y projections of photon candidates onto STAR EPD plane in x,y space with cut |vertex|<150cm
+  TH1* mH2F_EpdNmip = 0;                ///< Nmip distributions for EPD matched projected clusters (x-axis bin 1) and points (y-axis bin 2)
+
+  TH1* mH1F_ClusterEnergy = 0;          ///< All Cluster energy
+  TH1* mH1F_PointEnergy = 0;            ///< All Point energy
+  TH1* mH2F_Energy_ph1Vph2 = 0;         ///< Histogram of two photons energy used in reconstruction
+  
+  TH1* mH1F_BestPi0Mass = 0;            ///< Invariant mass with just highest energy points
+  //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
+  TH1* mH1F_PointMult = 0;              ///< Raw point multiplicity in event
+  TH1* mH1F_BestPi0Zgg = 0;             ///< Zgg of for BestPi0
+  TH1* mH1F_BestPi0Phi = 0;             ///< Azimuthal angle for BestPi0
+  TH1* mH1F_BestPi0Eta = 0;             ///< Psuedorapidity for BestPi0
+  TH1* mH1F_BestPi0En = 0;              ///< Energy for BestPi0
+  TH1* mH1F_BestPi0Pt = 0;              ///< Pt for BestPi0
+  TH1* mH1F_AllPointPairMass = 0;       ///< Invariant mass of all pairs of points
+
+  TH1* mH1F_EpdPhInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate uncharged particles (EpdPh stands for Epd Photon, as in uncharged particle)
+  //TH1* mH2F_EpdPhHeatMap = 0;           ///< x,y locations for EpdPh
+  TH1* mH1F_EpdPhPointMult = 0;         ///< Point Multiplicity for EpdPh
+  TH1* mH1F_EpdPhZgg = 0;               ///< Zgg of for EpdPh
+  TH1* mH1F_EpdPhPhi = 0;               ///< Azimuthal angle for EpdPh
+  TH1* mH1F_EpdPhEta = 0;               ///< Psuedorapidity for EpdPh
+  TH1* mH1F_EpdPhEn = 0;                ///< Energy for EpdPh
+  TH1* mH1F_EpdPhPt = 0;             ///< Pt for EpdPh
+  TH1* mH1F_EpdPhAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate uncharged particles
+
+  TH1* mH1F_EpdChInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate charged particles (EpdCh stands for Epd Charged, as in charged particle)
+  //TH1* mH2F_EpdChHeatMap = 0;           ///< x,y locations for EpdCh
+  TH1* mH1F_EpdChPointMult = 0;         ///< Point multiplicty for EpdCh
+  TH1* mH1F_EpdChZgg = 0;               ///< Zgg for EpdCh
+  TH1* mH1F_EpdChPhi = 0;               ///< Azimuthal angle for EpdCh
+  TH1* mH1F_EpdChEta = 0;               ///< Psuedorapidity for EpdCh
+  TH1* mH1F_EpdChEn = 0;                ///< Energy for EpdCh
+  TH1* mH1F_EpdChPt = 0;                ///< Pt for EpdCh
+  TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles  
+
+  //Also separate low point multiplicity events
+  //TH1* mH1F_2ndBestPi0Mass = 0;
+  //TH1* mH1F_3rdBestPi0Mass = 0;
+  //TH1* mH1F_LowPointMult = 0;
+  
+  Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
+  Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
+  
 private:
-  TRandom3 mSpinRndm;
+  HistManager* mHists = 0;            ///< Manage loading and saving histograms
+  bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
+  TRandom3 mSpinRndm;                 ///< Spin state randomizer
 
-  ClassDef(StMuFcsPi0TreeMaker, 1)
+  ClassDef(StMuFcsPi0TreeMaker, 2)
 };
 
 #endif
