@@ -19,6 +19,8 @@
 
   @[October 3, 2024] > Added #mFromPh to #FcsPi0Candidate to distinguish pi0s with and without an epd cut.
 
+  @[October 11, 2024] > Changed how comparison works for #FcsPhotonCandidate so a #TClonesArray of #FcsPhotonCandidate is sorted in descending order of energy rather than ascending order.
+
 */
 
 
@@ -108,11 +110,11 @@ public:
   Double_t magPosition();        ///< Magnitude of postiion vector i.e. sqrt(#mX^2+#mY^2+#mZ^2)
 
   virtual Bool_t IsSortable() const {return kTRUE; }  ///< I guess this is flag to indicate to ROOT that object is sortable
-  virtual Bool_t IsEqual(const TObject* obj) const;   ///< if both are equal to pi0 mass then return true otherwise false 
-  virtual Int_t Compare(const TObject* obj) const;    ///< -1 if distance to pi0 mass of this object is less than the other's distance, 1 if it is greater than, 0 otherwise
+  virtual Bool_t IsEqual(const TObject* obj) const;   ///< if comparing clusters to points return false. otherwise if comparing clusters to clusters (or points to points) check if energy matches
+  virtual Int_t Compare(const TObject* obj) const;    ///< Returns 1 if comparing clusters to points (i.e. clusters are less than points). If comparing clusters to clusters (or points to points) if this->en<other->en return 1 so it does descending energy sort; -1 if this->en>other->en
 
-  virtual void Clear(Option_t* opt="");          ///< Resets all variables to defaults
-  virtual void Print(Option_t* opt="") const;    ///< Print all variables no options
+  virtual void Clear(Option_t* opt="");               ///< Resets all variables to defaults
+  virtual void Print(Option_t* opt="") const;         ///< Print all variables no options
 
   ClassDef( FcsPhotonCandidate, 1 )
 };

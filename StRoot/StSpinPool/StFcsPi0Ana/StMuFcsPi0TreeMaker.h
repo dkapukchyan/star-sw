@@ -24,6 +24,11 @@
   @[October 4, 2024] > Added #mEpdNmipCut variable to make it easier to vary the EPD nmip cut. Added and implemented #mHists, a #HistManager, to manage all the histograms from 'AnaPi0Tree.cc' where the histograms were being filled by reading the tree. It was moved here to speed up processing the data. Implemented #LoadHists() to load all the histograms from a file and the tree. Added various "Paint" functions for the histograms. Because of this change the version was upgraded to version 2.
   
   @[October 8, 2024] > Found spikes in the point energy distribution and implemented #mH2F_PhotonHeatMapG and #mH2F_PhotonHeatMapB to see if the energy spikes are happening in a particular region. Also implemented #PaintEnergyZoom() to zoom in on the energy region and to plot the "G" and "B" histograms. Also increased the energy range to 200 GeV since the tower maximum was designed to go to 180 GeV.
+  + @[October 10, 2024] > The data does show that there is a hot spot in the energy spike region when compared to a region without a spike. I need to analyze these histograms and the hit distribution histograms on a run by run basis.
+
+  @[October 10, 2024] > Added Pi0 Pt histograms. Changed number of bins on the invariant mass histograms for "EpdCh" to be half that of "Best" and "EpdPh". Added #mH2F_EpdProjHitMap_Vcut that is the same as #mH2F_EpdProjHitMap except that it only gets filled when |vertex|<150cm. This was done to check if the bad distributions were coming from bad vertex projections.
+  
+  @[October 11, 2024] > It was true that bad vertex projections are causing the bad EPD projections and it was also caused by analyzing certain run numbers. Small fixes and some changes to plotting. Also, now #FcsPhotonCandidate array is properly sorted in descending order of energy but accompanying fix in "StMuFcsPi0Data". It was previously being sorted in ascending order of energy.
 
 */
 
@@ -165,10 +170,10 @@ protected:
   TH1* mH2F_foundVvertex = 0;           ///< found vertex bit vs. Vertex
 
   TH1* mH2F_PhotonHeatMap = 0;          ///< Distribution of photons in STAR x,y space
-  TH1* mH2F_PhotonHeatMapG = 0;  ///< Distribution of photons in STAR x,y space when energy has a specific value near an energy spike
-  TH1* mH2F_PhotonHeatMapB = 0;  ///< Distribution of photons in STAR x,y space when energy has a specific value on an energy spike
+  TH1* mH2F_PhotonHeatMapG = 0;         ///< Distribution of photons in STAR x,y space when energy has a specific value near an energy spike
+  TH1* mH2F_PhotonHeatMapB = 0;         ///< Distribution of photons in STAR x,y space when energy has a specific value on an energy spike
   TH1* mH2F_EpdProjHitMap = 0;          ///< Distribution of x,y projections of photon candidates onto STAR EPD plane in x,y space
-  //TH1* mH2F_EpdProjHitMap_Vcut = 0;     ///< Distribution of x,y projections of photon candidates onto STAR EPD plane in x,y space with cut |vertex|<150cm
+  TH1* mH2F_EpdProjHitMap_Vcut = 0;     ///< Distribution of x,y projections of photon candidates onto STAR EPD plane in x,y space with cut |vertex|<150cm
   TH1* mH2F_EpdNmip = 0;                ///< Nmip distributions for EPD matched projected clusters (x-axis bin 1) and points (y-axis bin 2)
 
   TH1* mH1F_ClusterEnergy = 0;          ///< All Cluster energy
@@ -192,7 +197,7 @@ protected:
   TH1* mH1F_EpdPhPhi = 0;               ///< Azimuthal angle for EpdPh
   TH1* mH1F_EpdPhEta = 0;               ///< Psuedorapidity for EpdPh
   TH1* mH1F_EpdPhEn = 0;                ///< Energy for EpdPh
-  TH1* mH1F_EpdPhPt = 0;             ///< Pt for EpdPh
+  TH1* mH1F_EpdPhPt = 0;                ///< Pt for EpdPh
   TH1* mH1F_EpdPhAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate uncharged particles
 
   TH1* mH1F_EpdChInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate charged particles (EpdCh stands for Epd Charged, as in charged particle)

@@ -37,14 +37,13 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
 {
-  if( mInternalHists ){ delete mHists; }
-  delete mH1F_Entries;
   delete mEvtInfo;
   delete mPhArr;
   delete mPi0Arr;
   delete mPi0Tree;
-  if( mFile_Output!=0 ){ mFile_Output->Close(); }
-  delete mFile_Output;
+  if( mInternalHists ){ delete mHists; } //This deletes the file too
+  //if( mFile_Output!=0 ){ mFile_Output->Close(); }
+  //delete mFile_Output;
 }
 
 /*#ifndef __CINT__
@@ -92,7 +91,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH2F(file,mH2F_PhotonHeatMapG,"H2F_PhotonHeatMapG","Distribution of photons in STAR x,y space (No Spike);x (cm);y (cm)", 400,-200,200, 300,-150,150);
   loaded += mHists->AddH2F(file,mH2F_PhotonHeatMapB,"H2F_PhotonHeatMapB","Distribution of photons in STAR x,y space (Spike);x (cm);y (cm)", 400,-200,200, 300,-150,150);
   loaded += mHists->AddH2F(file,mH2F_EpdProjHitMap,"H2F_EpdProjHitMap","Distribution of x,y projections of photon candidates onto STAR EPD plane;x (cm);y (cm)", 300,-150,150, 200,-100,100);
-  //loaded += mHists->AddH2F(file,mH2F_EpdProjHitMap_Vcut,"H2F_EpdProjHitMap","Distribution of x,y projections of photon candidates onto STAR EPD plane with |vertex|<150cm;x (cm);y (cm)", 300,-150,150, 200,-100,100);
+  loaded += mHists->AddH2F(file,mH2F_EpdProjHitMap_Vcut,"H2F_EpdProjHitMap_Vcut","Distribution of x,y projections of photon candidates onto STAR EPD plane with |vertex|<150cm;x (cm);y (cm)", 300,-150,150, 200,-100,100);
   loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","Distribution of nmip values from matching projected clusters and points;;Nmip",2,0,2, 70,0,7);
   mH2F_EpdNmip->GetXaxis()->SetBinLabel(1,"Clusters");
   mH2F_EpdNmip->GetXaxis()->SetBinLabel(2,"Points");
@@ -122,7 +121,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdPhAllPoints,"H1F_EpdPhAllPoints","Invariant mass of all point pair combinations with Epd Cut Photons;Invariant Mass (GeV);", 500,0,1);
 
 
-  loaded += mHists->AddH1F(file,mH1F_EpdChInvMass,"H1F_EpdChInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 1000,0,5);
+  loaded += mHists->AddH1F(file,mH1F_EpdChInvMass,"H1F_EpdChInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 1250,0,5);
   //loaded += mHists->AddH2F(file,mH2F_EpdChHeatMap,"H2F_EpdChHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
   loaded += mHists->AddH1F(file,mH1F_EpdChPointMult,"H1F_EpdChPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdChZgg,"H1F_EpdChZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Charged;Zgg;", 100,0,1);
@@ -130,7 +129,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdChEta,"H1F_EpdChEta","Eta of Pi0s using highest energy pairs and Epd Cut Charged;Eta;", 100,1,5.5);
   loaded += mHists->AddH1F(file,mH1F_EpdChEn,"H1F_EpdChEn","Energy of Pi0s using highest energy pairs and Epd Cut Charged;Energy (GeV)", 1000,0,100);
   loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
-  loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 1000,0,5);
+  loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 1250,0,5); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
   //loaded += mHists->AddH1F(file,mH1F_2ndBestPi0Mass,"H1F_2ndBestPi0Mass", "Second best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
   //loaded += mHists->AddH1F(file,mH1F_3rdBestPi0Mass,"H1F_3rdBestPi0Mass", "Third best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
@@ -214,7 +213,7 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
 
   if( mHists==0 ){ mHists = new HistManager(); }
   UInt_t totalhists = this->LoadHists(file);
-  std::cout << "|TotalHistsLoaded:"<<totalhists << std::endl;
+  std::cout << "TotalHistsLoaded: "<<totalhists << std::endl;
   //std::cout << "DUMB CHECK "<<mFcsTrigMap << std::endl;
   //std::string name(mFcsTrigMap->nameFromId(45,22349011));
   //std::cout << name << std::endl;
@@ -419,7 +418,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       }
     }
   }
-  
+
+  //std::cout << "===== EventId:"<< mEvtInfo->mEvent <<" =====" << std::endl;
   mEvtInfo->mClusterSize = ncandidates;
   Int_t clustersize = ncandidates; //local copy of mEvtInfo->mClusterSize
   
@@ -475,7 +475,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex));
     if( !(ph->mFromCluster) ){
       mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
-      //if( fabs(usevertex)<150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
+      if( fabs(usevertex)<150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
     }
     //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
     //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
@@ -514,6 +514,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   Int_t npoints = ncandidates - clustersize; //Don't need to add 1 since including clustersize but not ncandidates
   mH1F_PointMult->Fill(npoints);
   mPhArr->Sort(); //Since this is properly sorted with clusters showing up first clustersize is unchanged. Also sorts by energy
+
+  //std::cout << "|clustersize:"<<clustersize << "|ncandidates:"<<ncandidates << "|npoints:"<<npoints << std::endl;
   
   Int_t npi0candidate = 0;
   //Filling cluster pi0s and cluster photon/elecron epd nmip cut
@@ -522,13 +524,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   for( Int_t ic = 0; ic<clustersize; ++ic ){
     FcsPhotonCandidate* iclus = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ic);
     if( !(iclus->mFromCluster) ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
+    //std::cout << "|ic:"<<ic << std::endl;
+    //std::cout << "  + ";
+    //iclus->Print();
     if( ic==(clustersize-1) ){ continue; }
 
     if( iclus->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
       if( iclus->mEpdHitNmip<mEpdNmipCut ){ goodclusphotonsidx.emplace_back(ic); }
       else{ goodcluselectronsidx.emplace_back(ic); }
-    }
-    
+    }    
     for( Int_t jc=ic+1; jc<clustersize; jc++ ){
       FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->UncheckedAt(jc);
       if( !(jclus->mFromCluster) ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
@@ -633,9 +637,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   //Filling point pi0s and cluster photon/elecron epd nmip cut
   std::vector<Int_t> goodpointphotonsidx;      //Here I really mean photon candidates below epd cut threshold
   std::vector<Int_t> goodpointelectronsidx;    //Here I really mean photon candidates above epd cut threshold
+  //std::cout << "===== EventId:"<< mEvtInfo->mEvent <<" =====" << std::endl;
   for( Int_t ip = clustersize; ip<ncandidates; ++ip ){
     FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ip);
     if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
+    //std::cout << "|ip:"<<ip << std::endl;
+    //std::cout << "  + ";
+    //ipoi->Print();
+
     if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
 
     if( ipoi->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
@@ -845,7 +854,7 @@ void StMuFcsPi0TreeMaker::PaintPhotonQa(TCanvas* canv, const char* savename)   c
   canv->cd(2)->SetLogz();
   mH2F_EpdProjHitMap->Draw("colz");
   canv->cd(3)->SetLogz();
-  //mH2F_EpdProjHitMap_Vcut->Draw("colz");
+  mH2F_EpdProjHitMap_Vcut->Draw("colz");
   canv->cd(4)->SetLogz();
   mH2F_EpdNmip->Draw("colz");
   canv->cd(5)->SetLogy();
@@ -871,11 +880,13 @@ void StMuFcsPi0TreeMaker::PaintBestPi0(TCanvas* canv,  const char* savename)  co
   mH1F_BestPi0Phi->Draw("hist e");
   canv->cd(4);
   mH1F_BestPi0Eta->Draw("hist e");
-  canv->cd(5);
+  canv->cd(5)->SetLogy();
   mH1F_BestPi0En->Draw("hist e");
-  canv->cd(6);
-  mH1F_BestPi0Mass->Draw("hist e");
+  canv->cd(6)->SetLogy();
+  mH1F_BestPi0Pt->Draw("hist e");
   canv->cd(7);
+  mH1F_BestPi0Mass->Draw("hist e");
+  canv->cd(8);
   mH1F_AllPointPairMass->Draw("hist e");
 
   canv->Print(savename);
@@ -894,11 +905,13 @@ void StMuFcsPi0TreeMaker::PaintEpdPhPi0(TCanvas* canv, const char* savename) con
   mH1F_EpdPhPhi->Draw("hist e");
   canv->cd(4);
   mH1F_EpdPhEta->Draw("hist e");
-  canv->cd(5);
+  canv->cd(5)->SetLogy();
   mH1F_EpdPhEn->Draw("hist e");
-  canv->cd(6);
-  mH1F_EpdPhInvMass->Draw("hist e");
+  canv->cd(6)->SetLogy();
+  mH1F_EpdPhPt->Draw("hist e");
   canv->cd(7);
+  mH1F_EpdPhInvMass->Draw("hist e");
+  canv->cd(8);
   mH1F_EpdPhAllPoints->Draw("hist e");
 
   canv->Print(savename);
@@ -920,8 +933,10 @@ void StMuFcsPi0TreeMaker::PaintEpdChPi0(TCanvas* canv, const char* savename) con
   canv->cd(5)->SetLogy();
   mH1F_EpdChEn->Draw("hist e");
   canv->cd(6)->SetLogy();
-  mH1F_EpdChInvMass->Draw("hist e");
+  mH1F_EpdChPt->Draw("hist e");
   canv->cd(7)->SetLogy();
+  mH1F_EpdChInvMass->Draw("hist e");
+  canv->cd(8)->SetLogy();
   mH1F_EpdChAllPoints->Draw("hist e");
 
   canv->Print(savename);
@@ -983,26 +998,39 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   h1phen->SetLineColor(kBlue);
   TH1* h1chen = mH1F_EpdChEn->DrawNormalized("hist e same");
   h1chen->SetLineColor(kGreen);
-
-  canv->cd(6);
-  //canv->cd(6)->SetLogy();
-  TH1* h1chmass = mH1F_EpdChInvMass->DrawNormalized("hist e same");
-  h1chmass->GetXaxis()->SetRangeUser(0,0.3);
-  h1chmass->SetLineColor(kGreen);
-  TH1* h1pmass = mH1F_BestPi0Mass->DrawNormalized("hist e");
-  //h1pmass->GetXaxis()->SetRangeUser(0,0.3);
-  h1pmass->SetLineColor(kBlack);
-  TH1* h1phmass = mH1F_EpdPhInvMass->DrawNormalized("hist e same");
-  h1phmass->SetLineColor(kBlue);
-
+  
+  canv->cd(6)->SetLogy();
+  TH1* h1ppt = mH1F_BestPi0Pt->DrawNormalized("hist e");
+  h1ppt->SetLineColor(kBlack);
+  TH1* h1phpt = mH1F_EpdPhPt->DrawNormalized("hist e same");
+  h1phpt->SetLineColor(kBlue);
+  TH1* h1chpt = mH1F_EpdChPt->DrawNormalized("hist e same");
+  h1chpt->SetLineColor(kGreen);
+  
   canv->cd(7);
   //canv->cd(7)->SetLogy();
+  TH1* h1pmass = mH1F_BestPi0Mass->DrawNormalized("hist e");
+  h1pmass->GetXaxis()->SetRangeUser(0,0.3);
+  h1pmass->SetLineColor(kBlack);
+  h1pmass->Rebin(2);
+  TH1* h1phmass = mH1F_EpdPhInvMass->DrawNormalized("hist e same");
+  h1phmass->SetLineColor(kBlue);
+  h1phmass->Rebin(2);
+  TH1* h1chmass = mH1F_EpdChInvMass->DrawNormalized("hist e same");
+  h1chmass->SetLineColor(kGreen);
+
+  canv->cd(8);
+  //canv->cd(8)->SetLogy();
   TH1* h1allmass = mH1F_AllPointPairMass->DrawNormalized("hist e");
+  h1allmass->GetXaxis()->SetRangeUser(0,0.3);
   h1allmass->SetLineColor(kBlack);
+  h1allmass->Rebin(2);
   TH1* h1phallmass = mH1F_EpdPhAllPoints->DrawNormalized("hist e same");
   h1phallmass->SetLineColor(kBlue);
+  h1phallmass->Rebin(2);  
   TH1* h1challmass = mH1F_EpdChAllPoints->DrawNormalized("hist e same");
   h1challmass->SetLineColor(kGreen);
+
 
   canv->Print(savename);
 }
@@ -1035,10 +1063,12 @@ void StMuFcsPi0TreeMaker::PaintEnergyZoom(TCanvas* canv, const char* savename) c
   h1_encopy->GetXaxis()->SetRangeUser(75,85);
   h1_encopy->SetLineColor(kBlack);
 
-  canv->cd(2);
+  canv->cd(2)->SetLogz();
+  mH2F_PhotonHeatMapG->SetStats(0);
   mH2F_PhotonHeatMapG->Draw("colz");
 
-  canv->cd(3);
+  canv->cd(3)->SetLogz();
+  mH2F_PhotonHeatMapB->SetStats(0);
   mH2F_PhotonHeatMapB->Draw("colz");
   
   canv->Print(savename);

@@ -110,8 +110,8 @@ Int_t FcsPhotonCandidate::Compare(const TObject* obj) const
   if( this->mFromCluster==other->mFromCluster ){
     //if( this->mFromCluster < other->mFromCluster ){ return -1; }
     //if( this->mFromCluster==other->mFromCluster ){
-    if(      this->mEn < other->mEn ){ return -1; }
-    else if( this->mEn > other->mEn ){ return  1; }
+    if(      this->mEn < other->mEn ){ return  1; } //This way TClonesArray sorts in descending order
+    else if( this->mEn > other->mEn ){ return -1; } //This way TClonesArray sorts in descending order
     else{ return 0; }
   }
   else{
