@@ -29,6 +29,8 @@
   @[October 10, 2024] > Added Pi0 Pt histograms. Changed number of bins on the invariant mass histograms for "EpdCh" to be half that of "Best" and "EpdPh". Added #mH2F_EpdProjHitMap_Vcut that is the same as #mH2F_EpdProjHitMap except that it only gets filled when |vertex|<150cm. This was done to check if the bad distributions were coming from bad vertex projections.
   
   @[October 11, 2024] > It was true that bad vertex projections are causing the bad EPD projections and it was also caused by analyzing certain run numbers. Small fixes and some changes to plotting. Also, now #FcsPhotonCandidate array is properly sorted in descending order of energy but accompanying fix in "StMuFcsPi0Data". It was previously being sorted in ascending order of energy.
+  
+  @[October 21, 2024] > Added an additional loop over EPD tiles to check if a photon candidate actually intersects with an EPD tile before checking EPD hits. Modified the check condition to make sure an intersection with an EPD tile occurred before checking nmip. Also changed histogram binning and x range of #mH1F_EpdChInvMass and #mH1F_EpdChAllPoints to match #mH1F_BestPi0InvMass and #mH1F_EpdPhInvMass; also related changes for plotting. Also, added the unnormalized highest energy pair invariant mass histogram to the overlap plots
 
 */
 

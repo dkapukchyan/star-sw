@@ -138,7 +138,7 @@ void FcsPhotonCandidate::Clear(Option_t* opt)
   mPyVert = 0;
   mPzVert = 0;
   
-  mEpdHitNmip = 0;
+  mEpdHitNmip = -1;
 }
 
 void FcsPhotonCandidate::Print(Option_t* opt) const

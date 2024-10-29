@@ -121,7 +121,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdPhAllPoints,"H1F_EpdPhAllPoints","Invariant mass of all point pair combinations with Epd Cut Photons;Invariant Mass (GeV);", 500,0,1);
 
 
-  loaded += mHists->AddH1F(file,mH1F_EpdChInvMass,"H1F_EpdChInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 1250,0,5);
+  loaded += mHists->AddH1F(file,mH1F_EpdChInvMass,"H1F_EpdChInvMass","Pi0s with highest energy pairs from EPD cut photons;Invariant Mass (GeV);", 500,0,1);
   //loaded += mHists->AddH2F(file,mH2F_EpdChHeatMap,"H2F_EpdChHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
   loaded += mHists->AddH1F(file,mH1F_EpdChPointMult,"H1F_EpdChPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdChZgg,"H1F_EpdChZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Charged;Zgg;", 100,0,1);
@@ -129,7 +129,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdChEta,"H1F_EpdChEta","Eta of Pi0s using highest energy pairs and Epd Cut Charged;Eta;", 100,1,5.5);
   loaded += mHists->AddH1F(file,mH1F_EpdChEn,"H1F_EpdChEn","Energy of Pi0s using highest energy pairs and Epd Cut Charged;Energy (GeV)", 1000,0,100);
   loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
-  loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 1250,0,5); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
+  loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
   //loaded += mHists->AddH1F(file,mH1F_2ndBestPi0Mass,"H1F_2ndBestPi0Mass", "Second best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
   //loaded += mHists->AddH1F(file,mH1F_3rdBestPi0Mass,"H1F_3rdBestPi0Mass", "Third best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
@@ -479,7 +479,16 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
     //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
     //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
-    
+
+    //loop over all west epd tiles so that even if no hit recorded can use as a veto
+    for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+      for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+	if( mEpdGeo->IsInTile(i_pp,i_tt,1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
+	  ph->mEpdHitNmip = 0;
+	}
+      }
+    }
+    //loop over all hits and if an nmip value exists set for the point
     unsigned int nepdhits = 0;
     StSPtrVecEpdHit* epdhits = 0;
     if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
@@ -529,7 +538,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     //iclus->Print();
     if( ic==(clustersize-1) ){ continue; }
 
-    if( iclus->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
+    if( iclus->mEpdHitNmip>-0.1){ //Only include candidates who have their nmip value set
       if( iclus->mEpdHitNmip<mEpdNmipCut ){ goodclusphotonsidx.emplace_back(ic); }
       else{ goodcluselectronsidx.emplace_back(ic); }
     }    
@@ -647,7 +656,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 
     if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
 
-    if( ipoi->mEpdHitNmip>0.001){ //Only include candidates who have their nmip value set
+    if( ipoi->mEpdHitNmip>-0.1){ //Only include candidates who have their nmip value set
       if( ipoi->mEpdHitNmip<mEpdNmipCut ){ goodpointphotonsidx.emplace_back(ip); }
       else{ goodpointelectronsidx.emplace_back(ip); }
     }
@@ -934,9 +943,9 @@ void StMuFcsPi0TreeMaker::PaintEpdChPi0(TCanvas* canv, const char* savename) con
   mH1F_EpdChEn->Draw("hist e");
   canv->cd(6)->SetLogy();
   mH1F_EpdChPt->Draw("hist e");
-  canv->cd(7)->SetLogy();
+  canv->cd(7);
   mH1F_EpdChInvMass->Draw("hist e");
-  canv->cd(8)->SetLogy();
+  canv->cd(8);
   mH1F_EpdChAllPoints->Draw("hist e");
 
   canv->Print(savename);
@@ -960,17 +969,17 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   AddHistStatsOneline(legpad1,h1phmult,"EpdNmip<0.7");
   TH1* h1chmult = mH1F_EpdChPointMult->DrawNormalized("hist e same");
   AddHistStatsOneline(legpad1,h1chmult,"EpdNmip>=0.7");
-  h1chmult->SetLineColor(kGreen);
+  h1chmult->SetLineColor(kGreen+2);
   legpad1->Draw();
   
   //canv->cd(2);
-  canv->cd(2)->SetLogy();
+  canv->cd(2);//->SetLogy();
   TH1* h1pzgg = mH1F_BestPi0Zgg->DrawNormalized("hist e");
   h1pzgg->SetLineColor(kBlack);
   TH1* h1phzgg = mH1F_EpdPhZgg->DrawNormalized("hist e same");
   h1phzgg->SetLineColor(kBlue);
   TH1* h1chzgg  = mH1F_EpdChZgg->DrawNormalized("hist e same");
-  h1chzgg->SetLineColor(kGreen);
+  h1chzgg->SetLineColor(kGreen+2);
   
   canv->cd(3);
   //canv->cd(3)->SetLogy();
@@ -979,7 +988,7 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   TH1* h1phphi = mH1F_EpdPhPhi->DrawNormalized("hist e same");
   h1phphi->SetLineColor(kBlue);
   TH1* h1chphi = mH1F_EpdChPhi->DrawNormalized("hist e same");
-  h1chphi->SetLineColor(kGreen);
+  h1chphi->SetLineColor(kGreen+2);
   
   canv->cd(4);
   //canv->cd(4)->SetLogy();
@@ -988,7 +997,7 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   TH1* h1pheta = mH1F_EpdPhEta->DrawNormalized("hist e same");
   h1pheta->SetLineColor(kBlue);
   TH1* h1cheta = mH1F_EpdChEta->DrawNormalized("hist e same");
-  h1cheta->SetLineColor(kGreen);
+  h1cheta->SetLineColor(kGreen+2);
 
   //canv->cd(5);
   canv->cd(5)->SetLogy();
@@ -997,7 +1006,7 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   TH1* h1phen = mH1F_EpdPhEn->DrawNormalized("hist e same");
   h1phen->SetLineColor(kBlue);
   TH1* h1chen = mH1F_EpdChEn->DrawNormalized("hist e same");
-  h1chen->SetLineColor(kGreen);
+  h1chen->SetLineColor(kGreen+2);
   
   canv->cd(6)->SetLogy();
   TH1* h1ppt = mH1F_BestPi0Pt->DrawNormalized("hist e");
@@ -1005,31 +1014,49 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   TH1* h1phpt = mH1F_EpdPhPt->DrawNormalized("hist e same");
   h1phpt->SetLineColor(kBlue);
   TH1* h1chpt = mH1F_EpdChPt->DrawNormalized("hist e same");
-  h1chpt->SetLineColor(kGreen);
-  
+  h1chpt->SetLineColor(kGreen+2);
+
   canv->cd(7);
   //canv->cd(7)->SetLogy();
+  mH1F_BestPi0Mass->SetLineColor(kBlack);
+  mH1F_BestPi0Mass->Draw("hist e");
+  mH1F_EpdPhInvMass->SetLineColor(kBlue);
+  mH1F_EpdPhInvMass->Draw("hist e same");
+  mH1F_EpdChInvMass->SetLineColor(kGreen+2);
+  mH1F_EpdChInvMass->Draw("hist e same");
+  
+  canv->cd(8);
+  //canv->cd(8)->SetLogy();
   TH1* h1pmass = mH1F_BestPi0Mass->DrawNormalized("hist e");
   h1pmass->GetXaxis()->SetRangeUser(0,0.3);
   h1pmass->SetLineColor(kBlack);
-  h1pmass->Rebin(2);
+  //h1pmass->Rebin(2);
   TH1* h1phmass = mH1F_EpdPhInvMass->DrawNormalized("hist e same");
   h1phmass->SetLineColor(kBlue);
-  h1phmass->Rebin(2);
+  //h1phmass->Rebin(2);
   TH1* h1chmass = mH1F_EpdChInvMass->DrawNormalized("hist e same");
-  h1chmass->SetLineColor(kGreen);
+  h1chmass->SetLineColor(kGreen+2);
 
-  canv->cd(8);
-  //canv->cd(8)->SetLogy();
+  canv->cd(9);
+  //canv->cd(9)->SetLogy();
+  /*
   TH1* h1allmass = mH1F_AllPointPairMass->DrawNormalized("hist e");
   h1allmass->GetXaxis()->SetRangeUser(0,0.3);
   h1allmass->SetLineColor(kBlack);
-  h1allmass->Rebin(2);
+  //h1allmass->Rebin(2);
   TH1* h1phallmass = mH1F_EpdPhAllPoints->DrawNormalized("hist e same");
   h1phallmass->SetLineColor(kBlue);
-  h1phallmass->Rebin(2);  
+  //h1phallmass->Rebin(2);  
   TH1* h1challmass = mH1F_EpdChAllPoints->DrawNormalized("hist e same");
-  h1challmass->SetLineColor(kGreen);
+  h1challmass->SetLineColor(kGreen+2);
+  */
+  mH1F_AllPointPairMass->Draw("hist e");
+  //mH1F_AllPointPairMass->GetXaxis()->SetRangeUser(0,0.3);
+  mH1F_AllPointPairMass->SetLineColor(kBlack);
+  mH1F_EpdPhAllPoints->Draw("hist e same");
+  mH1F_EpdPhAllPoints->SetLineColor(kBlue);
+  mH1F_EpdChAllPoints->Draw("hist e same");
+  mH1F_EpdChAllPoints->SetLineColor(kGreen+2);
 
 
   canv->Print(savename);

@@ -20,6 +20,7 @@
   @[October 3, 2024] > Added #mFromPh to #FcsPi0Candidate to distinguish pi0s with and without an epd cut.
 
   @[October 11, 2024] > Changed how comparison works for #FcsPhotonCandidate so a #TClonesArray of #FcsPhotonCandidate is sorted in descending order of energy rather than ascending order.
+  @[October 21, 2024] > Changed #mEpdHitNmip in #FcsPhotonCandidate to default to -1. This is so that I can have an additional check for if the candidate intersected any EPD tile even if it was not hit
 
 */
 
@@ -103,7 +104,7 @@ public:
   Double_t mPyVert = 0;       ///< Y momentum using best found vertex
   Double_t mPzVert = 0;       ///< Z momentum using best found vertex
 
-  Double_t mEpdHitNmip = 0;   ///< NMIP value from EPD hit
+  Double_t mEpdHitNmip = -1;   ///< NMIP value from EPD hit (-1 means could not project to valid tile, 0 means projected to valid tile but no hit, >0 value from EPD hit
 
   TLorentzVector lvRaw();        ///< TLorentz vector for this condidate with 0,0,0 vertex momentum
   TLorentzVector lvVert();       ///< TLorentz vector for this candidate with vertex momentum
