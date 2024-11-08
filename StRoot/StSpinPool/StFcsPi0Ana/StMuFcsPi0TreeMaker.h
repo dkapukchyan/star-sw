@@ -32,6 +32,8 @@
   
   @[October 21, 2024] > Added an additional loop over EPD tiles to check if a photon candidate actually intersects with an EPD tile before checking EPD hits. Modified the check condition to make sure an intersection with an EPD tile occurred before checking nmip. Also changed histogram binning and x range of #mH1F_EpdChInvMass and #mH1F_EpdChAllPoints to match #mH1F_BestPi0InvMass and #mH1F_EpdPhInvMass; also related changes for plotting. Also, added the unnormalized highest energy pair invariant mass histogram to the overlap plots
 
+  @[November 1, 2024] > Added #mTreeOnBitMap to allow easily setting on and off certain branches of the Pi0 Tree or to even completely turn it off. Implemented the corresponding setter and accessor functions for the this bit map. Also, changed how the file is loaded so that it checks for and excludes missing branches when loading from a file.
+
 */
 
 
@@ -90,6 +92,16 @@ public:
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
   void setHistManager( HistManager* hm );
+
+  void setTreeOnBit(UShort_t bitmap){ mTreeOnBitMap = bitmap; }
+  void setEventBit(bool val=1);
+  void setPhotonOn(bool val=1);
+  void setPi0On(bool val=1);
+
+  UShort_t checkTreeOnBit() const { return mTreeOnBitMap; }
+  bool isEventOn() const;
+  bool isPhotonOn() const;
+  bool isPi0On() const;
   
   TTree* getPi0Tree()const{ return mPi0Tree; }
 
@@ -164,7 +176,8 @@ protected:
   Int_t mNTrig  = 0;                    ///< Total triggers in the event
   Int_t mTriggers[mMaxTrigs];           ///< Array of Triggers in the event 
   //void ResetTrigs();                    ///< Reset #mTriggers to default values
-  TClonesArray* mPhArr = 0;             ///< #TClonesArray of #FcsPhotonCandidate
+  TClonesArray* mPhArr = 0;             ///< #TClonesArray of all #FcsPhotonCandidate
+  //TClonesArray* mBestPharr = 0;         ///< #TClonesArray of #FcsPhotonCandidates which are highest energy pairs
   TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the best pi0 candidates for analysis
   
   TH1* mH1F_Entries = 0;                ///< Number of events processed no cuts (i.e. "Make" calls)
@@ -219,6 +232,7 @@ protected:
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
   Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
+  UShort_t mTreeOnBitMap = 0x7;         /// Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
   
 private:
   HistManager* mHists = 0;            ///< Manage loading and saving histograms

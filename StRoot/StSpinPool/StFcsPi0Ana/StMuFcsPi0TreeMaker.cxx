@@ -59,6 +59,48 @@ void StMuFcsPi0TreeMaker::SetTrigs(const char* trigname,...)
 }
 #endif*/
 
+void StMuFcsPi0TreeMaker::setEventBit(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x01; }
+  else{ mTreeOnBitMap &= ~(0x01); }
+}
+
+void StMuFcsPi0TreeMaker::setPhotonOn(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x02; }
+  else{ mTreeOnBitMap &= ~(0x02); }
+}
+
+void StMuFcsPi0TreeMaker::setPi0On(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x04; }
+  else{ mTreeOnBitMap &= ~(0x04); }
+}
+
+/*bool StMuFcsPi0TreeMaker::checkTreeOnBit(UShort_t bit)
+{
+  if( mTreeOnBitMap & (1<<bit) ){ return true; }
+  else{ return false; }
+  }*/
+
+bool StMuFcsPi0TreeMaker::isEventOn() const
+{
+  if( mTreeOnBitMap & 0x01 ){ return true; }
+  else{ return false; }
+}
+
+bool StMuFcsPi0TreeMaker::isPhotonOn() const
+{
+  if( mTreeOnBitMap & 0x02 ){ return true; }
+  else{ return false; }
+}
+
+bool StMuFcsPi0TreeMaker::isPi0On() const
+{
+  if( mTreeOnBitMap & 0x04 ){ return true; }
+  else{ return false; }
+}
+
 void StMuFcsPi0TreeMaker::setHistManager( HistManager* hm )
 {
   if( mInternalHists ){ delete mHists; mHists = 0; }
@@ -156,17 +198,24 @@ Int_t StMuFcsPi0TreeMaker::Init()
     mInternalHists = false;
   }
   mFile_Output->cd(); //File expected to be nonzero here if everything initialized correctly
-  mPi0Tree     = new TTree("Pi0Tree","Tree with FcsPi0Candidate");
+  if( mTreeOnBitMap!=0 ){
+    mPi0Tree     = new TTree("Pi0Tree","Tree with FcsPi0Candidate");
+  }
+  //These are still needed in Make so even if you are not writing the tree still need these objects
   mEvtInfo     = new FcsEventInfo();
   mPhArr       = new TClonesArray("FcsPhotonCandidate");
   mPi0Arr      = new TClonesArray("FcsPi0Candidate");
 
-  mPi0Tree->Branch("EventInfo","FcsEventInfo",&mEvtInfo);
-  mPi0Tree->Branch("TriggerInfo",0,"NTrig/I:Trig[NTrig]/I");
-  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
-  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
-  mPi0Tree->Branch("Photon",&mPhArr);
-  mPi0Tree->Branch("Pi0",&mPi0Arr);
+  if( mTreeOnBitMap!=0 ){
+    if( isEventOn() ){
+      mPi0Tree->Branch("EventInfo","FcsEventInfo",&mEvtInfo);
+      mPi0Tree->Branch("TriggerInfo",0,"NTrig/I:Trig[NTrig]/I");
+      ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
+      ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
+    }
+    if( isPhotonOn() ){ mPi0Tree->Branch("Photon",&mPhArr); }
+    if( isPi0On() ){ mPi0Tree->Branch("Pi0",&mPi0Arr); }
+  }
   
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap");
   
@@ -188,29 +237,47 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
   if( mPi0Tree!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal TTree pointer not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Tree; mPi0Tree=0; }
   mPi0Tree = (TTree*)file->Get("Pi0Tree");
   //tree = mPi0Tree;
-  if( mPi0Tree==0 ){ std::cout << "LoadDataFromFile - ERROR:Pi0Tree not found in file" << std::endl; return; }
-
-  //Set event branches
-  if( mEvtInfo!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsEventInfo not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mEvtInfo; mEvtInfo=0; }
-  mEvtInfo     = new FcsEventInfo();
-  mPi0Tree->SetBranchAddress("EventInfo",&mEvtInfo);
-
-  //Set trigger branches
-  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
-  ((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
-
-  if( mPhArr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPhotonCandidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPhArr; mPhArr=0; }
-  mPhArr       = new TClonesArray("FcsPhotonCandidate");
-  mPi0Tree->SetBranchAddress("Photon",&mPhArr);
-
-  if( mPi0Arr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPi0Candidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Arr; mPi0Arr=0; }
-  mPi0Arr      = new TClonesArray("FcsPi0Candidate");  
-  mPi0Tree->SetBranchAddress("Pi0",&mPi0Arr);
-
+  if( mPi0Tree==0 ){ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
+  else{
+    //Set event branches
+    if( mEvtInfo!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsEventInfo not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mEvtInfo; mEvtInfo=0; }
+    if( isEventOn() ){
+      if( mPi0Tree->Branch("EventInfo")!=0 && mPi0Tree->Branch("TriggerInfo")!=0 ){
+	mEvtInfo     = new FcsEventInfo();
+	mPi0Tree->SetBranchAddress("EventInfo",&mEvtInfo);
+	//Set trigger branches
+	((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(0))->SetAddress(&mNTrig);
+	((TLeaf*)mPi0Tree->GetBranch("TriggerInfo")->GetListOfLeaves()->At(1))->SetAddress(&mTriggers);
+      }
+      else{ std::cout << "LoadDataFromFile - WARNING:No \"EventInfo\" and no \"TriggerInfo\" branch found in mPi0Tree it could be that the tree was generated without this option." << std::endl;
+      }
+    }
+    
+    if( mPhArr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPhotonCandidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPhArr; mPhArr=0; }
+    if( isPhotonOn() ){
+      if( mPi0Tree->Branch("Photon")!=0 ){
+	mPhArr       = new TClonesArray("FcsPhotonCandidate");
+	mPi0Tree->SetBranchAddress("Photon",&mPhArr);
+      }
+      else{
+	std::cout << "LoadDataFromFile - WARNING:No \"Photon\" branch found in mPi0Tree it could be that the tree was generated without this option." << std::endl;
+      }
+    }
+    
+    if( mPi0Arr!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsPi0Candidate array not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Arr; mPi0Arr=0; }
+    if( isPi0On() ){
+      if( mPi0Tree->Branch("Pi0")!=0 ){
+	mPi0Arr      = new TClonesArray("FcsPi0Candidate");  
+	mPi0Tree->SetBranchAddress("Pi0",&mPi0Arr);
+      }
+      else{ std::cout << "LoadDataFromFile - WARNING:No \"Pi0\" branch found in mPi0Tree it could be that the tree was generated without this option." << std::endl; }
+    }
+  }
+  
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap"); //Don't use GetMaker since it doesn't use the right name when searching
   if( mFcsTrigMap==0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
   else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - Trigger Map is empty" << std::endl; } }
-
+  
   if( mHists==0 ){ mHists = new HistManager(); }
   UInt_t totalhists = this->LoadHists(file);
   std::cout << "TotalHistsLoaded: "<<totalhists << std::endl;
