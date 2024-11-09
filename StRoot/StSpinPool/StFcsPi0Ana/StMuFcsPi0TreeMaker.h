@@ -34,6 +34,8 @@
 
   @[November 1, 2024] > Added #mTreeOnBitMap to allow easily setting on and off certain branches of the Pi0 Tree or to even completely turn it off. Implemented the corresponding setter and accessor functions for the this bit map. Also, changed how the file is loaded so that it checks for and excludes missing branches when loading from a file.
 
+  @[November 26, 2024] > Added an array of histograms #mH1F_InvMassEpdCuts and related code to check how different EPD nmip values are changing the pi0 signal region. also added #NEPDCUTS to make filling and looping over array easier. Implemented several cuts for the pi0 A_N analysis and added an array of histograms #mH1F_NPi0ByEnByPhi to keep track of the number of pi0s found in each energy bin and phi bin for a given spin configuration; it is not "filled" but populated after counting the pi0s from the different spin states. In this way I no longer need to loop over a tree of pi0s after processing MuDsts but can just merge the histograms to get the total number of pi0s for computing A_N. To this effect added static integers #NENERGYBIN and #NPHIBIN that keeps track of the energy and phi bins I will use. Added #mH1F_InvMassAllCuts to see the invariant mass distribution of the found pi0s after all the cuts and also the #mH1F_Pi0MultAllCuts to see how many potential pi0s are left in each event after all the cuts. I thought this would be 1 pi0 but turns out it is quite significant. It's mostly coming from one high energy "photon" that gets paired with other "photons". However, this may be a bit biased since I cut out other combinations for the sake of making the trees take up less space. Also, in #Make() added #emtrigfound which is a boolean to indicate one of the EM triggers had fired. This is used to separate the EM trigger events from others and is one of the cuts applied. The cuts are in order of checking in the cod: emtrig,|vertex|<100,fcspoint,Zgg<0.7,both points of pi0 passed epd nmip cut, pi0 Pt larger than trigger threshold. Changed code to grab 4 bit spin from bx7. Also wrote paint functions for the new histograms.
+
 */
 
 
@@ -140,6 +142,9 @@ public:
   void PaintEpdChPi0(TCanvas* canv, const char* savename="testepdchpi0.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
+  void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmpcut.png") const;
+  void PaintPi0Cuts(TCanvas* canv, const char* savename = "testpi0cuts.png") const;
+  void PaintNpi0(TCanvas* canv, const char* savename = "testnpi0.pdf") const;
 
   static void AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title="" );
   
@@ -223,12 +228,23 @@ protected:
   TH1* mH1F_EpdChEta = 0;               ///< Psuedorapidity for EpdCh
   TH1* mH1F_EpdChEn = 0;                ///< Energy for EpdCh
   TH1* mH1F_EpdChPt = 0;                ///< Pt for EpdCh
-  TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles  
+  TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles
 
   //Also separate low point multiplicity events
   //TH1* mH1F_2ndBestPi0Mass = 0;
   //TH1* mH1F_3rdBestPi0Mass = 0;
   //TH1* mH1F_LowPointMult = 0;
+
+  static const short NEPDCUTS = 8;
+  TObjArray* mH1F_InvMassEpdCuts[2];         ///< Invariant Mass using different epd nmip cuts and all triggers or only EM triggers
+  //TH1* mH1F_InvMassZggCuts[2][8];          ///< Invariant Mass using different zgg cuts and all triggers or only EM triggers
+  //TH1* mH1F_InvMassEnBins[2][4][3];        ///< Invariant Mass in different energy bins after each cut, fidicual volume cut, Zgg cut, Epd photon cut, and all triggers or only EM triggers
+  TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied
+  TH1* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
+  static const short NENERGYBIN = 6;    ///< Number of energy bins
+  static const short NPHIBIN = 4;       ///< Number of phi bins
+  TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];        ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
+
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
   Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged

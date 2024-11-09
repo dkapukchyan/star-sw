@@ -45,6 +45,8 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
   memset(mH1F_Poi_En,0,sizeof(mH1F_Poi_En));
   memset(mH1F_Poi_NCluPhotons,0,sizeof(mH1F_Poi_NCluPhotons));
   memset(mH2F_Poi_yVx,0,sizeof(mH2F_Poi_yVx));
+
+  //memset(mSpinPattern,0,sizeof(mSpinPattern));
 }
 
 StMuFcsRun22QaMaker::~StMuFcsRun22QaMaker()
@@ -104,12 +106,15 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += mHists->AddH1F(file,mH1F_BbcTimeDiff,"H1F_BbcTimeDiff","Bbc Time difference", 200,-5000,5000);
   loaded += mHists->AddH1F(file,mH1F_VertexZdc,"H1F_VertexZdc","Zdc Vertex (z);cm",50,-200,200);
   
-  loaded += mHists->AddH2F(file,mH2F_BxId_7V48,"H2F_BxId7V48","Bunch Crossing Id;48 bit;7 bit", 121,-0.5,120.5, 121,-0.5,120.5);
+  loaded += mHists->AddH2F(file,mH2F_BxId_7V48,"H2F_BxId7V48","Bunch Crossing Id;48 bit;7 bit", 120,-0.5,119.5, 120,-0.5,119.5);
   loaded += mHists->AddH2F(file,mH2F_Mult_tofVref,"H2F_Mult_tofVref","TOF multiplicity vs. Reference multiplicity;RefMult;TofMult",100,0,100,100,0,100);
   loaded += mHists->AddH2F(file,mH2F_Mult_tofVecal,"H2F_Mult_tofVecal","TOF multiplicity vs. Fcs Ecal multiplicity;EcalMult;TofMult",200,0,1000,100,0,100);
 
   loaded += mHists->AddH1F(file,mH1F_Spin,"H1F_Spin","Spin",3,-1.5,1.5);
-
+  //loaded += mHists->AddH1F(file,mH1F_BunchXing, "H1F_BunchXing", "Bunch Crossing number (blue clock)",    120,0,120);
+  loaded += mHists->AddH1F(file,mH1F_spin4Vbx7, "H1F_spin4Vbx7", "Spin 4 value vs. Bx7 Id;Bx7 Id;Spin4",  120,-0.5,119.5);
+  loaded += mHists->AddH1F(file,mH1F_spin4Vbx48,"H1F_spin4Vbx48","Spin 4 value vs. Bx48 Id;Bx48 Id;Spin4",120,-0.5,119.5);
+  
   TString namesuffix[6] = {"EN","ES","HN","HS","PN","PS"};
   for( UShort_t i=0; i<kFcsNDet; ++i ){
     UInt_t nchs = 0;
@@ -243,8 +248,40 @@ Int_t StMuFcsRun22QaMaker::InitRun(int runnumber)
   mFcsDb = static_cast<StFcsDb*>(GetDataSet("fcsDb"));
   //mFcsDb->setDbAccess(0);
   if (!mFcsDb) {
-    LOG_ERROR << "StMuFcsRun22QaMaker::InitRun Failed to get StFcsDbMaker" << endm;
+    LOG_ERROR << "StMuFcsRun22QaMaker::InitRun - Failed to get StFcsDbMaker" << endm;
     return kStFatal;
+  }
+
+  mSpinDbMkr = static_cast<StSpinDbMaker*>(GetMaker("spinDb"));
+  if( !mSpinDbMkr ){
+    LOG_WARN << "StMuFcsRun22QaMaker::InitRun - Could not find StSpinDbMaker named 'spinDb'" << endm;
+  }
+  else{
+    if( !mSpinDbMkr->isValid() ){
+      LOG_WARN << "StMuFcsRun22QaMaker::InitRun - Found StSpinDbMaker but contains invalid data so will not use it" << endm;
+      mSpinDbMkr=0;
+    }
+    else{
+      mSpinDbMkr->print();
+      /* These are already displayed by the print function
+      if( mSpinDbMkr->isPolDirTrans()==true ){
+	std::cout << "Run:" << runnumber << "is transversely polarized" << std::endl;
+      }
+      else{
+	std::cout << "Run:" << runnumber << "is not transversely polarized" << std::endl;
+      }
+      std::cout <<"|bx7off:"<<mSpinDbMkr->BX7offset() << "|bx48off:"<<mSpinDbMkr->BX48offset() << std::endl;
+      */
+      for( int i=0; i<120; ++i ){ //Bunch crossing ids run from [0-119]
+	int bx7     = mSpinDbMkr->BXstarUsingBX7(i);
+	int spinX7  = mSpinDbMkr->spin4usingBX7(i);
+	int bx48    = mSpinDbMkr->BXstarUsingBX48(i);
+	int spinX48 = mSpinDbMkr->spin4usingBX48(i);
+	//std::cout << "|i:"<<i <<"\t|bx7:"<<bx7 << "  \t|spinX7:"<<spinX7 << "  \t|bx48:"<<bx48 << "  \t|spinX48:"<<spinX48 << std::endl;
+	mH1F_spin4Vbx7->SetBinContent(i+1,bx7,spinX7);
+	mH1F_spin4Vbx48->SetBinContent(i+1,bx48,spinX48);
+      }
+    }
   }
   // if( !mEpdGeo ){ mEpdGeo = new StEpdGeom(); }
   // else{
@@ -319,9 +356,14 @@ Int_t StMuFcsRun22QaMaker::FillEventInfo()
     mH1F_Spin->Fill(getRandomSpin()); //Random Yellow beam spin
   }
   else{
-    int spin4bit = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() );
+    //int spin4bit = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() );
+    //Int_t runnum = mMuEvent->runNumber();
+    //StL0Trigger& trig = mMuEvent->l0Trigger();
+    //int bx7 = (trig.bunchCrossingId7bit(runnum)) % 120;
+    int spinx7 = mSpinDbMkr->spin4usingBX7(mTrigData->bunchId7Bit());
+    //std::cout << "|trigbx7:"<<mTrigData->bunchId7Bit() << "|l0bx7:"<<bx7 << "|spinx7:"<<spinx7 << "|spinx7arr:"<<spinx7arr <<"|trgspin:"<<mTrigData->spinBit() <<"|l0spin:"<<trig.spinBits(runnum) <<"|trigname:"<<mTrigData->ClassName()<< std::endl;
     int bluespin, yellowspin;
-    spinFrom4BitSpin( spin4bit, bluespin, yellowspin );
+    spinFrom4BitSpin( spinx7, bluespin, yellowspin );
     mH1F_Spin->Fill(bluespin);
     mH1F_Spin->Fill(yellowspin);
   }
@@ -673,6 +715,57 @@ void StMuFcsRun22QaMaker::DrawBxId(TCanvas* canv, const char* savename)
 {
   canv->Clear();
   mH2F_BxId_7V48->Draw("colz");
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawBx7Bx48Ana(TCanvas* canv, const char* savename)
+{
+  TH1* out_h1_bx7 = 0;
+  TH1* out_h1_bx48 = 0;
+  TH1* out_h1_bx7minusbx48 = 0;
+  out_h1_bx7 = ((TH2*)mH2F_BxId_7V48)->ProjectionY( "H1F_bx7" );
+  out_h1_bx7->SetTitle("bx7;bx7;");
+  out_h1_bx48 = ((TH2*)mH2F_BxId_7V48)->ProjectionX( "H1F_bx48" );
+  out_h1_bx48->SetTitle("bx48;bx48;");
+  out_h1_bx7minusbx48 = new TH1F( "H2F_bx7minusbx48", "bx7 minus bx48;bx7-bx48;", 241, -120.5, 120.5 );
+  for( Int_t xbin=1; xbin<=mH2F_BxId_7V48->GetNbinsX(); ++xbin ){
+    for( Int_t ybin=1; ybin<=mH2F_BxId_7V48->GetNbinsY(); ++ybin ){
+      if( mH2F_BxId_7V48->GetBinContent(xbin,ybin)>0 ){
+	Double_t xlow = mH2F_BxId_7V48->GetXaxis()->GetBinLowEdge(xbin);
+	Double_t ylow = mH2F_BxId_7V48->GetYaxis()->GetBinLowEdge(ybin);
+	Double_t diff = ylow-xlow;
+	if( diff<0 ){ diff = 120 + diff; } //Bunch Id maxes at 120 so fix it so that negative differences are still positive. i.e. a negative difference means add by 120
+	//out_h1_bx7minusbx48->Fill(ylow-xlow);
+	out_h1_bx7minusbx48->Fill(diff);
+      }
+    }
+  }
+
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1)->SetGrid();
+  mH2F_BxId_7V48->SetStats(0);
+  mH2F_BxId_7V48->Draw("colz");
+  canv->cd(2);
+  out_h1_bx7->Draw("hist e");
+  canv->cd(3);
+  out_h1_bx48->Draw("hist e");
+  canv->cd(4);
+  out_h1_bx7minusbx48->Draw("hist e");
+  canv->SaveAs( savename );
+  mH2F_BxId_7V48->SetStats(1);  
+}
+
+void StMuFcsRun22QaMaker::DrawSpinInfo(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,1);
+  canv->cd(1);
+  mH1F_spin4Vbx7->SetStats(0);
+  mH1F_spin4Vbx7->Draw("hist e");
+  canv->cd(2);
+  mH1F_spin4Vbx48->SetStats(0);
+  mH1F_spin4Vbx48->Draw("hist e");
   canv->Print(savename);
 }
 

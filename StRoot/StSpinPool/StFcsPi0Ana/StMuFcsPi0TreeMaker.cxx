@@ -33,6 +33,10 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 {
   mSpinRndm.SetSeed(0);
   memset(mTriggers,0,sizeof(mTriggers));
+  memset(mH1F_InvMassEpdCuts,0,sizeof(mH1F_InvMassEpdCuts));
+  //memset(mH1F_InvMassZggCuts,0,sizeof(mH1F_InvMassZggCuts));
+  //memset(mH1F_InvMassPtCuts, 0,sizeof(mH1F_InvMassPtCuts));
+  memset(mH1F_NPi0ByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
 }
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
@@ -180,7 +184,31 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH1F(file,mH1F_GoodPointMult,"H1F_GoodPointMult","Point Multiplicity used for pi0 candidate pairs from photons with EPD cut;Point Multiplicity", 30,0,30);
   //loaded += mHists->AddH1F(file,mH1F_PointsEpd,"H1F_PointsEpd","Number of points with EPD nmip cut;Point Multiplicty",30,0,30);
 
-  //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5); 
+
+  mH1F_InvMassEpdCuts[0] = new TObjArray();
+  loaded += mHists->AddH1FArr(file,mH1F_InvMassEpdCuts[0],NEPDCUTS,"H1F_InvMassEpdCuts_AllTrig","Different EPD NMIP cuts all triggers",500,0,1);
+  mH1F_InvMassEpdCuts[1] = new TObjArray();
+  loaded += mHists->AddH1FArr(file,mH1F_InvMassEpdCuts[1],NEPDCUTS,"H1F_InvMassEpdCuts_EmTrig","Different EPD NMIP cuts EM triggers",500,0,1);
+  //loaded += mHists->AddH1FArr(file,mH1F_InvMassZggCuts,8,"H1F_InvMassZggCuts",500,0,1);
+  //loaded += mHists->AddH1FArr(file,mH1F_InvMassPtCuts,8,"H1F_InvMassPtCuts",500,0,1);
+  loaded += mHists->AddH1F(file,mH1F_InvMassAllCuts,"H1F_AllInvMassCuts","Invariant Mass of two photons after all cuts applied", 500,0,1);
+  loaded += mHists->AddH1F(file,mH1F_Pi0MultAllCuts,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts", 5,0,5);
+  
+  
+  //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5);
+  TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
+  TString phititletext[NPHIBIN] = { "0<=#phi<#frac{#pi}{4}", "#frac{#pi}{4}<=#phi<#frac{#pi}{2}", "#frac{#pi}{2}<=#phi<#frac{3#pi}{4}", "#frac{3#pi}{4}<=#phi<#pi" };
+  for( int ebin=0; ebin<NENERGYBIN; ++ebin ){
+    for( int phibin=0; phibin<NPHIBIN; ++phibin ){
+      TString histname = "H1F_NPi0En" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
+      TString histtitle = "Number of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin];
+      loaded += mHists->AddH1F(file,mH1F_NPi0ByEnByPhi[ebin][phibin],histname.Data(),histtitle.Data(),4,0,4);
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(1,"NPi0UpAtPhi");
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(2,"NPi0UpAtPhiPlusPi");
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(3,"NPi0DownAtPhi");
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(4,"NPi0DownAtPhiPlusPi");
+    }
+  }
   return loaded;
 }
 
@@ -312,7 +340,7 @@ Int_t StMuFcsPi0TreeMaker::Finish()
 {
   if( mFile_Output!=0 ){
     mFile_Output->cd();
-    mPi0Tree->Write();
+    if( mPi0Tree!=0 ){ mPi0Tree->Write(); }
     mHists->Write();
   }
   return kStOK;
@@ -335,6 +363,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   
   //Filter with Trigger Information first
   bool validtrigfound = false;
+  bool emtrigfound = false;
   if( mIgnoreTrig ){ validtrigfound = true; } //If ignoring triggers then set validtrigfound to true so event is not skipped
   StMuTriggerIdCollection* TrigMuColl = &(mMuEvent->triggerIdCollection());
   if( !TrigMuColl ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
@@ -343,9 +372,9 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   for( Int_t i=0; i<ntrig; ++i ){
     unsigned int trig = trgIDs.triggerId(i);
     mTriggers[i] = trig;
-    if( !mIgnoreTrig ){
-      if( mFcsTrigMap!=0 ){
-	std::string thistrig = mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber());
+    if( mFcsTrigMap!=0 ){
+      std::string thistrig = mFcsTrigMap->nameFromId(trig,mMuEvent->runNumber());      
+      if( !mIgnoreTrig ){
 	for( unsigned int j=0; j<mTargetTrig.size(); ++j ){
 	  if( mTargetTrig.at(j)==thistrig ){
 	    mNTrig++;
@@ -354,6 +383,11 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	  }
 	}
       }
+      if( thistrig=="fcsEM0" || thistrig=="fcsEM1" || thistrig=="fcsEM2" || thistrig=="fcsEM3"
+	  || thistrig=="fcsEM0_tpc" || thistrig=="fcsEM1_tpc" || thistrig=="fcsEM2_tpc" || thistrig=="fcsEM3_tpc" )
+	{
+	  emtrigfound = true;
+	}
     }
     else{ mNTrig = ntrig; }
   }
@@ -396,7 +430,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     else{ mEvtInfo->mSpin = 10; }                               //Bits 1010 is B- and Y-
   }
   else{
-    mEvtInfo->mSpin = mSpinDbMkr->spin4usingBX48( mTrigData->bunchId48Bit() ); //This is also source polarization
+    mEvtInfo->mSpin = mSpinDbMkr->spin4usingBX7( mTrigData->bunchId7Bit() ); //This is also source polarization
   }
   
 
@@ -422,7 +456,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     mEvtInfo->mEpdVz = -999;
   }
 
-  short foundvertex = 0;     //Bit vectorfor knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
+  short foundvertex = 0;     //Bit vector for knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
   Double_t usevertex = -999.0; //Vertex to use
   if( mEvtInfo->mVpdVz > -998 )     { foundvertex = 1; usevertex = mEvtInfo->mVpdVz; }
   else if( mEvtInfo->mEpdVz > -998 ){ foundvertex = 2; usevertex = mEvtInfo->mEpdVz; }
@@ -714,6 +748,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   std::vector<Int_t> goodpointphotonsidx;      //Here I really mean photon candidates below epd cut threshold
   std::vector<Int_t> goodpointelectronsidx;    //Here I really mean photon candidates above epd cut threshold
   //std::cout << "===== EventId:"<< mEvtInfo->mEvent <<" =====" << std::endl;
+  FcsPhotonCandidate* firstphotoncut[NEPDCUTS] = {0};
+  FcsPhotonCandidate* secondphotoncut[NEPDCUTS] = {0};
   for( Int_t ip = clustersize; ip<ncandidates; ++ip ){
     FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ip);
     if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
@@ -726,6 +762,12 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     if( ipoi->mEpdHitNmip>-0.1){ //Only include candidates who have their nmip value set
       if( ipoi->mEpdHitNmip<mEpdNmipCut ){ goodpointphotonsidx.emplace_back(ip); }
       else{ goodpointelectronsidx.emplace_back(ip); }
+      for( short i=0; i<NEPDCUTS; ++i ){
+	if( ipoi->mEpdHitNmip < 0.2+0.1*static_cast<double>(i) ){
+	  if( firstphotoncut[i]==0 ){ firstphotoncut[i]=ipoi; }
+	  else{ if( secondphotoncut[i]==0 ){ secondphotoncut[i]=ipoi; } }
+	}
+      }
     }
     
     for( Int_t jp=ip+1; jp<ncandidates; ++jp ){
@@ -766,6 +808,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
   }
 
+  //Handle the epd cuts
+  for( short i=0; i<NEPDCUTS; ++i ){
+    if( firstphotoncut[i]!=0 && secondphotoncut[i]!=0 ){
+      TLorentzVector pi0Vert_LV = firstphotoncut[i]->lvVert() + secondphotoncut[i]->lvVert();
+      if( emtrigfound ){ ((TH1*)mH1F_InvMassEpdCuts[1]->UncheckedAt(i))->Fill(pi0Vert_LV.Mag()); }
+      ((TH1*)mH1F_InvMassEpdCuts[0]->UncheckedAt(i))->Fill(pi0Vert_LV.Mag());
+    }
+  }
 
   //Making pi0s with point cut photon candidates
   mH1F_EpdPhPointMult->Fill(goodpointphotonsidx.size());
@@ -850,13 +900,87 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
   }
 
-  mPi0Tree->Fill();
+  //XF = pi0Vert_LV.Pz()/255;
+  Double_t PiOver4 = 3.14159/4.0;
+  Double_t PhiBin[NPHIBIN*2+1] = {0.0, PiOver4, 2.0*PiOver4, 3.0*PiOver4, 4.0*PiOver4, 5.0*PiOver4, 6.0*PiOver4, 7.0*PiOver4, 8.0*PiOver4}; //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
+  Int_t NPi0UpAtPhi[NENERGYBIN][NPHIBIN]         = {0};
+  Int_t NPi0DownAtPhi[NENERGYBIN][NPHIBIN]       = {0};
+  Int_t NPi0UpAtPhiPlusPi[NENERGYBIN][NPHIBIN]   = {0};
+  Int_t NPi0DownAtPhiPlusPi[NENERGYBIN][NPHIBIN] = {0};
+  Int_t ngoodpi0s = 0;
+  //std::cout << "NPi0s:"<<mPi0Arr->GetEntriesFast() << std::endl;
+  for( int i=0; i<mPi0Arr->GetEntriesFast(); ++i ){
+    FcsPi0Candidate* pi0 = (FcsPi0Candidate*)mPi0Arr->At(i);
+    if( pi0==0 ){ continue; }
+    //pi0->Print();
+    float pi0en = pi0->mEn;
+    //if( !emtrigfound )     { continue; }
+    if( ! (-100<=usevertex && usevertex<=100) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
+    if( pi0->mFromCluster ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Not a point - "<<pi0->mFromCluster<< std::endl;*/ continue; }
+    if( pi0->mZgg>0.7 )    { /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed Zgg:"<< pi0->mZgg << std::endl;*/ continue; }
+    if( pi0->mFromPh>=0 )  { /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; }  //Ensure pi0 is coming from photon cut
+    //Add pt cut based on trigger
+    bool exceedtrigpt = false;
+    Float_t trigptthr = -1;
+    std::string trigname = "";
+    if( !mIgnoreTrig ){
+      if( !emtrigfound ){ continue; }
+      if( mFcsTrigMap!=0 ){
+	for( Int_t itrig=0; itrig<mNTrig; ++itrig ){
+	  Float_t ptthres = mFcsTrigMap->GetPtThr(mTriggers[itrig]);
+	  std::string thistrig = mFcsTrigMap->nameFromId(mTriggers[itrig],mMuEvent->runNumber());
+	  /*
+	    if( thistrig=="fcsEM0" || thistrig=="fcsEM1" || thistrig=="fcsEM2" || thistrig=="fcsEM3"
+	    || thistrig=="fcsEM0_tpc" || thistrig=="fcsEM1_tpc" || thistrig=="fcsEM2_tpc" || thistrig=="fcsEM3_tpc" )
+	    {
+	    }
+	  */
+	  if( pi0->pt()>=ptthres ){ exceedtrigpt=true; trigptthr=ptthres; trigname=thistrig; }
+	}
+      }
+    }
+    else{ exceedtrigpt = true; }
+    if( !exceedtrigpt ){ continue; }
+    //std::cout << "StMuFcsPi0TreeMaker::Make() - Passed all cuts!" << std::endl;
+    ++ngoodpi0s;
+    //std::cout << " + |Ntrig:"<<mNTrig << "|trigname:"<<trigname << "|trigpt:"<<trigptthr;
+    //pi0->Print();
+    short enbin = -1;
+    if( pi0en<=10 ){ enbin = 0; }
+    else if( pi0en>10 && pi0en<=30 ){ enbin=1; }
+    else if( pi0en>30 && pi0en<=50 ){ enbin=2; }
+    else if( pi0en>50 && pi0en<=70 ){ enbin=3; }
+    else if( pi0en>70 && pi0en<=100 ){ enbin=4; }
+    else{ enbin=5; }
+    Double_t phi = pi0->phi();
+    if( phi<0 ){ phi += 2.0*3.14159; } //atan2 gives negative angles but I don't want negative values in my array so just shift by 2pi
+    for( int iphi=0; iphi<NPHIBIN; ++iphi ){
+      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0UpAtPhi[enbin][iphi]; } //Spin up and on right side is N^{up}(phi)
+      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0UpAtPhiPlusPi[enbin][iphi]; } //Spin up and on left side is N^{up}(phi+pi)
+      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0DownAtPhi[enbin][iphi]; } //Spin down and on right side is N^{down}(phi)
+      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0DownAtPhiPlusPi[enbin][iphi]; } //Spin down and on left side is N^{down}(phi+pi)
+    }
+    mH1F_InvMassAllCuts->Fill(pi0->mass());
+  }
+  mH1F_Pi0MultAllCuts->Fill(ngoodpi0s);
+  //std::cout << "NGoodPi0s:"<<ngoodpi0s << std::endl;
+
+  for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
+    for( short phibin=0; phibin<NPHIBIN; ++phibin ){
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(1,NPi0UpAtPhi[ebin][phibin]);
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(2,NPi0UpAtPhiPlusPi[ebin][phibin]);
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(3,NPi0DownAtPhi[ebin][phibin]);
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(4,NPi0DownAtPhiPlusPi[ebin][phibin]);
+    }
+  }
+
+  if( mPi0Tree!=0 ){ mPi0Tree->Fill(); }
 
   mEvtInfo->Clear();
   mNTrig = 0; //Since ROOT only writes up to the size of mNTrig then only need to reset this back to zero and next loop will overwrite array as neccessary
   mPhArr->Clear();
   mPi0Arr->Clear();
-    
+  
   return kStOk;
 }
 
@@ -1167,5 +1291,48 @@ void StMuFcsPi0TreeMaker::PaintEnergyZoom(TCanvas* canv, const char* savename) c
   
   canv->Print(savename);
 }
+
+void StMuFcsPi0TreeMaker::PaintEpdNmipCuts(TCanvas* canv, const char* savename ) const
+{
+  canv->Clear();
+  canv->Divide(2,1);
+  for( UInt_t i=0; i<2; ++i ){
+    canv->cd(i+1);
+    for( Int_t icut=0, ipad=1; icut<NEPDCUTS; ++icut,++ipad ){
+      ((TH1*)mH1F_InvMassEpdCuts[i]->UncheckedAt(icut))->SetLineColor(icut+1);//Hack to get rainbow colors since I know I only have 8 histograms
+      if( icut==0 ){ ((TH1*)mH1F_InvMassEpdCuts[i]->UncheckedAt(icut))->Draw("hist e"); }
+      else{  ((TH1*)mH1F_InvMassEpdCuts[i]->UncheckedAt(icut))->Draw("hist e same"); }
+    }
+  }
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) const
+{
+  canv->Clear();
+  canv->Divide(2,1);
+  canv->cd(1);
+  mH1F_InvMassAllCuts->Draw("hist e");
+  canv->cd(2);
+  mH1F_Pi0MultAllCuts->Draw("hist e");
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintNpi0(TCanvas* canv, const char* savename ) const
+{
+  //canv->Clear();
+  for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
+    canv->DivideSquare(NPHIBIN);
+    for( short phibin=0; phibin<NPHIBIN; ++phibin ){
+      canv->cd(phibin+1);
+      mH1F_NPi0ByEnByPhi[ebin][phibin]->Draw();
+    }
+    canv->Print(savename);
+    canv->Clear();
+  }
+}
+
+  
+
 
 

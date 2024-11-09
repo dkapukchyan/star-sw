@@ -22,6 +22,7 @@
   @[October 11, 2024] > Changed how comparison works for #FcsPhotonCandidate so a #TClonesArray of #FcsPhotonCandidate is sorted in descending order of energy rather than ascending order.
   @[October 21, 2024] > Changed #mEpdHitNmip in #FcsPhotonCandidate to default to -1. This is so that I can have an additional check for if the candidate intersected any EPD tile even if it was not hit
   @[October 31, 2024] > Changed Double_t to Float_t for many values to conserve on disk space for the trees
+  @[November 22, 2024] > In #FcsPi0Candidate made all the functions related to kinematic variables const and added the Pt value to the printout so that I can check it against the Pt trigger threshold more easily.
 
 */
 
@@ -140,12 +141,12 @@ public:
   Float_t mEn = 0;            ///< Energy from Lorentz vector of two reconstructed candidates
   
   Float_t mEta = -1;          ///< Pseudorapidity from the lorentz vector
-  Float_t eta();              ///< Needed since in simulations the stored eta was not there when reconstructing from simulated photons
-  Float_t phi();              ///< Angle in x,y plane
-  Float_t pt();               ///< Transverse momentum
-  Float_t ptot();             ///< Total momentum
-  Float_t theta();            ///< azimuthal angle (angle from z-axis to x-y plane)
-  Float_t mass();             ///< Invariant mass of the Pi0
+  Float_t eta() const;        ///< Needed since in simulations the stored eta was not there when reconstructing from simulated photons
+  Float_t phi() const;        ///< Angle in x,y plane
+  Float_t pt() const;         ///< Transverse momentum
+  Float_t ptot() const;       ///< Total momentum
+  Float_t theta() const;      ///< azimuthal angle (angle from z-axis to x-y plane)
+  Float_t mass() const;       ///< Invariant mass of the Pi0
   //Need to project using momentum
   //Float_t mStarX = 0;     ///< Global STAR x postion from best vertex
   //Float_t mStarY = 0;     ///< Global STAR y postion from best vertex

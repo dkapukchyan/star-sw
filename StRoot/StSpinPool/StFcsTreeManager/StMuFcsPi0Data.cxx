@@ -154,22 +154,22 @@ FcsPi0Candidate::FcsPi0Candidate()
 FcsPi0Candidate::~FcsPi0Candidate()
 {}
 
-Float_t FcsPi0Candidate::eta()
+Float_t FcsPi0Candidate::eta() const
 { if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
 
-Float_t FcsPi0Candidate::phi()
+Float_t FcsPi0Candidate::phi() const
 { return atan2(mPy,mPx); }
 
-Float_t FcsPi0Candidate::pt()
+Float_t FcsPi0Candidate::pt() const
 { return sqrt( mPx*mPx + mPy*mPy ); }
 
-Float_t FcsPi0Candidate::ptot()
+Float_t FcsPi0Candidate::ptot() const
 { return sqrt( mPx*mPx + mPy*mPy + mPz*mPz ); }
 
-Float_t FcsPi0Candidate::theta()
+Float_t FcsPi0Candidate::theta() const
 { return 2.0*atan(exp(-1.0*eta())); }
 
-Float_t FcsPi0Candidate::mass()
+Float_t FcsPi0Candidate::mass() const
 { return sqrt(mEn*mEn - ptot()*ptot()); }
 
 Bool_t FcsPi0Candidate::IsEqual(const TObject* obj) const
@@ -211,7 +211,7 @@ void FcsPi0Candidate::Clear(Option_t* opt)
 
 void FcsPi0Candidate::Print(Option_t* opt) const
 {
-  std::cout << "|Clus:"<<mFromCluster <<"|PhCut:"<<mFromPh << "|Ph1Idx:"<<mPhoton1Idx << "|Ph2Idx:"<<mPhoton2Idx << "|En:"<<mEn << "|P:("<<mPx<<","<<mPy<<","<<mPz<<")|Eta:"<<mEta << "|Dgg:"<<mDgg << "|Zgg:"<<mZgg << "|Alpha:"<<mAlpha << "|InvMass:"<<mInvMass << std::endl;
+  std::cout << "|Clus:"<<mFromCluster <<"|PhCut:"<<mFromPh << "|Ph1Idx:"<<mPhoton1Idx << "|Ph2Idx:"<<mPhoton2Idx << "|En:"<<mEn << "|P:("<<mPx<<","<<mPy<<","<<mPz<<")|Pt:"<<pt()<<"|Eta:"<<mEta << "|Dgg:"<<mDgg << "|Zgg:"<<mZgg << "|Alpha:"<<mAlpha << "|InvMass:"<<mInvMass << std::endl;
 }
 
 Float_t FcsPi0Candidate::zgg(FcsPhotonCandidate& ph1, FcsPhotonCandidate& ph2)
