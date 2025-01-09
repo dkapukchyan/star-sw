@@ -36,6 +36,7 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
   memset(mH1F_InvMassEpdCuts,0,sizeof(mH1F_InvMassEpdCuts));
   //memset(mH1F_InvMassZggCuts,0,sizeof(mH1F_InvMassZggCuts));
   //memset(mH1F_InvMassPtCuts, 0,sizeof(mH1F_InvMassPtCuts));
+  memset(mH1F_InvMassAllCutsByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
   memset(mH1F_NPi0ByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
 }
 
@@ -132,6 +133,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
     mH1F_Triggers->GetXaxis()->SetBinLabel(65,"NF");  //Last bin is named "NF" for not found which is what nameFromId() returns if trigger is not in the map. This way if no map was loaded but an StFcsRun22TriggerMap was found, searching for triggers will return "NF"
   }
   loaded += mHists->AddH2F(file,mH2F_foundVvertex,"H2F_foundVvertex", "Used vertex bit vs. Vertex that was used in Pi0 Reconstruction;Vertex (cm);found (bit) 0=NA,1=VPD,2=EPD,4=BBC", 50,-200,200, 5,0,5);
+  loaded += mHists->AddH1F(file,mH1F_RndmSpin,"H1F_RndmSpin","Histogram to know if using random spin or not",2,0,2);
 
   loaded += mHists->AddH2F(file,mH2F_PhotonHeatMap,"H2F_PhotonHeatMap","Distribution of photons in STAR x,y space;x (cm);y (cm)", 400,-200,200, 300,-150,150);
   loaded += mHists->AddH2F(file,mH2F_PhotonHeatMapG,"H2F_PhotonHeatMapG","Distribution of photons in STAR x,y space (No Spike);x (cm);y (cm)", 400,-200,200, 300,-150,150);
@@ -145,12 +147,14 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_ClusterEnergy,"H1F_ClusterEnergy","Energy of FCS Clusters;Energy (GeV);", 1000,0,200);
   loaded += mHists->AddH1F(file,mH1F_PointEnergy,"H1F_PointEnergy","Energy of FCS Points;Energy (GeV);", 1000,0,200);
   loaded += mHists->AddH2F(file,mH2F_Energy_ph1Vph2,"H2F_Energy_ph1Vph2","Energy of photon 1 vs. photon 2 no EPD cuts;Energy Highest Photon (GeV);Energy Next Highest (GeV)", 1000,0,200, 1000,0,200);
+  loaded += mHists->AddH1F(file,mH1F_NBadEpdProj,"H1F_NBadEpdProj","Number of points in an event that did not project back to a valid EPD tile;;",15,0,15);
+  loaded += mHists->AddH1F(file,mH1F_NBadEpdProjVcut,"H1F_NBadEpdProjVcut","Number of points in an event that did not project back to a valid EPD tile with |vertex|<150;;",15,0,15);
   
   loaded += mHists->AddH1F(file,mH1F_BestPi0Mass,"H1F_BestPi0Mass","Pi0s with photon combination of two highest energy pairs;Invariant Mass (GeV);", 500,0,1);
   //loaded += mHists->AddH2F(file,mH2F_Pi0HeatMap,"H2F_Pi0HeatMap","STAR x,y locations for Pi0s;x (cm);y (cm)", 500,-250,250, 500,-250,250);
   loaded += mHists->AddH1F(file,mH1F_PointMult,"H1F_PointMult","Point Multiplicity with only an energy cut;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_BestPi0Zgg,"H1F_BestPi0Zgg","Zgg of Pi0s with photon combination using highest energy pairs;Zgg;", 100,0,1);
-  loaded += mHists->AddH1F(file,mH1F_BestPi0Phi,"H1F_BestPi0Phi","Phi of Pi0s with photon combination using highest energy pairs;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_BestPi0Phi,"H1F_BestPi0Phi","Phi of Pi0s with photon combination using highest energy pairs;Phi;", 100,-TMath::Pi(),TMath::Pi());
   loaded += mHists->AddH1F(file,mH1F_BestPi0Eta,"H1F_BestPi0Eta","Eta of Pi0s with photon combination using highest energy pairs;Eta;", 100,1,5.5);
   loaded += mHists->AddH1F(file,mH1F_BestPi0En,"H1F_BestPi0En","Energy of Pi0s with photon combination using highest energy pairs;Energy (GeV)", 1000,0,100);
   loaded += mHists->AddH1F(file,mH1F_BestPi0Pt,"H1F_BestPi0Pt","Pt of Pi0s with photon combination using highest energy pairs;Pt (GeV)", 100,0,10);
@@ -160,7 +164,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH2F(file,mH2F_EpdPhHeatMap,"H2F_EpdPhHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
   loaded += mHists->AddH1F(file,mH1F_EpdPhPointMult,"H1F_EpdPhPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdPhZgg,"H1F_EpdPhZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Photons;Zgg;", 100,0,1);
-  loaded += mHists->AddH1F(file,mH1F_EpdPhPhi,"H1F_EpdPhPhi","Phi of Pi0s using highest energy pairs and Epd Cut Photons;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_EpdPhPhi,"H1F_EpdPhPhi","Phi of Pi0s using highest energy pairs and Epd Cut Photons;Phi;", 100,-TMath::Pi(),TMath::Pi());
   loaded += mHists->AddH1F(file,mH1F_EpdPhEta,"H1F_EpdPhEta","Eta of Pi0s using highest energy pairs and Epd Cut Photons;Eta;", 100,1,5.5);
   loaded += mHists->AddH1F(file,mH1F_EpdPhEn,"H1F_EpdPhEn","Energy of Pi0s using highest energy pairs and Epd Cut Photons;Energy (GeV)", 1000,0,100);
   loaded += mHists->AddH1F(file,mH1F_EpdPhPt,"H1F_EpdPhPt","Pt of Pi0s using highest energy pairs and Epd Cut Photons;Pt (GeV)", 100,0,10);
@@ -171,7 +175,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH2F(file,mH2F_EpdChHeatMap,"H2F_EpdChHeatMap","STAR x,y locations for Pi0s with EPD cut photons;x (cm);y (cm)", 500,-250,250, 500,-250,250);
   loaded += mHists->AddH1F(file,mH1F_EpdChPointMult,"H1F_EpdChPointMult","Point Multiplicity with an energy cut and EPD cut on photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdChZgg,"H1F_EpdChZgg","Zgg of Pi0s using highest energy pairs and Epd Cut Charged;Zgg;", 100,0,1);
-  loaded += mHists->AddH1F(file,mH1F_EpdChPhi,"H1F_EpdChPhi","Phi of Pi0s using highest energy pairs and Epd Cut Charged;Phi;", 100,-3.14159,3.14159);
+  loaded += mHists->AddH1F(file,mH1F_EpdChPhi,"H1F_EpdChPhi","Phi of Pi0s using highest energy pairs and Epd Cut Charged;Phi;", 100,-TMath::Pi(),TMath::Pi());
   loaded += mHists->AddH1F(file,mH1F_EpdChEta,"H1F_EpdChEta","Eta of Pi0s using highest energy pairs and Epd Cut Charged;Eta;", 100,1,5.5);
   loaded += mHists->AddH1F(file,mH1F_EpdChEn,"H1F_EpdChEn","Energy of Pi0s using highest energy pairs and Epd Cut Charged;Energy (GeV)", 1000,0,100);
   loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
@@ -185,23 +189,34 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH1F(file,mH1F_PointsEpd,"H1F_PointsEpd","Number of points with EPD nmip cut;Point Multiplicty",30,0,30);
 
 
-  mH1F_InvMassEpdCuts[0] = new TObjArray();
+  if( mH1F_InvMassEpdCuts[0]==0 ){ mH1F_InvMassEpdCuts[0] = new TObjArray(); }
   loaded += mHists->AddH1FArr(file,mH1F_InvMassEpdCuts[0],NEPDCUTS,"H1F_InvMassEpdCuts_AllTrig","Different EPD NMIP cuts all triggers",500,0,1);
-  mH1F_InvMassEpdCuts[1] = new TObjArray();
+  if( mH1F_InvMassEpdCuts[1]==0 ){ mH1F_InvMassEpdCuts[1] = new TObjArray(); }
   loaded += mHists->AddH1FArr(file,mH1F_InvMassEpdCuts[1],NEPDCUTS,"H1F_InvMassEpdCuts_EmTrig","Different EPD NMIP cuts EM triggers",500,0,1);
   //loaded += mHists->AddH1FArr(file,mH1F_InvMassZggCuts,8,"H1F_InvMassZggCuts",500,0,1);
   //loaded += mHists->AddH1FArr(file,mH1F_InvMassPtCuts,8,"H1F_InvMassPtCuts",500,0,1);
   loaded += mHists->AddH1F(file,mH1F_InvMassAllCuts,"H1F_AllInvMassCuts","Invariant Mass of two photons after all cuts applied", 500,0,1);
-  loaded += mHists->AddH1F(file,mH1F_Pi0MultAllCuts,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts", 5,0,5);
-  
-  
+  loaded += mHists->AddH1F(file,mH1F_Pi0MultAllCuts,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts", 20,0,20);
+  //loaded += mHists->AddH2F(file,mH2F_AllCuts_Poi_yVx,"H2F_AllCuts_Poi_yVx","Point distribution y vs. x after all cuts", 400,-200,200, 300,-150,150);
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_yVx,"H2F_AllCuts_Pi0_yVx","Pi0 distribution projected to FCS y vs. x after all cuts", 400,-200,200, 300,-150,150);
+
+  loaded += mHists->AddH1F(file,mH1F_NFoundPhiBin,"H1F_NFoundPhiBin","Number of found phi bins",3,0,3);
+  loaded += mHists->AddH1F(file,mH1F_AllCuts_xF,"H1F_AllCuts_xF","xF of pi0s after all cuts applied", 100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0En,"H1F_AllCuts_Pi0En","Energy of pi0s after all cuts applied", 100,0,100);
+  //loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0Phi,"H1F_AllCuts_Pi0Phi","Phi of pi0s after all cuts applied", NPHIBIN,0,TMath::TwoPi());
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_etaVphi,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s", NPHIBIN*2,0,TMath::TwoPi(), 70,0,7);
   //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5);
+			   
   TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
   TString phititletext[NPHIBIN] = { "0<=#phi<#frac{#pi}{4}", "#frac{#pi}{4}<=#phi<#frac{#pi}{2}", "#frac{#pi}{2}<=#phi<#frac{3#pi}{4}", "#frac{3#pi}{4}<=#phi<#pi" };
   for( int ebin=0; ebin<NENERGYBIN; ++ebin ){
     for( int phibin=0; phibin<NPHIBIN; ++phibin ){
-      TString histname = "H1F_NPi0En" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
-      TString histtitle = "Number of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin];
+      TString histname = "H1F_InvMassEn" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
+      TString histtitle = "Invariant Mass of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin] + ";InvMass (GeV);";
+      loaded += mHists->AddH1F(file,mH1F_InvMassAllCutsByEnByPhi[ebin][phibin],histname.Data(),histtitle.Data(),500,0,1);
+
+      histname = "H1F_NPi0En" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
+      histtitle = "Number of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin];
       loaded += mHists->AddH1F(file,mH1F_NPi0ByEnByPhi[ebin][phibin],histname.Data(),histtitle.Data(),4,0,4);
       mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(1,"NPi0UpAtPhi");
       mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(2,"NPi0UpAtPhiPlusPi");
@@ -265,8 +280,7 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
   if( mPi0Tree!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal TTree pointer not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mPi0Tree; mPi0Tree=0; }
   mPi0Tree = (TTree*)file->Get("Pi0Tree");
   //tree = mPi0Tree;
-  if( mPi0Tree==0 ){ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
-  else{
+  if( mPi0Tree!=0 ){
     //Set event branches
     if( mEvtInfo!=0 ){ std::cout << "LoadDataFromFile - WARNING:Internal #FcsEventInfo not zero must have been intialized elsewhere\n -> Deleting old data for new" << std::endl; delete mEvtInfo; mEvtInfo=0; }
     if( isEventOn() ){
@@ -301,6 +315,7 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
       else{ std::cout << "LoadDataFromFile - WARNING:No \"Pi0\" branch found in mPi0Tree it could be that the tree was generated without this option." << std::endl; }
     }
   }
+  //else{ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
   
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap"); //Don't use GetMaker since it doesn't use the right name when searching
   if( mFcsTrigMap==0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
@@ -308,7 +323,7 @@ void StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsEve
   
   if( mHists==0 ){ mHists = new HistManager(); }
   UInt_t totalhists = this->LoadHists(file);
-  std::cout << "TotalHistsLoaded: "<<totalhists << std::endl;
+  //std::cout << "TotalHistsLoaded: "<<totalhists << std::endl;
   //std::cout << "DUMB CHECK "<<mFcsTrigMap << std::endl;
   //std::string name(mFcsTrigMap->nameFromId(45,22349011));
   //std::cout << name << std::endl;
@@ -323,6 +338,22 @@ Int_t StMuFcsPi0TreeMaker::InitRun(int runnumber) {
     LOG_ERROR << "StMuFcsPi0TreeMaker::InitRun - Failed to get StFcsDbMaker" << endm;
     return kStFatal;
   }
+
+  mSpinDbMkr = static_cast<StSpinDbMaker*>(GetMaker("spinDb"));
+  if( !mSpinDbMkr ){
+    LOG_WARN << "StMuFcsPi0TreeMaker::InitRun - Could not find StSpinDbMaker named 'spinDb'" << endm;
+  }
+  else{
+    if( !mSpinDbMkr->isValid() ){
+      LOG_WARN << "StMuFcsPi0TreeMaker::InitRun - Found StSpinDbMaker but contains invalid data so will not use it" << endm;
+      mSpinDbMkr=0;
+      mH1F_RndmSpin->SetBinContent(1,1);
+    }
+    else{
+      mH1F_RndmSpin->SetBinContent(2,1);
+    }
+  }
+  
   if( !mEpdGeo ){ mEpdGeo = new StEpdGeom(); }
   else{
     LOG_ERROR << "StMuFcsPi0TreeMaker::InitRun - StEpdGeom Exists!" << endm;
@@ -576,7 +607,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex));
     if( !(ph->mFromCluster) ){
       mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
-      if( fabs(usevertex)<150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
+      if( -150<=usevertex && usevertex<=150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
     }
     //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
     //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
@@ -584,7 +615,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     //loop over all west epd tiles so that even if no hit recorded can use as a veto
     for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
       for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
-	if( mEpdGeo->IsInTile(i_pp,i_tt,1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
+	if( mEpdGeo->IsInTile(i_pp,i_tt, 1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
 	  ph->mEpdHitNmip = 0;
 	}
       }
@@ -750,14 +781,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   //std::cout << "===== EventId:"<< mEvtInfo->mEvent <<" =====" << std::endl;
   FcsPhotonCandidate* firstphotoncut[NEPDCUTS] = {0};
   FcsPhotonCandidate* secondphotoncut[NEPDCUTS] = {0};
+  Int_t n_noepdproj = 0;
+  Int_t n_noepdproj_vcut = 0;
   for( Int_t ip = clustersize; ip<ncandidates; ++ip ){
     FcsPhotonCandidate* ipoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(ip);
     if( ipoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
     //std::cout << "|ip:"<<ip << std::endl;
     //std::cout << "  + ";
     //ipoi->Print();
-
-    if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
 
     if( ipoi->mEpdHitNmip>-0.1){ //Only include candidates who have their nmip value set
       if( ipoi->mEpdHitNmip<mEpdNmipCut ){ goodpointphotonsidx.emplace_back(ip); }
@@ -769,7 +800,12 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	}
       }
     }
+    else{
+      ++n_noepdproj;
+      if( -150<=usevertex && usevertex<=150 ){ ++n_noepdproj_vcut; }
+    }
     
+    if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
     for( Int_t jp=ip+1; jp<ncandidates; ++jp ){
       FcsPhotonCandidate* jpoi = (FcsPhotonCandidate*) mPhArr->UncheckedAt(jp);
       if( jpoi->mFromCluster ){ std::cout << "MAJOR ERROR - point size of array found a cluster crashing" << std::endl; exit(0); }
@@ -807,6 +843,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       }
     }
   }
+  mH1F_NBadEpdProj->Fill(n_noepdproj);
+  mH1F_NBadEpdProjVcut->Fill(n_noepdproj_vcut);
 
   //Handle the epd cuts
   for( short i=0; i<NEPDCUTS; ++i ){
@@ -901,8 +939,10 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   }
 
   //XF = pi0Vert_LV.Pz()/255;
-  Double_t PiOver4 = 3.14159/4.0;
-  Double_t PhiBin[NPHIBIN*2+1] = {0.0, PiOver4, 2.0*PiOver4, 3.0*PiOver4, 4.0*PiOver4, 5.0*PiOver4, 6.0*PiOver4, 7.0*PiOver4, 8.0*PiOver4}; //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
+  Double_t PiOverN = TMath::Pi()/static_cast<Double_t>(NPHIBIN);
+  Double_t PhiBin[NPHIBIN*2+1];  //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
+  for( short i=0; i<=2*NPHIBIN; ++i ){ PhiBin[i] = static_cast<Double_t>(i)*PiOverN; }
+  //{0.0, PiOver4, 2.0*PiOver4, 3.0*PiOver4, 4.0*PiOver4, 5.0*PiOver4, 6.0*PiOver4, 7.0*PiOver4, 8.0*PiOver4};
   Int_t NPi0UpAtPhi[NENERGYBIN][NPHIBIN]         = {0};
   Int_t NPi0DownAtPhi[NENERGYBIN][NPHIBIN]       = {0};
   Int_t NPi0UpAtPhiPlusPi[NENERGYBIN][NPHIBIN]   = {0};
@@ -915,7 +955,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     //pi0->Print();
     float pi0en = pi0->mEn;
     //if( !emtrigfound )     { continue; }
-    if( ! (-100<=usevertex && usevertex<=100) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
+    if( ! (-150<=usevertex && usevertex<=150) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
     if( pi0->mFromCluster ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Not a point - "<<pi0->mFromCluster<< std::endl;*/ continue; }
     if( pi0->mZgg>0.7 )    { /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed Zgg:"<< pi0->mZgg << std::endl;*/ continue; }
     if( pi0->mFromPh>=0 )  { /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; }  //Ensure pi0 is coming from photon cut
@@ -945,6 +985,23 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     ++ngoodpi0s;
     //std::cout << " + |Ntrig:"<<mNTrig << "|trigname:"<<trigname << "|trigpt:"<<trigptthr;
     //pi0->Print();
+    /*
+    FcsPhotonCandidate* ph1 = mPhArr->UncheckedAt(pi0->mPhoton1Idx);
+    FcsPhotonCandidate* ph2 = mPhArr->UncheckedAt(pi0->mPhoton2Idx);
+    mH2F_AllCuts_PoiX_1V2->(ph1->mX,ph2->mX);
+    mH2F_AllCuts_PoiY_1V2->(ph1->mY,ph2->mY);
+    */
+
+    //Get Pi0 projection to Ecal front face 
+    double pi0_momentum[3] = {pi0->mPx,pi0->mPy,pi0->mPz};
+    double pi0_vertex[3] = {0,0,usevertex};
+    int det = 0; //North side if negative px
+    //South side for positive px, set px==0 to south side since fcs planes would intersect in that case
+    if( pi0_momentum[2]>=0 && pi0_momentum[0]>=0 ){ det=1; }
+    if( pi0_momentum[2]<0  && pi0_momentum[0]<0  ){ det=1; }
+    StThreeVectorD pi0_xyz = mFcsDb->projectLine(det,pi0_momentum,pi0_vertex,0); //Project to front face of FCS
+    mH2F_AllCuts_Pi0_yVx->Fill(pi0_xyz.x(),pi0_xyz.y());
+
     short enbin = -1;
     if( pi0en<=10 ){ enbin = 0; }
     else if( pi0en>10 && pi0en<=30 ){ enbin=1; }
@@ -953,13 +1010,21 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     else if( pi0en>70 && pi0en<=100 ){ enbin=4; }
     else{ enbin=5; }
     Double_t phi = pi0->phi();
-    if( phi<0 ){ phi += 2.0*3.14159; } //atan2 gives negative angles but I don't want negative values in my array so just shift by 2pi
+    short phibin = -1;
+    if( phi<0 ){ phi += TMath::TwoPi(); } //atan2 gives negative angles but I don't want negative values in my array so just shift by 2pi
+    mH1F_AllCuts_xF->Fill( pi0->mPz/255 );
+    mH1F_AllCuts_Pi0En->Fill( pi0en );
+    mH2F_AllCuts_Pi0_etaVphi->Fill( phi,pi0->eta() );
+    short nfoundphibin = 0;
     for( int iphi=0; iphi<NPHIBIN; ++iphi ){
-      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0UpAtPhi[enbin][iphi]; } //Spin up and on right side is N^{up}(phi)
-      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0UpAtPhiPlusPi[enbin][iphi]; } //Spin up and on left side is N^{up}(phi+pi)
-      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0DownAtPhi[enbin][iphi]; } //Spin down and on right side is N^{down}(phi)
-      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0DownAtPhiPlusPi[enbin][iphi]; } //Spin down and on left side is N^{down}(phi+pi)
+      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0UpAtPhi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on right side is N^{up}(phi)
+      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0UpAtPhiPlusPi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on left side is N^{up}(phi+pi)
+      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0DownAtPhi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin down and on right side is N^{down}(phi)
+      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0DownAtPhiPlusPi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin down and on left side is N^{down}(phi+pi)
     }
+    if( phibin<0 ){ std::cout << "Couldn't find a valid phi bin" << std::endl; break; }
+    mH1F_NFoundPhiBin->Fill(nfoundphibin);
+    mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
     mH1F_InvMassAllCuts->Fill(pi0->mass());
   }
   mH1F_Pi0MultAllCuts->Fill(ngoodpi0s);
@@ -1040,6 +1105,8 @@ void StMuFcsPi0TreeMaker::PaintEventQa(TCanvas* canv,  const char* savename) con
   mH1F_Triggers->Draw("hist e");
   canv->cd(3)->SetLogz();
   mH2F_foundVvertex->Draw("colz");
+  canv->cd(4);
+  mH1F_RndmSpin->Draw("hist e");
 
   canv->Print(savename);
 }
@@ -1310,12 +1377,43 @@ void StMuFcsPi0TreeMaker::PaintEpdNmipCuts(TCanvas* canv, const char* savename )
 void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) const
 {
   canv->Clear();
-  canv->Divide(2,1);
+  canv->Divide(3,3);
   canv->cd(1);
-  mH1F_InvMassAllCuts->Draw("hist e");
+  mH1F_NFoundPhiBin->Draw("hist e");
   canv->cd(2);
+  mH1F_AllCuts_xF->Draw("hist e");
+  canv->cd(3);
+  mH1F_AllCuts_Pi0En->Draw("hist e");
+  canv->cd(4);
+  //mH1F_AllCuts_Pi0Phi->Draw("hist e");
+  mH2F_AllCuts_Pi0_etaVphi->Draw("colz");
+  canv->cd(5);
+  mH1F_InvMassAllCuts->Draw("hist e");
+  canv->cd(6)->SetLogy();
+  mH1F_NBadEpdProj->Draw("hist e");
+  mH1F_NBadEpdProjVcut->Draw("hist e same");
+  canv->cd(7);
+  mH2F_AllCuts_Pi0_yVx->Draw("colz");
+  canv->cd(8);
   mH1F_Pi0MultAllCuts->Draw("hist e");
+  canv->cd(9);
+  TH1* h1f_multcut_clone = (TH1*)mH1F_Pi0MultAllCuts->Clone("h1f_multcut_clone");
+  h1f_multcut_clone->SetBinContent(1,0); //Artifically delete all entries in zero bin to zoom in on the higher regions
+  h1f_multcut_clone->Draw("hist e");
   canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintInvMassCuts(TCanvas* canv, const char* savename ) const
+{
+  for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
+    canv->DivideSquare(NPHIBIN);
+    for( short phibin=0; phibin<NPHIBIN; ++phibin ){
+      canv->cd(phibin+1);
+      mH1F_InvMassAllCutsByEnByPhi[ebin][phibin]->Draw("hist e");
+    }
+    canv->Print(savename);
+    canv->Clear();
+  }
 }
 
 void StMuFcsPi0TreeMaker::PaintNpi0(TCanvas* canv, const char* savename ) const
@@ -1333,6 +1431,38 @@ void StMuFcsPi0TreeMaker::PaintNpi0(TCanvas* canv, const char* savename ) const
 }
 
   
+Int_t StMuFcsPi0TreeMaker::LoadGraphsFromFile(TFile* file, TObjArray* graphs )
+{
+  Int_t gloaded = 0;
+  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_InvMass,"GE_AllCuts_InvMass","Peak position of Invariant Mass vs. Run Index");
+  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_Pi0En,"GE_AllCuts_Pi0En","Mean Pi0 Energy vs. Run Index");
+  return gloaded;
+}
 
+
+void StMuFcsPi0TreeMaker::FillGraphs(Int_t irun)
+{
+  mGE_AllCuts_InvMass->SetPoint(irun,irun,mH1F_InvMassAllCuts->GetMean());
+  mGE_AllCuts_InvMass->SetPointError(irun,irun,mH1F_InvMassAllCuts->GetRMS());
+
+  mGE_AllCuts_Pi0En->SetPoint(irun,irun,mH1F_AllCuts_Pi0En->GetMean());
+  mGE_AllCuts_Pi0En->SetPointError(irun,irun,mH1F_AllCuts_Pi0En->GetRMS());
+  
+  return;
+}
+
+void StMuFcsPi0TreeMaker::DrawQaGraphs(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->cd();
+  canv->Divide(1,2);
+
+  canv->cd(1);
+  mGE_AllCuts_InvMass->Draw("AL");
+  canv->cd(2);
+  mGE_AllCuts_Pi0En->Draw("AL");
+  
+  canv->SaveAs(savename);
+}
 
 

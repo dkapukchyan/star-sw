@@ -21,10 +21,13 @@ TFile* HistManager::InitFile(const char* fname, Option_t* option, const char* ft
 UInt_t HistManager::AddH1F(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
   UInt_t status = 0;
+  //std::cout << "HistManager::AddH1F|h1:"<< h1 << std::endl;
   if( h1!=0 ){
+    //std::cout << " + |HistManager::AddH1F|"<<h1->GetName()<<"|kND:"<<h1->TestBit(kNotDeleted) <<"|22:"<< h1->TestBit(22) << std::endl;
     //Here I am using bit 22 since that is unused by TH1
-    if( h1->TestBit(22) ){ h1=0; } //It is true that the file was loaded so safe to change pointer without delete
+    if( h1->TestBit(22) ){ delete h1; h1=0; } //It is true that it was loaded from the file so safe to delete pointer and reset as long as TH1::AddDirectory(kFALSE) is called since deleting/closing a #TFile deletes the histograms even if this object is set as the owner, which causes undefined behavior for the status bits which this class needs
     else{ Add(h1); return status; } //Object was new so stop and return 0 and re-add to array
+    //h1 = 0; //@[Dec, 16, 2024] > Hack to make loading files work
   }
   if( file!=0 ){ h1 = (TH1*)file->Get(name); }
   if( h1==0 ){
@@ -46,11 +49,23 @@ UInt_t HistManager::AddH1F(TFile* file, TH1*& h1, const char* name, const char* 
 
 UInt_t HistManager::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
+  if( arr==0 ){ return 0; }
   UInt_t status = 0;
   for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
+    TH1* h1 = 0;
+    bool inarray = false;
+    if( ((int)iobj)<arr->GetEntriesFast() && arr->GetEntriesFast()>0 ){ //This means the array already has some object at iobj
+      h1 = (TH1*)arr->UncheckedAt(iobj);
+      if( h1!=0 ){
+	inarray = true;
+	//Here I am using bit 22 since that is unused by TH1
+	//std::cout << " + |HistManager::AddH2FArr|"<<h2->GetName()<<"|kND:"<<h2->TestBit(kNotDeleted) <<"|22:"<< h2->TestBit(22) << std::endl;
+	if( h1->TestBit(22) ){ delete h1; h1=0; } //It is true that the file was loaded so safe to change pointer without delete
+	else{ ++status; continue; } //Object was added to array as new so just keep going
+      }
+    }
     std::stringstream ss_name;
     ss_name << name << "_" << iobj;
-    TH1F* h1 = 0;
     if( file!=0 ){ h1 = (TH1F*)file->Get(ss_name.str().c_str()); }
     if( h1==0 ){
       h1 = new TH1F(ss_name.str().c_str(),title,nbins,xlow,xhigh);
@@ -61,7 +76,8 @@ UInt_t HistManager::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const 
       ++status;
     }
     h1->SetTitle(title);
-    arr->Add(h1);
+    if( inarray ){ arr->AddAt(h1,iobj); }
+    else{ arr->Add(h1); }
     Add(h1);
   }
   return status;
@@ -72,8 +88,10 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
   UInt_t status = 0;
   if( h2!=0 ){
     //Here I am using bit 22 since that is unused by TH1
-    if( h2->TestBit(22) ){ h2=0; } //It is true that the file was loaded so safe to change pointer without delete
+    //std::cout << " + |HistManager::AddH2F|"<<h2->GetName()<<"|kND:"<<h2->TestBit(kNotDeleted) <<"|22:"<< h2->TestBit(22) << std::endl;
+    if( h2->TestBit(22) ){ delete h2; h2=0; } //It is true that the file was loaded so safe to change pointer without delete
     else{ Add(h2); return status; } //Object was new so stop and return 0 and re-add to array
+    //h2 = 0; //@[Dec, 16, 2024] > Hack to make loading files work
   }
   if( file!=0 ){ h2 = (TH1*)file->Get(name); }
   if( h2==0 ){
@@ -96,14 +114,26 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
 
 UInt_t HistManager::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
 {
+  if( arr==0 ){ return 0; }
   UInt_t status = 0;
   for( UInt_t iobj = 0; iobj<nobjs; ++iobj ){
+    TH1* h2 = 0;
+    bool inarray = false;
+    if( ((int)iobj)<arr->GetEntriesFast() && arr->GetEntriesFast()>0 ){ //This means the array already has some object at iobj
+      h2 = (TH1*)arr->UncheckedAt(iobj);
+      if( h2!=0 ){
+	inarray = true;
+	//Here I am using bit 22 since that is unused by TH1
+	//std::cout << " + |HistManager::AddH2FArr|"<<h2->GetName()<<"|kND:"<<h2->TestBit(kNotDeleted) <<"|22:"<< h2->TestBit(22) << std::endl;
+	if( h2->TestBit(22) ){ delete h2; h2=0; } //It is true that the file was loaded so safe to change pointer without delete
+	else{ ++status; continue; } //Object was added to array as new so just keep going
+      }
+    }
     std::stringstream ss_name;
     ss_name << name << "_" << iobj;
-    TH2* h2 = 0;
     if( file!=0 ){ h2 = (TH2F*)file->Get(ss_name.str().c_str()); }
     if( h2==0 ){
-	h2 = new TH2F(ss_name.str().c_str(),title,nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
+      h2 = new TH2F(ss_name.str().c_str(),title,nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
 	h2->Sumw2();
     }
     else{
@@ -111,8 +141,31 @@ UInt_t HistManager::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const 
       ++status;
     }
     h2->SetTitle(title);
-    arr->Add(h2);
+    if( inarray ){ arr->AddAt(h2,iobj); }
+    else{ arr->Add(h2); }
     Add(h2);
   }
   return status; 
+}
+
+void HistManager::Draw(Option_t* option)
+{
+  std::string opt(option);
+  //if( opt.Length()==0 ){ TCollection::Draw(); return; } Maybe not a good idea since TCollection should draw them all with some option
+
+  TString histname("");
+  TString histopt("");
+  std::size_t firstcolon = opt.find(";");
+  if( firstcolon!=std::string::npos ){
+    histname = opt.substr(0,firstcolon);
+    histopt = opt.substr(firstcolon+1);
+  }
+  else{
+    histname = option;
+  }
+  TObject* h = FindObject(histname.Data());
+  std::cout << "          +|histname:"<<histname << "|histopt:"<<histopt << std::endl;
+  if( h==0 ){ std::cout << "HistManager::Draw - Warning:Could not find histogram '"<<histname<< "'" << std::endl; }
+  else{ h->Draw(histopt.Data()); }
+
 }

@@ -46,12 +46,31 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
   memset(mH1F_Poi_NCluPhotons,0,sizeof(mH1F_Poi_NCluPhotons));
   memset(mH2F_Poi_yVx,0,sizeof(mH2F_Poi_yVx));
 
+  memset(mG_Triggers,0,sizeof(mG_Triggers));
+  memset(mGE_NHits,0,sizeof(mGE_NHits));
+
   //memset(mSpinPattern,0,sizeof(mSpinPattern));
 }
 
 StMuFcsRun22QaMaker::~StMuFcsRun22QaMaker()
 {
   if( mInternalHists ){ delete mHists; }
+  for( UShort_t i=0; i<kFcsNDet; ++i ){
+    delete mH2F_Hit_adcVtb[i];
+    //delete mH2F_Hit_enVid[i];
+    //delete mH2F_Hit_fitpeakVid[i];
+    //delete mH2F_Hit_chi2Vid[i];
+    //delete mH2F_Hit_npeaksVid[i];
+    //delete mH1F_Hit_NHits[i];
+
+    //if( i<3 ){ delete mH1F_Hit_ESum[0]; }
+    
+    if( i<2 ){
+      delete mH2F_HitPres_depVqt[i];
+      delete mH2F_HitPres_peakVtac[i];
+      //delete mH2F_HitEpd_tacVadcmip[i];
+    }
+  }
 }
 
 void StMuFcsRun22QaMaker::setHistManager( HistManager* hm )
@@ -81,8 +100,10 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 {
   if( mHists==0 ){ return 0; }
   UInt_t loaded = 0;
+  //std::cout << "    + B|entries:"<< mH1F_Entries << "|22:"<< ((mH1F_Entries==0)? 2:mH1F_Entries->TestBit(22)) << std::endl;
   loaded += mHists->AddH1F(file,mH1F_Entries,"H1F_Entries","Entries",2,0,2);
-
+  //std::cout << "    + A|entries:"<< mH1F_Entries << "|22:"<<mH1F_Entries->TestBit(22) << std::endl;
+  
   loaded += mHists->AddH1F(file,mH1F_Triggers,"H1F_Triggers","Triggers;;",65,0,65);
   //@[June 3, 2024] > This is almost all of them as some ids are not in this range but good enough for now
   //@[September 6, 2024] > Learned that for Run 22 only FCS triggers above 890000 are production triggers and can ignore triggers lower than that. Loooking at STAR's RunLog Browser I don't see any triggers larger than 892000. For this reason trigger histogram is only showing these Ids.
@@ -127,7 +148,7 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
     TString histname = "H2F_Hit_adcVtb_" + namesuffix[i];
     TString histtitle = "Adc vs. Tb for " + namesuffix[i] + ";tb;adc";
     if( mFcsAdcTbOn ){
-      mH2F_Hit_adcVtb[i] = new TObjArray(); //Create new array for each detector
+      if( mH2F_Hit_adcVtb[i]==0 ){ mH2F_Hit_adcVtb[i] = new TObjArray(); } //Create new array for each detector
       loaded += mHists->AddH2FArr(file,(mH2F_Hit_adcVtb[i]),nchs,histname.Data(),histtitle.Data(),100,0,100,400,0,4000);
     }
     histname = "H2F_Hit_enVid_" + namesuffix[i];
@@ -193,18 +214,19 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
 
   if( mEpdAdcQaOn || mEpdTacQaOn ){
     if( mEpdAdcQaOn ){
-      mH2F_HitPres_depVqt[0]   = new TObjArray();
-      mH2F_HitPres_depVqt[1]   = new TObjArray();
+      if( mH2F_HitPres_depVqt[0]==0 ){ mH2F_HitPres_depVqt[0] = new TObjArray(); }
+      if( mH2F_HitPres_depVqt[1]==0 ){ mH2F_HitPres_depVqt[1] = new TObjArray(); }
       loaded += mHists->AddH2FArr(file,mH2F_HitPres_depVqt[0],192,"H2F_HitPres_depVqt_PN","QT sum vs. DEP ADC sum for Fcs Preshower North hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
       loaded += mHists->AddH2FArr(file,mH2F_HitPres_depVqt[1],192,"H2F_HitPres_depVqt_PS","QT sum vs. DEP ADC sum for Fcs Preshower South hits;QtSum;DepSum", 64,0,4096, 64,0,4096);
     }
     if( mEpdTacQaOn ){
-      mH2F_HitPres_peakVtac[0] = new TObjArray();
-      mH2F_HitPres_peakVtac[1] = new TObjArray();
+      if( mH2F_HitPres_peakVtac[0]==0 ){ mH2F_HitPres_peakVtac[0] = new TObjArray(); }
+      if( mH2F_HitPres_peakVtac[1]==0 ){ mH2F_HitPres_peakVtac[1] = new TObjArray(); }
       loaded += mHists->AddH2FArr(file,mH2F_HitPres_peakVtac[0],192,"H2F_HitPres_peakVtac_PN","Qt TAC vs. Found peak tb for Fcs Preshower North hits;peak (tb);Qt TAC", 100,0,100, 100,0,100);
       loaded += mHists->AddH2FArr(file,mH2F_HitPres_peakVtac[1],192,"H2F_HitPres_peakVtac_PS","Qt TAC vs. Found peak tb for Fcs Preshower South hits;peak (tb);Qt TAC", 100,0,100, 100,0,100); 
     }
   }
+  
   
   loaded += mHists->AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
   loaded += mHists->AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
@@ -219,7 +241,7 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
   loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
   loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
   loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
-
+  
   return loaded;
 }
 
@@ -994,5 +1016,206 @@ void StMuFcsRun22QaMaker::DrawFcsPointPi0(TCanvas* canv, const char* savename)
   canv->cd(6);
   mH2F_PoiHigh_invmassVzgg->Draw("colz");
   canv->Print(savename);
+}
+
+Int_t StMuFcsRun22QaMaker::MakeGraph(TFile* file, TObjArray* grapharr, TGraph*& graph, const char* name, const char* title )
+{
+  if( graph!=0 ){ return 0; }  //Graph pointer should always be zero
+  if( file!=0 ){
+    graph = (TGraph*)file->Get(name);
+    grapharr->Add(graph); //add graphs from file too
+  }
+  if( graph==0 ){
+    TGraph* gexists = (TGraph*)grapharr->FindObject(name);
+    if( gexists==0 ){
+      graph = new TGraph();
+      grapharr->Add(graph); //Add new graphs to array
+    }
+    else{ graph = gexists; }
+  }
+  graph->SetNameTitle(name,title);
+  return 1;//1 if histogram loaded or exists, 0 otherwise
+}
+
+Int_t StMuFcsRun22QaMaker::MakeGraph(TFile* file, TObjArray* grapharr, TGraphErrors*& graph, const char* name, const char* title )
+{
+  if( graph!=0 ){ return 0; }  //Graph pointer should always be zero
+  if( file!=0 ){ graph = (TGraphErrors*)file->Get(name); }
+  if( graph==0 ){
+    TGraphErrors* gexists = (TGraphErrors*)grapharr->FindObject(name);
+    if( gexists==0 ){
+      graph = new TGraphErrors();
+    }
+    else{ graph = gexists; }
+  }
+  graph->SetNameTitle(name,title);
+  grapharr->Add(graph);
+  return 1;//1 if histogram loaded or exists, 0 otherwise
+}
+
+Int_t StMuFcsRun22QaMaker::LoadGraphsFromFile(TFile* file, TObjArray* graphs )
+{
+  Int_t gloaded = 0;
+  gloaded += MakeGraph(file,graphs,mG_Entries,"G_Entries","Number of Entries vs. Run Index");
+  gloaded += MakeGraph(file,graphs,mGE_VertexVpd,"GE_VertexVpd","VPD vertex mean (Err=RMS) vs. Run index");
+  gloaded += MakeGraph(file,graphs,mGE_VertexBbc,"GE_VertexBbc","Bbc vertex mean (Err=RMS) vs. Run index");
+  gloaded += MakeGraph(file,graphs,mG_UpSpin,"G_UpSpin","Number of Spin Up states vs. Run Index");
+  gloaded += MakeGraph(file,graphs,mG_NoSpin,"G_NoSpin","Number of No Spin states vs. Run Index");
+  gloaded += MakeGraph(file,graphs,mG_DownSpin,"G_DownSpin","Number of Spin Down states vs. Run Index");
+
+  //Trigger QA
+  mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap");
+  if( mFcsTrigMap==0 ){ LOG_WARN << "StMuFcsRun22QaMaker::Init() - No Trigger Map found" << endm; }
+  if( mFcsTrigMap!=0 ){
+    int trigsize = mFcsTrigMap->sizeOfTriggers();
+    if( trigsize==64 ){ //Check to make sure all triggers are in the map and it matches the bin size
+      for( int i=0; i<trigsize; ++i ){
+	TString trigname(mFcsTrigMap->triggerName(i));
+	TString gname("G_");
+	TString gtitle("Number of Events for trigger ");
+	gname += trigname;
+	gtitle += trigname + " vs. Run Index";
+	gloaded += MakeGraph(file,graphs,mG_Triggers[i],gname.Data(),gtitle.Data());
+      }
+      gloaded += MakeGraph(file,graphs,mG_Triggers[64],"NF","Number of Events with no trigger vs. Run Index"); //Last bin is named "NF" for not found which is what nameFromId() returns if trigger is not in the map. This way if no map was loaded but an StFcsRun22TriggerMap was found, searching for triggers will return "NF"
+    }
+  }
+
+  //Nhits QA
+  TString namesuffix[6] = {"EN","ES","HN","HS","PN","PS"};
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    //UInt_t nchs = 0;
+    //UInt_t ncol = 0;
+    //UInt_t nrow = 0;
+    //if( i<=kFcsEcalSouthDetId )                              { nchs = kFcsEcalMaxId; ncol = kFcsEcalNCol; nrow = kFcsEcalNRow; }
+    //else if( kFcsHcalNorthDetId<=i && i<=kFcsHcalSouthDetId ){ nchs = kFcsHcalMaxId; ncol = kFcsHcalNCol; nrow = kFcsHcalNRow; }
+    //else if( kFcsPresNorthDetId<=i && i<=kFcsPresSouthDetId ){ nchs = kFcsPresMaxId; ncol = kFcsPresNCol; nrow = kFcsPresNRow; }
+    //else{ LOG_ERROR << "StFcsFun22QaMaker::LoadHists() too many detector ids for some reason" << endm; return kStErr; }
+    //histname = "H2F_Hit_enVid_" + namesuffix[i];
+    //histtitle = "Energy vs. Id for " + namesuffix[i] + ";id;energy (GeV)";
+    //loaded += mHists->AddH2F(file,(mH2F_Hit_enVid[i]),histname.Data(),histtitle.Data(),nchs,0,nchs,200,0,200);
+    TString gname = "GE_NHits_" + namesuffix[i];
+    TString gtitle = "Mean number of hits (Err=RMS) for " + namesuffix[i] + " vs. Run Index";
+    gloaded += MakeGraph(file,graphs,mGE_NHits[i],gname.Data(),gtitle.Data());
+    //TGraphErrors* gnhits = (TGraphErrors*) qagraphs->FindObject(gname.Data());
+    //gnhits->SetPoint(irun,irun,mH1F_Hit_NHits[i]->GetMean());
+    //gnhits->SetPointError(irun,0,mH1F_Hit_NHits[i]->GetRMS());
+  }
+  
+  gloaded += MakeGraph(file,graphs,mGE_ESum_Ecal,"GE_ESum_Ecal","Ecal total energy (Err=RMS) vs. Run Index");
+  gloaded += MakeGraph(file,graphs,mGE_ESum_Hcal,"GE_ESum_Hcal","Hcal total energy (Err=RMS) vs. Run Index");
+  gloaded += MakeGraph(file,graphs,mGE_ESum_Pres,"GE_ESum_Pres","Pres total energy (Err=RMS) vs. Run Index");
+
+  return gloaded;
+}
+
+void StMuFcsRun22QaMaker::FillGraphs(Int_t irun)
+{
+  //Entries QA
+  //std::cout << "|mG_Entries:"<<mG_Entries << std::endl;
+  //std::cout << "|mH1F_Entries:"<<mH1F_Entries << std::endl;
+  mG_Entries->SetPoint(irun,irun,mH1F_Entries->GetEntries());
+
+  //Vertex QA
+  mGE_VertexVpd->SetPoint(irun,irun,mH1F_VertexVpd->GetMean());
+  mGE_VertexVpd->SetPointError(irun,0,mH1F_VertexVpd->GetRMS());
+  mGE_VertexBbc->SetPoint(irun,irun,mH1F_VertexBbc->GetMean());
+  mGE_VertexBbc->SetPointError(irun,0,mH1F_VertexBbc->GetRMS());
+  
+  //Trigger QA
+  if( mH1F_Triggers==0 || mH1F_Triggers->GetNbinsX()!=65 ){ std::cout << "huge errors" << std::endl; return; }
+  for( int i=0; i<65; ++i ){
+    mG_Triggers[i]->SetPoint(irun,irun,mH1F_Triggers->GetBinContent(i+1));
+  }
+
+  //Spin state QA
+  mG_UpSpin->SetPoint(irun,irun,mH1F_Spin->GetBinContent(3));
+  mG_NoSpin->SetPoint(irun,irun,mH1F_Spin->GetBinContent(2));
+  mG_DownSpin->SetPoint(irun,irun,mH1F_Spin->GetBinContent(1));
+
+  //NHit QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    mGE_NHits[i]->SetPoint(irun,irun,mH1F_Hit_NHits[i]->GetMean());
+    mGE_NHits[i]->SetPointError(irun,0,mH1F_Hit_NHits[i]->GetRMS());
+  }
+
+  //ESum QA
+  mGE_ESum_Ecal->SetPoint(irun,irun,mH1F_Hit_ESum[0]->GetMean());
+  mGE_ESum_Ecal->SetPointError(irun,0,mH1F_Hit_ESum[0]->GetRMS());
+
+  mGE_ESum_Hcal->SetPoint(irun,irun,mH1F_Hit_ESum[1]->GetMean());
+  mGE_ESum_Hcal->SetPointError(irun,0,mH1F_Hit_ESum[1]->GetRMS());
+
+  mGE_ESum_Pres->SetPoint(irun,irun,mH1F_Hit_ESum[2]->GetMean());
+  mGE_ESum_Pres->SetPointError(irun,0,mH1F_Hit_ESum[2]->GetRMS());
+}
+
+void StMuFcsRun22QaMaker::DrawGraphs(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,3);
+  canv->cd(1);
+  mG_Entries->Draw("AL");
+
+  //Vertex QA
+  canv->cd(2);
+  mGE_VertexVpd->Draw("AL");
+  canv->cd(3);
+  mGE_VertexBbc->Draw("AL");
+
+  //Spin state QA
+  canv->cd(4);
+  mG_UpSpin->Draw("AL");
+  canv->cd(5);
+  mG_NoSpin->Draw("AL");
+  canv->cd(6);
+  mG_DownSpin->Draw("AL");
+
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawGraphTrig(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  for( int i=0; i<65; ++i ){
+    //if( ((i-1)%16)==0 ){ canv->Print(savename); canv->Clear(); canv->Divide(4,4); }
+    canv->cd(i+1);
+    mG_Triggers[i]->Draw("AL");
+    canv->Print(savename);
+  }
+  //canv->Print(savename);
+}
+
+
+
+void StMuFcsRun22QaMaker::DrawGraphNhits(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  canv->Divide(2,3);
+
+  //NHit QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mGE_NHits[i]->Draw("AL");
+  }
+
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawGraphESum(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  canv->Divide(2,2);
+
+  //ESum QA
+  canv->cd(1);
+  mGE_ESum_Ecal->Draw("AL");
+  canv->cd(2);
+  mGE_ESum_Hcal->Draw("AL");
+  canv->cd(3);
+  mGE_ESum_Pres->Draw("AL");
+
+  canv->Print(savename);
+
 }
 

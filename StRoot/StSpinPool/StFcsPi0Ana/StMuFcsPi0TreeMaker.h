@@ -36,6 +36,10 @@
 
   @[November 26, 2024] > Added an array of histograms #mH1F_InvMassEpdCuts and related code to check how different EPD nmip values are changing the pi0 signal region. also added #NEPDCUTS to make filling and looping over array easier. Implemented several cuts for the pi0 A_N analysis and added an array of histograms #mH1F_NPi0ByEnByPhi to keep track of the number of pi0s found in each energy bin and phi bin for a given spin configuration; it is not "filled" but populated after counting the pi0s from the different spin states. In this way I no longer need to loop over a tree of pi0s after processing MuDsts but can just merge the histograms to get the total number of pi0s for computing A_N. To this effect added static integers #NENERGYBIN and #NPHIBIN that keeps track of the energy and phi bins I will use. Added #mH1F_InvMassAllCuts to see the invariant mass distribution of the found pi0s after all the cuts and also the #mH1F_Pi0MultAllCuts to see how many potential pi0s are left in each event after all the cuts. I thought this would be 1 pi0 but turns out it is quite significant. It's mostly coming from one high energy "photon" that gets paired with other "photons". However, this may be a bit biased since I cut out other combinations for the sake of making the trees take up less space. Also, in #Make() added #emtrigfound which is a boolean to indicate one of the EM triggers had fired. This is used to separate the EM trigger events from others and is one of the cuts applied. The cuts are in order of checking in the cod: emtrig,|vertex|<100,fcspoint,Zgg<0.7,both points of pi0 passed epd nmip cut, pi0 Pt larger than trigger threshold. Changed code to grab 4 bit spin from bx7. Also wrote paint functions for the new histograms.
 
+  @[December 20, 2025] > Added several histograms related to filling invariant mass with cuts to isolate good pi0s and making histograms of number of pi0s, along with a few QA other histograms. Implemented drawing functions for them as well.
+
+  @[January 8, 2025] > Fixed how histograms are loaded so it can work with multiple files. Added two graphs and methods for processing, filling, and plotting them to look at data over many runs; one for the peak of the invariant mass, the other for pi0 energy.
+
 */
 
 
@@ -81,7 +85,7 @@ class StEpdGeom;
 
 class StMuFcsPi0TreeMaker : public StMaker {
 public:
-
+  
   StMuFcsPi0TreeMaker(const Char_t* name = "MuFcsPi0Maker");
   ~StMuFcsPi0TreeMaker();
   virtual Int_t Init();
@@ -93,6 +97,7 @@ public:
   void setEpdNmipCut(Double_t val ){ mEpdNmipCut = val; }
   void setRandomSeed(ULong_t seed){ mSpinRndm.SetSeed(seed); }
   UInt_t getRandomSeed(){ return mSpinRndm.GetSeed(); }
+  HistManager* getHists()const{ return mHists; }
   void setHistManager( HistManager* hm );
 
   void setTreeOnBit(UShort_t bitmap){ mTreeOnBitMap = bitmap; }
@@ -142,11 +147,17 @@ public:
   void PaintEpdChPi0(TCanvas* canv, const char* savename="testepdchpi0.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
-  void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmpcut.png") const;
+  void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
   void PaintPi0Cuts(TCanvas* canv, const char* savename = "testpi0cuts.png") const;
+  void PaintInvMassCuts(TCanvas* canv, const char* savename = "testinvmasscuts.pdf") const;
   void PaintNpi0(TCanvas* canv, const char* savename = "testnpi0.pdf") const;
 
   static void AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title="" );
+
+  Int_t LoadGraphsFromFile(TFile* file, TObjArray* graphs );
+  void FillGraphs(Int_t irun);
+
+  void DrawQaGraphs(TCanvas* canv, const char* savename="testGraphPi0.png");
   
 protected:
   StMuDstMaker* mMuDstMkr        = 0;
@@ -188,6 +199,7 @@ protected:
   TH1* mH1F_Entries = 0;                ///< Number of events processed no cuts (i.e. "Make" calls)
   TH1* mH1F_Triggers = 0;               ///< Triggers used in analysis
   TH1* mH2F_foundVvertex = 0;           ///< found vertex bit vs. Vertex
+  TH1* mH1F_RndmSpin = 0;               ///< Single bin histogram to know if random spins are being used or grabbing from database
 
   TH1* mH2F_PhotonHeatMap = 0;          ///< Distribution of photons in STAR x,y space
   TH1* mH2F_PhotonHeatMapG = 0;         ///< Distribution of photons in STAR x,y space when energy has a specific value near an energy spike
@@ -199,6 +211,8 @@ protected:
   TH1* mH1F_ClusterEnergy = 0;          ///< All Cluster energy
   TH1* mH1F_PointEnergy = 0;            ///< All Point energy
   TH1* mH2F_Energy_ph1Vph2 = 0;         ///< Histogram of two photons energy used in reconstruction
+  TH1* mH1F_NBadEpdProj = 0;            ///< Number of points that did not have a valid projection to an EPD tile in a given event
+  TH1* mH1F_NBadEpdProjVcut = 0;        ///< Number of points that did not have a valid projection to an EPD tile in a given event with cut |vertex|<150
   
   TH1* mH1F_BestPi0Mass = 0;            ///< Invariant mass with just highest energy points
   //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
@@ -234,6 +248,7 @@ protected:
   //TH1* mH1F_2ndBestPi0Mass = 0;
   //TH1* mH1F_3rdBestPi0Mass = 0;
   //TH1* mH1F_LowPointMult = 0;
+  //Get pt thresholds; Plot x,y positions of pi0s using the projection from px,py,pz;make plot of epd bad projections on same pad also plot vs. npointmult?; do run by run qa
 
   static const short NEPDCUTS = 8;
   TObjArray* mH1F_InvMassEpdCuts[2];         ///< Invariant Mass using different epd nmip cuts and all triggers or only EM triggers
@@ -241,9 +256,23 @@ protected:
   //TH1* mH1F_InvMassEnBins[2][4][3];        ///< Invariant Mass in different energy bins after each cut, fidicual volume cut, Zgg cut, Epd photon cut, and all triggers or only EM triggers
   TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied
   TH1* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
+  //(Need to reimplment looping over all possible combinations since I am not storing them anymore
+  //(Need to mass cut to number of pi0s
+  //(TH1* mH1F_AllPi0_xF = 0;             ///< Feynman-x (xF) of all pi0s
   static const short NENERGYBIN = 6;    ///< Number of energy bins
   static const short NPHIBIN = 4;       ///< Number of phi bins
-  TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];        ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
+  TH1* mH1F_NFoundPhiBin = 0;           ///< Number of valid phi bins found. This is a cross check to make sure that I am not double counting pi0s and finding more than one valid bin when I loop over the phi bins
+  TH1* mH1F_AllCuts_xF = 0;             ///< Feynman-x (xF) of the pi0s that pass all the cuts
+  TH1* mH1F_AllCuts_Pi0En = 0;          ///< Pi0 energy distribution with all cuts
+  //TH1* mH1F_AllCuts_Pi0Phi = 0;         ///< Pi0 phi distribution with all cuts
+  TH1* mH2F_AllCuts_Pi0_etaVphi = 0;    ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
+  //TH1* mH2F_AllCuts_Poi_yVx = 0;        ///< Point y vs. x distributions after all cuts this gets complicated because you have two point
+  TH1* mH2F_AllCuts_Pi0_yVx = 0;        ///< Pi0 FCS projected y vs. x distributions after all cuts
+  TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
+  TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
+
+  TGraphErrors* mGE_AllCuts_InvMass = 0;
+  TGraphErrors* mGE_AllCuts_Pi0En = 0;  
 
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates

@@ -37,6 +37,8 @@
   @[September 16, 2024] > Added #StFcsRun22TriggerMap to manage looking up Fcs triggers and for generating histogram with named bin labels. Also fills trigger histogram by name not Id. There were 64 FCS triggers in Run 22 and I added a 65th bin called "NF" which is for trigger Ids that are not one of those 64. Also added #DrawTrigger() which just draws the trigger histogram since with the bin names the font is too small in the "Event" histogram
 
   @[November 22, 2024] > Added spin related QA histograms #mH1F_spin4Vbx7 and #mH1F_spin4Vbx48 which is not "filled" but populated with the spin4 bit vs. bx7 and bx48 ids respectively. Implemented code in #InitRun() to print information from spin database. Code now uses #StSpinDbMaker to properly read the spin database to get 4 bit spin value (spin4). Wrote #DrawBx7Bx48Ana() that draws the bx7Vbx48 histogram and its projections as well as the difference (Mostly copied from another macro HistoAna.cc). Wrote #DrawSpinInfo() to the draw the new spin histograms. Got rid of storing the spin pattern since that is not needed. Made comments more ROOT friendly
+
+  @[January 8, 2025] > Added static function #MakeGraph() which can be used to add many graphs to a #TObjArray. This way I can easily manage alot of QA graphs across multiple #StMakers. Added many QA graphs and methods for processing and filling them. Fixed how histograms are loaded so it can work with multiple files. Addressed memory leak issues by properly deleting things now.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -131,6 +133,18 @@ class StMuFcsRun22QaMaker : public StMaker
   void DrawFcsClusterPi0(TCanvas* canv, const char* savename);
   void DrawFcsPointQa(TCanvas* canv, const char* savename);
   void DrawFcsPointPi0(TCanvas* canv, const char* savename);
+
+  static Int_t MakeGraph(TFile* file, TObjArray* grapharr, TGraph*& graph, const char* name, const char* title );
+  static Int_t MakeGraph(TFile* file, TObjArray* grapharr, TGraphErrors*& graph, const char* name, const char* title );
+
+  Int_t LoadGraphsFromFile(TFile* file, TObjArray* graphs );
+  void FillGraphs(Int_t irun);
+
+  void DrawGraphs(TCanvas* canv, const char* savename="testGraphs.png" );
+  void DrawGraphTrig(TCanvas* canv, const char* savename );
+  void DrawGraphNhits(TCanvas* canv, const char* savename="testGraphNhits.png" );
+  void DrawGraphESum(TCanvas* canv, const char* savename="testGraphESum.png" );
+
   
 protected:
   //UInt_t mEvent;  ///< Keeps track of number of events
@@ -179,7 +193,7 @@ protected:
 
   TObjArray* mH2F_HitPres_depVqt[2];    ///< Special for checking EPD ADC Qt vs. DEP sum split by North[0], South[1] Fcs designation
   TObjArray* mH2F_HitPres_peakVtac[2];  ///< Special for checking EPD TAC values vs. found peak time from FCS split by North[0], South[1] Fcs designation
-  TObjArray* mH2F_HitEpd_tacVadcmip[2]; ///< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
+  //TObjArray* mH2F_HitEpd_tacVadcmip[2]; ///< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
   
   TH1* mH1F_NClusters[kFcsNDet];              ///< Cluster multiplicity
   TH1* mH1F_Clu_NTowers[kFcsNDet];            ///< Number towers in a cluster
@@ -215,8 +229,21 @@ protected:
   bool mEpdAdcQaOn = true;             ///< For turning on/off Qt V Dep histograms from the EPD data
   bool mEpdTacQaOn = true;             ///< For turning on/off Tac V PeakX histograms from the EPD data
 
+  TGraph* mG_Entries = 0;              ///< Graph for number of entries vs. Run Index
+  TGraph* mG_Triggers[65];             ///< Graph for number of events in a given trigger vs. run number
+  TGraphErrors* mGE_VertexVpd = 0;     ///< Graph for Mean VPD vertex and Err as RMS vs. Run Index
+  TGraphErrors* mGE_VertexBbc = 0;     ///< Graph for Mean BBC vertex and Err as RMS vs. Run Index
+  TGraph* mG_UpSpin = 0;               ///< Graph for Number of times Spin state was up (+1) vs. Run Index
+  TGraph* mG_NoSpin = 0;               ///< Graph for Number of times Spin state was nonexistent vs. Run Index
+  TGraph* mG_DownSpin = 0;             ///< Graph for Number of times Spin state was down (-1) vs. Run Index
+  TGraphErrors* mGE_NHits[kFcsNDet];   ///< Graph for Mean Number of hits for a given detectorId and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Ecal = 0;     ///< Graph for Mean Total Energy Sum for Ecal and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Hcal = 0;     ///< Graph for Mean Total Energy Sum for Hcal and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Pres = 0;     ///< Graph for Mean Total Energy Sum for Pres and Err as RMS vs. Run Index
+
+
 private:
-  HistManager* mHists = 0;             ///< Manage loading and saving histograms
+  HistManager* mHists = 0;            ///< Manage loading and saving histograms
   bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
   TRandom3 mSpinRndm;
 

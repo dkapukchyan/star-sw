@@ -14,6 +14,7 @@
   @[August 30, 2024] > Changed default vertex for all detectors to -999. Modified some drawing options. Small fixes
   @[September 9, 2024] > Clean up extraneous code and added #getFileName() for mHists
   @[September 18, 2024] > Made the variables related to computing the vertex members of the class and added get functions for them
+  @[January 8, 2025] > Fixed comments to be ROOT friendly. Fixed how histograms are loaded so it can work with multiple files. Added a graph for EPD vertex QA over many runs and methods for processing, filling, and plotting the EPD vertex over time.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -58,6 +59,7 @@
 
 //Custom headers in this folder
 #include "HistManager.h"
+#include "StMuFcsRun22QaMaker.h"   //For MakeGraph
 
 
 class StMuEpdRun22QaMaker : public StMaker
@@ -90,6 +92,11 @@ class StMuEpdRun22QaMaker : public StMaker
   void DrawEpdTacCutQa(TCanvas* canv, const char* savename);   //!< Draw the histograms related to the TAC difference with cuts, single page
   void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);   //!< Draw the TAC vs. ADC histograms for all channels, savename should be some kind of pdf as it will encompass many pages
 
+  Int_t LoadGraphsFromFile(TFile* file, TObjArray* graphs );
+  void FillGraphs(Int_t irun);
+
+  void DrawGraphVertex(TCanvas* canv, const char* savename="testGraphEpdVert.png");
+
 protected:
   StMuDstMaker* mMuDstMkr = 0;
   StMuDst* mMuDst = 0;
@@ -117,43 +124,45 @@ protected:
   TH1* mH1F_BbcTimeDiff = 0;          //!< BBC Time difference used to compute the vertex
   TH1* mH1F_VertexZdc = 0;            //!< Vertex from ZDC
   */
-  TH1* mH1F_VertexEpd = 0;            //!< Vertex from EPD
+  TH1* mH1F_VertexEpd = 0;            ///< Vertex from EPD
 
-  TH1* mH2F_VertexZ_vpdVepd = 0;      //!< Correlation histogram between VPD z vertex vs. computed EPD z vertex
-  TH1* mH2F_VertexZ_zdcVepd = 0;      //!< Correlation histogram between ZDC z vertex vs. computed EPD z vertex
-  TH1* mH2F_VertexZ_bbcVepd = 0;      //!< Correlation histogram between BBC z vertex vs. computed EPD z vertex
-  TH1* mH2F_VertexZ_vpdVbbc = 0;      //!< Correlation histogram between VPD z vertex vs. the BBC z vertex
-  TH1* mH2F_VertexZ_vpdVzdc = 0;      //!< Correlation histogram between VPD z vertex vs. the ZDC z vertex
-  TH1* mH2F_VertexZ_zdcVbbc = 0;      //!< Correlation histogram between ZDC z vertex vs. the BBC z vertex
+  TH1* mH2F_VertexZ_vpdVepd = 0;      ///< Correlation histogram between VPD z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_zdcVepd = 0;      ///< Correlation histogram between ZDC z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_bbcVepd = 0;      ///< Correlation histogram between BBC z vertex vs. computed EPD z vertex
+  TH1* mH2F_VertexZ_vpdVbbc = 0;      ///< Correlation histogram between VPD z vertex vs. the BBC z vertex
+  TH1* mH2F_VertexZ_vpdVzdc = 0;      ///< Correlation histogram between VPD z vertex vs. the ZDC z vertex
+  TH1* mH2F_VertexZ_zdcVbbc = 0;      ///< Correlation histogram between ZDC z vertex vs. the BBC z vertex
 
-  TH1* mH1F_Epd_NHits = 0;              //!< Number of hits from EPD collection
-  TH1* mH1F_Epd_NHits_Cut = 0;          //!< Number of hits in EPD with nMIP>0.7
-  TH1* mH1F_Epd_NHitsWest = 0;          //!< Number of hits from EPD collection only west side
-  TH1* mH1F_Epd_NHitsWest_Cut = 0;      //!< Number of hits from EPD collection only west side with nMIP>0.7
+  TH1* mH1F_Epd_NHits = 0;              ///< Number of hits from EPD collection
+  TH1* mH1F_Epd_NHits_Cut = 0;          ///< Number of hits in EPD with nMIP>0.7
+  TH1* mH1F_Epd_NHitsWest = 0;          ///< Number of hits from EPD collection only west side
+  TH1* mH1F_Epd_NHitsWest_Cut = 0;      ///< Number of hits from EPD collection only west side with nMIP>0.7
 
-  TH1* mH2F_HitEpd_nmipVchkey[2];        //!< Special for checking nmip of a given channel in the EPD. The "chkey" is (supersector-1)*31+(tileid-1)
-  TObjArray* mH2F_HitEpd_tacVadcmip[2]; //!< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
+  TH1* mH2F_HitEpd_nmipVchkey[2];        ///< Special for checking nmip of a given channel in the EPD. The "chkey" is (supersector-1)*31+(tileid-1)
+  TObjArray* mH2F_HitEpd_tacVadcmip[2];  ///< Special for checking EPD TAC vs. ADC/ADC_1mip histograms which may help with slew corrections in the EPD
 
-  TH1* mH2F_Epd_earlywVearlye = 0;      //!< EPD hit with Earliest West TAC vs. Earliest East TAC (Since using common stop early means largest TAC value)
-  TH1* mH2F_Epd_avgwVavge = 0;          //!< EPD Averaged West TAC vs. Averaged East TAC
+  TH1* mH2F_Epd_earlywVearlye = 0;      ///< EPD hit with Earliest West TAC vs. Earliest East TAC (Since using common stop early means largest TAC value)
+  TH1* mH2F_Epd_avgwVavge = 0;          ///< EPD Averaged West TAC vs. Averaged East TAC
   TH1* mH2F_EpdTacDiff_avgVearly = 0;       //EPD tac difference between West and East tiles (in that order) computed from average tac vs. differences computed using earliest TAC
-  TH1* mH2F_EpdCut_earlywVearlye = 0;   //!< EPD hit with Earliest West TAC vs. Earliest East TAC with channel 1<nMIP<15 (Since using common stop early means largest TAC value)
-  TH1* mH2F_EpdCut_avgwVavge = 0;       //!< EPD Averaged West TAC vs. Averaged East TAC with channel 1<nMIP<15
-  TH1* mH2F_EpdCutTacDiff_avgVearly = 0;  //!< EPD tac difference between West and East tiles (in that order)  computed from average tac vs. differences computed using earliest TAC; computed with cut 1<adcnmip<15 && TAC>50
+  TH1* mH2F_EpdCut_earlywVearlye = 0;   ///< EPD hit with Earliest West TAC vs. Earliest East TAC with channel 1<nMIP<15 (Since using common stop early means largest TAC value)
+  TH1* mH2F_EpdCut_avgwVavge = 0;       ///< EPD Averaged West TAC vs. Averaged East TAC with channel 1<nMIP<15
+  TH1* mH2F_EpdCutTacDiff_avgVearly = 0;  ///< EPD tac difference between West and East tiles (in that order)  computed from average tac vs. differences computed using earliest TAC; computed with cut 1<adcnmip<15 && TAC>50
 
-  bool mEpdTacAdcOn = true;            //!< For turning on/off TAC vs. ADC histograms for all EPD channels
+  bool mEpdTacAdcOn = true;            ///< For turning on/off TAC vs. ADC histograms for all EPD channels
+
+  TGraphErrors* mGE_VertexEpd = 0;     ///< Graph for Mean EPD vertex and Err as RMS vs. Run Index
 
 private:
-  HistManager* mHists = 0;            //!< Manage loading and saving histograms
-  bool mInternalHists = false;        //!< Boolean to keep track if mHists was added externally or an internal one was created
-  //TFile* mFileOutput = 0;           //!< For saving histograms not loading
-  Double_t mEpdVertex = -999;         //!< Saved vertex from event
-  Int_t mCutEarliestTacE  = 0;        //!< Stores the largest found TAC value in EPD East with cuts
-  Int_t mCutEarliestTacW  = 0;        //!< Stores the largest found TAC value in EPD West with cuts
-  Double_t mCutAvgTacE = 0;           //!< Stores the average TAC value in EPD East with cuts
-  Double_t mCutAvgTacW = 0;           //!< Stores the average TAC value in EPD West with cuts
+  HistManager* mHists = 0;            ///< Manage loading and saving histograms
+  bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
+  //TFile* mFileOutput = 0;           ///< For saving histograms not loading
+  Double_t mEpdVertex = -999;         ///< Saved vertex from event
+  Int_t mCutEarliestTacE  = 0;        ///< Stores the largest found TAC value in EPD East with cuts
+  Int_t mCutEarliestTacW  = 0;        ///< Stores the largest found TAC value in EPD West with cuts
+  Double_t mCutAvgTacE = 0;           ///< Stores the average TAC value in EPD East with cuts
+  Double_t mCutAvgTacW = 0;           ///< Stores the average TAC value in EPD West with cuts
 
-  double mEpdScale = 15.6;             //!< picoSecond/TAC for EPD
+  double mEpdScale = 15.6;             ///< picoSecond/TAC for EPD
 
   ClassDef(StMuEpdRun22QaMaker,1)
 

@@ -52,8 +52,8 @@ UInt_t StMuEpdRun22QaMaker::LoadHists(TFile* file)
   loaded += mHists->AddH2F(file,mH2F_VertexZ_zdcVbbc,"H2F_VertexZ_zdcVbbc","ZPD vs. BBC Vertex (z);BBC (z) cm;ZDC (z) cm", 50,-200,200, 50,-200,200);
 
   if( mEpdTacAdcOn ){
-    mH2F_HitEpd_tacVadcmip[0] = new TObjArray(); //Create new array for east side
-    mH2F_HitEpd_tacVadcmip[1] = new TObjArray(); //Create new array for west side
+    if( mH2F_HitEpd_tacVadcmip[0]==0 ){ mH2F_HitEpd_tacVadcmip[0] = new TObjArray(); }//Create new array for east side
+    if( mH2F_HitEpd_tacVadcmip[1]==0 ){ mH2F_HitEpd_tacVadcmip[1] = new TObjArray(); }//Create new array for west side
     //EPD has 372 tiles on one side
     loaded += mHists->AddH2FArr(file,mH2F_HitEpd_tacVadcmip[0],372,"H2F_HitEpd_tacVadcmip_E","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000);
     loaded += mHists->AddH2FArr(file,mH2F_HitEpd_tacVadcmip[1],372,"H2F_HitEpd_tacVadcmip_W","Qt TAC vs. ADC/ADC_1mip;ADC/ADC_1mip;TAC", 50,0,25, 200,0,4000 );
@@ -394,6 +394,30 @@ void StMuEpdRun22QaMaker::DrawEpdTacAdcQa(TCanvas* canv, const char* savename)
       }
     }
   }
+}
+
+Int_t StMuEpdRun22QaMaker::LoadGraphsFromFile(TFile* file, TObjArray* graphs )
+{
+  Int_t gloaded = 0;
+  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_VertexEpd,"GE_VertexEpd","EPD vertex mean (Err=RMS) vs. Run index");
+  return gloaded;
+}
+
+void StMuEpdRun22QaMaker::FillGraphs(Int_t irun)
+{
+  mGE_VertexEpd->SetPoint(irun,irun,mH1F_VertexEpd->GetMean());
+  mGE_VertexEpd->SetPointError(irun,0,mH1F_VertexEpd->GetRMS());
+}
+
+void StMuEpdRun22QaMaker::DrawGraphVertex(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->cd();
+
+  mGE_VertexEpd->Draw("AL");
+
+  canv->Print(savename);
+  
 }
 
 
