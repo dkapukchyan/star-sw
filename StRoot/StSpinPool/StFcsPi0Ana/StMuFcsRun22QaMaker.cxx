@@ -1219,3 +1219,22 @@ void StMuFcsRun22QaMaker::DrawGraphESum(TCanvas* canv, const char* savename )
 
 }
 
+void StMuFcsRun22QaMaker::PrintSpinBits()
+{
+  std::cout << "==================================================" << std::endl;
+  if( mH1F_spin4Vbx7!=0 ){
+    std::cout << "Spin from Bx7" << std::endl;
+    for( Int_t ibx7=1; ibx7<mH1F_spin4Vbx7->GetNbinsX(); ++ibx7 ){
+      std::cout << "|bx7:"<<ibx7 << "|spin4:"<<mH1F_spin4Vbx7->GetBinContent(ibx7) << std::endl;
+    }
+  }
+  std::cout << "==================================================" << std::endl;
+  if( mH1F_spin4Vbx48!=0 ){
+    std::cout << "Spin from Bx48" << std::endl;
+    for( Int_t ibx48=1; ibx48<mH1F_spin4Vbx48->GetNbinsX(); ++ibx48 ){
+      std::cout << "|bx48:"<<ibx48 << "|spin4:"<<mH1F_spin4Vbx48->GetBinContent(ibx48) << std::endl;
+    }
+  }
+  std::cout << "==================================================" << std::endl;
+}
+

@@ -39,6 +39,8 @@
   @[November 22, 2024] > Added spin related QA histograms #mH1F_spin4Vbx7 and #mH1F_spin4Vbx48 which is not "filled" but populated with the spin4 bit vs. bx7 and bx48 ids respectively. Implemented code in #InitRun() to print information from spin database. Code now uses #StSpinDbMaker to properly read the spin database to get 4 bit spin value (spin4). Wrote #DrawBx7Bx48Ana() that draws the bx7Vbx48 histogram and its projections as well as the difference (Mostly copied from another macro HistoAna.cc). Wrote #DrawSpinInfo() to the draw the new spin histograms. Got rid of storing the spin pattern since that is not needed. Made comments more ROOT friendly
 
   @[January 8, 2025] > Added static function #MakeGraph() which can be used to add many graphs to a #TObjArray. This way I can easily manage alot of QA graphs across multiple #StMakers. Added many QA graphs and methods for processing and filling them. Fixed how histograms are loaded so it can work with multiple files. Addressed memory leak issues by properly deleting things now.
+
+  @[January 9, 2024] > Added #PrintSpinBits() to help with printing the spin4 bits to cross check with the spin database.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -145,6 +147,7 @@ class StMuFcsRun22QaMaker : public StMaker
   void DrawGraphNhits(TCanvas* canv, const char* savename="testGraphNhits.png" );
   void DrawGraphESum(TCanvas* canv, const char* savename="testGraphESum.png" );
 
+  void PrintSpinBits();        ///< Special funtion to cross check the spin bit dump with spin bits stored in the histograms #mH1F_spin4Vbx7 and #mH1F_spin4Vbx48.
   
 protected:
   //UInt_t mEvent;  ///< Keeps track of number of events
