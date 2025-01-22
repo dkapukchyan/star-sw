@@ -41,6 +41,8 @@
   @[January 8, 2025] > Added static function #MakeGraph() which can be used to add many graphs to a #TObjArray. This way I can easily manage alot of QA graphs across multiple #StMakers. Added many QA graphs and methods for processing and filling them. Fixed how histograms are loaded so it can work with multiple files. Addressed memory leak issues by properly deleting things now.
 
   @[January 9, 2024] > Added #PrintSpinBits() to help with printing the spin4 bits to cross check with the spin database.
+
+  @[January 21, 2025] > Added more graphs for the run by run qa. These are related to the cluster and point energy, and multiplicity. Also, added #GraphAverage() that is used to check if the graphs for the various triggers are zero or not. This is used to avoid plotting triggers that had 0 for all runs. Added a histogram and a graph to check hit multiplicity with some cuts applied.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -145,7 +147,13 @@ class StMuFcsRun22QaMaker : public StMaker
   void DrawGraphs(TCanvas* canv, const char* savename="testGraphs.png" );
   void DrawGraphTrig(TCanvas* canv, const char* savename );
   void DrawGraphNhits(TCanvas* canv, const char* savename="testGraphNhits.png" );
+  void DrawGraphNhitsCut(TCanvas* canv, const char* savename="testGraphNhitsCut.png" );
   void DrawGraphESum(TCanvas* canv, const char* savename="testGraphESum.png" );
+
+  void DrawGraphNClusters(TCanvas* canv, const char* savename="testGraphNClusters.png");
+  void DrawGraphNPoints(TCanvas* canv, const char* savename="testGraphNPoints.png");
+  void DrawGraphCluEn(TCanvas* canv, const char* savename="testGraphCluEn.png");
+  void DrawGraphPoiEn(TCanvas* canv, const char* savename="testGraphPoiEn.png");
 
   void PrintSpinBits();        ///< Special funtion to cross check the spin bit dump with spin bits stored in the histograms #mH1F_spin4Vbx7 and #mH1F_spin4Vbx48.
   
@@ -191,6 +199,7 @@ protected:
   TH1* mH2F_Hit_chi2Vid[kFcsNDet];       ///< chi^2 of fitted peaks (npeaks>1 only) vs. channel id
   TH1* mH2F_Hit_npeaksVid[kFcsNDet];     ///< number peaks in fit vs. channel id
   TH1* mH1F_Hit_NHits[kFcsNDet];         ///< Hit multiplicity in FCS
+  TH1* mH1F_Hit_NHitsCut[kFcsNDet];      ///< Hit multiplicity in FCS with 1GeV cut on Ecal and Hcal and 250 ADC for Pres
   TH1* mH1F_Hit_ESum[3];                 ///< Total energy sum in ecal[0], hcal[1], pres[2]
   //TH1* mH2F_Hit_colVrow[3];            ///< @[May 28, 2024] > Trying to emulate mHitMap in StFcsQaMaker
 
@@ -232,18 +241,24 @@ protected:
   bool mEpdAdcQaOn = true;             ///< For turning on/off Qt V Dep histograms from the EPD data
   bool mEpdTacQaOn = true;             ///< For turning on/off Tac V PeakX histograms from the EPD data
 
-  TGraph* mG_Entries = 0;              ///< Graph for number of entries vs. Run Index
-  TGraph* mG_Triggers[65];             ///< Graph for number of events in a given trigger vs. run number
-  TGraphErrors* mGE_VertexVpd = 0;     ///< Graph for Mean VPD vertex and Err as RMS vs. Run Index
-  TGraphErrors* mGE_VertexBbc = 0;     ///< Graph for Mean BBC vertex and Err as RMS vs. Run Index
-  TGraph* mG_UpSpin = 0;               ///< Graph for Number of times Spin state was up (+1) vs. Run Index
-  TGraph* mG_NoSpin = 0;               ///< Graph for Number of times Spin state was nonexistent vs. Run Index
-  TGraph* mG_DownSpin = 0;             ///< Graph for Number of times Spin state was down (-1) vs. Run Index
-  TGraphErrors* mGE_NHits[kFcsNDet];   ///< Graph for Mean Number of hits for a given detectorId and Err as RMS vs. Run Index
-  TGraphErrors* mGE_ESum_Ecal = 0;     ///< Graph for Mean Total Energy Sum for Ecal and Err as RMS vs. Run Index
-  TGraphErrors* mGE_ESum_Hcal = 0;     ///< Graph for Mean Total Energy Sum for Hcal and Err as RMS vs. Run Index
-  TGraphErrors* mGE_ESum_Pres = 0;     ///< Graph for Mean Total Energy Sum for Pres and Err as RMS vs. Run Index
+  TGraph* mG_Entries = 0;                ///< Graph for number of entries vs. Run Index
+  TGraph* mG_Triggers[65];               ///< Graph for number of events in a given trigger vs. run number
+  TGraphErrors* mGE_VertexVpd = 0;       ///< Graph for Mean VPD vertex and Err as RMS vs. Run Index
+  TGraphErrors* mGE_VertexBbc = 0;       ///< Graph for Mean BBC vertex and Err as RMS vs. Run Index
+  TGraph* mG_UpSpin = 0;                 ///< Graph for Number of times Spin state was up (+1) vs. Run Index
+  TGraph* mG_NoSpin = 0;                 ///< Graph for Number of times Spin state was nonexistent vs. Run Index
+  TGraph* mG_DownSpin = 0;               ///< Graph for Number of times Spin state was down (-1) vs. Run Index
+  TGraphErrors* mGE_NHits[kFcsNDet];     ///< Graph for Mean Number of hits for a given detectorId and Err as RMS vs. Run Index
+  TGraphErrors* mGE_NHitsCut[kFcsNDet];  ///< Graph for Mean Number of hits with cuts for a given detectorId and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Ecal = 0;       ///< Graph for Mean Total Energy Sum for Ecal and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Hcal = 0;       ///< Graph for Mean Total Energy Sum for Hcal and Err as RMS vs. Run Index
+  TGraphErrors* mGE_ESum_Pres = 0;       ///< Graph for Mean Total Energy Sum for Pres and Err as RMS vs. Run Index
+  TGraphErrors* mGE_NClusters[kFcsNDet]; ///< Graphs for mean of nhit clusters and Err as RMS vs. Run Index for the different detector Ids
+  TGraphErrors* mGE_NPoints[kFcsNDet];   ///< Graphs for mean of nhit  points and Err as RMS vs. Run Index for the different detector Ids
+  TGraph* mG_Clu_En[kFcsNDet];           ///< Graphs for mean of cluster energy vs. Run Index for the different detector Ids
+  TGraph* mG_Poi_En[kFcsNDet];           ///< Graphs for mean of point energy vs. Run Index for the different detector Ids
 
+  double GraphAverage(TGraph* g);        ///< Helper function to check if a graph has zero average so I don't plot it
 
 private:
   HistManager* mHists = 0;            ///< Manage loading and saving histograms

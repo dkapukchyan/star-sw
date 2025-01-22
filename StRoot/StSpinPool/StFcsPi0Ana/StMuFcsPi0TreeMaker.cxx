@@ -1434,22 +1434,36 @@ void StMuFcsPi0TreeMaker::PaintNpi0(TCanvas* canv, const char* savename ) const
 Int_t StMuFcsPi0TreeMaker::LoadGraphsFromFile(TFile* file, TObjArray* graphs )
 {
   Int_t gloaded = 0;
-  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_InvMass,"GE_AllCuts_InvMass","Peak position of Invariant Mass vs. Run Index");
-  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_Pi0En,"GE_AllCuts_Pi0En","Mean Pi0 Energy vs. Run Index");
+  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_InvMass,"GE_AllCuts_InvMass","Mean of Invariant Mass (Err=RMS) vs. Run Index");
+  gloaded += StMuFcsRun22QaMaker::MakeGraph(file,graphs,mGE_AllCuts_Pi0En,"GE_AllCuts_Pi0En","Mean Pi0 Energy (Err=RMS) vs. Run Index");
   return gloaded;
 }
 
 
 void StMuFcsPi0TreeMaker::FillGraphs(Int_t irun)
 {
+  //TF1* pi0gausfit = new TF1("pi0gausfit","gaus(0)",0.1,0.2);
+  //mH1F_InvMassAllCuts->Fit(pi0gausfit,"RQN");
   mGE_AllCuts_InvMass->SetPoint(irun,irun,mH1F_InvMassAllCuts->GetMean());
-  mGE_AllCuts_InvMass->SetPointError(irun,irun,mH1F_InvMassAllCuts->GetRMS());
+  mGE_AllCuts_InvMass->SetPointError(irun,0,mH1F_InvMassAllCuts->GetRMS());
+  //delete pi0gausfit;
+  //pi0gausfit = 0;
 
   mGE_AllCuts_Pi0En->SetPoint(irun,irun,mH1F_AllCuts_Pi0En->GetMean());
-  mGE_AllCuts_Pi0En->SetPointError(irun,irun,mH1F_AllCuts_Pi0En->GetRMS());
-  
+  mGE_AllCuts_Pi0En->SetPointError(irun,0,mH1F_AllCuts_Pi0En->GetRMS());
+
   return;
 }
+
+void StMuFcsPi0TreeMaker::MergeForTssa(TH1* Total[][4])
+{
+  for( int i=0; i<NENERGYBIN; ++i ){
+    for( int j=0; j<NPHIBIN; ++j ){
+      Total[i][j]->Add(mH1F_NPi0ByEnByPhi[i][j]);
+    }
+  }
+}
+
 
 void StMuFcsPi0TreeMaker::DrawQaGraphs(TCanvas* canv, const char* savename)
 {

@@ -26,6 +26,7 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
   memset(mH2F_Hit_chi2Vid,0,sizeof(mH2F_Hit_chi2Vid));
   memset(mH2F_Hit_npeaksVid,0,sizeof(mH2F_Hit_npeaksVid));
   memset(mH1F_Hit_NHits,0,sizeof(mH1F_Hit_NHits));
+  memset(mH1F_Hit_NHitsCut,0,sizeof(mH1F_Hit_NHitsCut));
   memset(mH1F_Hit_ESum,0,sizeof(mH1F_Hit_ESum));
 
   memset(mH2F_HitPres_depVqt,0,sizeof(mH2F_HitPres_depVqt));
@@ -48,6 +49,11 @@ StMuFcsRun22QaMaker::StMuFcsRun22QaMaker(const char* name):StMaker(name)
 
   memset(mG_Triggers,0,sizeof(mG_Triggers));
   memset(mGE_NHits,0,sizeof(mGE_NHits));
+  memset(mGE_NHitsCut,0,sizeof(mGE_NHitsCut));
+  memset(mGE_NClusters,0,sizeof(mGE_NClusters));
+  memset(mGE_NPoints,0,sizeof(mGE_NPoints));
+  memset(mG_Clu_En,0,sizeof(mG_Clu_En));
+  memset(mG_Poi_En,0,sizeof(mG_Poi_En));
 
   //memset(mSpinPattern,0,sizeof(mSpinPattern));
 }
@@ -166,6 +172,9 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
     histname = "H1F_Hit_Nhits_" + namesuffix[i];
     histtitle = "Hit Multiplicity for " + namesuffix[i] + ";NChs";
     loaded += mHists->AddH1F(file,(mH1F_Hit_NHits[i]),histname.Data(),histtitle.Data(),nchs,0,nchs);
+    histname = "H1F_Hit_NhitsCut_" + namesuffix[i];
+    histtitle = "Hit Multiplicity with Cuts for " + namesuffix[i] + ";NChs";
+    loaded += mHists->AddH1F(file,(mH1F_Hit_NHitsCut[i]),histname.Data(),histtitle.Data(),nchs,0,nchs);
 
     histname = "H1F_NClusters_" + namesuffix[i];
     histtitle = "Number of Clusters for " + namesuffix[i] + ";NClusters";
@@ -466,6 +475,7 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
       unsigned int ihit = mMuFcsColl->indexOfFirstHit(idet);
       nh += ihit; //Need to correct for the fact that number of hits is just that and doesn't correspond to max index to loop to
       //std::cout << "|nh:" << mMuFcsColl->numberOfHits(idet) << "|index:"<<mMuFcsColl->indexOfFirstHit(idet) << "|actualmax:"<<nh << std::endl;
+      int nhitcut = 0;
       for( ; ihit<nh; ++ihit ){
 	StMuFcsHit* hit = (StMuFcsHit*)hits->At(ihit);
 	//unsigned short hit_det = hit->detectorId();
@@ -477,6 +487,7 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	int   hit_npeak  = hit->nPeak();
 	float hit_chi2   = hit->fitChi2();
 	unsigned int ntb = hit->nTimeBin();
+	if( idet<=kFcsHcalSouthDetId && hit_energy>1 ){ ++nhitcut; } //Ecal and Hcal Cut for nhit
 	//std::cout << "   + |ihit:"<<ihit << "|idet:"<<hit_det << "|hit_id:"<<hit_id << "|hit_ehp:"<<hit_ehp << "|hit_adcsum:"<<hit_adcsum << "|hit_energy:"<<hit_energy << "|hit_ntb:"<<ntb << "|nh:"<<nh << "|th:"<<mMuFcsColl->numberOfHits() << std::endl;
 	esum[hit_ehp] += hit_energy;
 	mH2F_Hit_enVid[idet]     ->Fill(hit_id,hit_energy);
@@ -487,6 +498,7 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	  for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
 	}
 	if( kFcsPresNorthDetId<=idet && idet<=kFcsPresSouthDetId ){
+	  if( hit_adcsum>250 ){ ++nhitcut; } //Pres Cut for nhit
 	  if( mEpdAdcQaOn || mEpdTacQaOn ){
 	    unsigned int nepdhits = 0;
 
@@ -524,6 +536,7 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	  }
 	}
       }//fcs hits
+      mH1F_Hit_NHitsCut[idet]->Fill(nhitcut);
     }
     else{ LOG_INFO <<"|hits is empty:"<<hits << endm; }
 
@@ -892,6 +905,8 @@ void StMuFcsRun22QaMaker::DrawFcsHitQa(TCanvas* canv, const char* savename)
     mH2F_Hit_npeaksVid[i]->Draw("colz");
     canv->cd(5);
     mH1F_Hit_NHits[i]->Draw("hist e");
+    canv->cd(6);
+    mH1F_Hit_NHitsCut[i]->Draw("hist e");
     canv->Print(savename);
   }
   canv->Clear();
@@ -1097,9 +1112,22 @@ Int_t StMuFcsRun22QaMaker::LoadGraphsFromFile(TFile* file, TObjArray* graphs )
     TString gname = "GE_NHits_" + namesuffix[i];
     TString gtitle = "Mean number of hits (Err=RMS) for " + namesuffix[i] + " vs. Run Index";
     gloaded += MakeGraph(file,graphs,mGE_NHits[i],gname.Data(),gtitle.Data());
-    //TGraphErrors* gnhits = (TGraphErrors*) qagraphs->FindObject(gname.Data());
-    //gnhits->SetPoint(irun,irun,mH1F_Hit_NHits[i]->GetMean());
-    //gnhits->SetPointError(irun,0,mH1F_Hit_NHits[i]->GetRMS());
+    gname = "GE_NHitsCut_" + namesuffix[i];
+    gtitle = "Mean number of hits with Cuts (Err=RMS) for " + namesuffix[i] + " vs. Run Index";
+    gloaded += MakeGraph(file,graphs,mGE_NHitsCut[i],gname.Data(),gtitle.Data());
+
+    gname = "GE_NClusters_" + namesuffix[i];
+    gtitle = "Mean number of clusters (Err=RMS) for " + namesuffix[i] + " vs. Run Index";
+    gloaded += MakeGraph(file,graphs,mGE_NClusters[i],gname.Data(),gtitle.Data());
+    gname = "GE_NPoints_" + namesuffix[i];
+    gtitle = "Mean number of points (Err=RMS) for " + namesuffix[i] + " vs. RunIndex";
+    gloaded += MakeGraph(file,graphs,mGE_NPoints[i],gname.Data(),gtitle.Data());
+    gname = "G_Clu_En_" + namesuffix[i];
+    gtitle = "Mean of Cluster Energy for " + namesuffix[i] + " vs. RunIndex;;GeV";
+    gloaded += MakeGraph(file,graphs,mG_Clu_En[i],gname.Data(),gtitle.Data());
+    gname = "G_Poi_En_" + namesuffix[i];
+    gtitle = "Mean of Point Energy for " + namesuffix[i] + " vs. RunIndex;;GeV";
+    gloaded += MakeGraph(file,graphs,mG_Poi_En[i],gname.Data(),gtitle.Data());
   }
   
   gloaded += MakeGraph(file,graphs,mGE_ESum_Ecal,"GE_ESum_Ecal","Ecal total energy (Err=RMS) vs. Run Index");
@@ -1137,6 +1165,17 @@ void StMuFcsRun22QaMaker::FillGraphs(Int_t irun)
   for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
     mGE_NHits[i]->SetPoint(irun,irun,mH1F_Hit_NHits[i]->GetMean());
     mGE_NHits[i]->SetPointError(irun,0,mH1F_Hit_NHits[i]->GetRMS());
+    mGE_NHitsCut[i]->SetPoint(irun,irun,mH1F_Hit_NHitsCut[i]->GetMean());
+    mGE_NHitsCut[i]->SetPointError(irun,0,mH1F_Hit_NHitsCut[i]->GetRMS());
+
+    mGE_NClusters[i]->SetPoint(irun,irun,mH1F_NClusters[i]->GetMean());
+    mGE_NClusters[i]->SetPointError(irun,0,mH1F_NClusters[i]->GetRMS());
+
+    mGE_NPoints[i]->SetPoint(irun,irun,mH1F_NPoints[i]->GetMean());
+    mGE_NPoints[i]->SetPointError(irun,0,mH1F_NPoints[i]->GetMean());
+
+    mG_Clu_En[i]->SetPoint(irun,irun,mH1F_Clu_En[i]->GetMean());
+    mG_Poi_En[i]->SetPoint(irun,irun,mH1F_Poi_En[i]->GetMean());
   }
 
   //ESum QA
@@ -1177,16 +1216,28 @@ void StMuFcsRun22QaMaker::DrawGraphs(TCanvas* canv, const char* savename)
 void StMuFcsRun22QaMaker::DrawGraphTrig(TCanvas* canv, const char* savename )
 {
   canv->Clear();
+  canv->Divide(4,4);
+  int iplot=0;
   for( int i=0; i<65; ++i ){
-    //if( ((i-1)%16)==0 ){ canv->Print(savename); canv->Clear(); canv->Divide(4,4); }
-    canv->cd(i+1);
+    if( GraphAverage(mG_Triggers[i])<1 ){ continue; }
+    canv->cd(iplot%16+1);
     mG_Triggers[i]->Draw("AL");
-    canv->Print(savename);
+    if( ((iplot+1)%16)==0 ){ canv->Print(savename); canv->Clear(); canv->Divide(4,4); iplot=0; }
+    else{ ++iplot; }
   }
-  //canv->Print(savename);
+  canv->Print(savename);
 }
 
-
+double StMuFcsRun22QaMaker::GraphAverage(TGraph* g)
+{
+  double sum = 0;
+  for( int i=0; i<g->GetN(); ++i ){
+    double x,y;
+    g->GetPoint(i,x,y);
+    sum += y;
+  }
+  return sum;
+}
 
 void StMuFcsRun22QaMaker::DrawGraphNhits(TCanvas* canv, const char* savename )
 {
@@ -1198,7 +1249,19 @@ void StMuFcsRun22QaMaker::DrawGraphNhits(TCanvas* canv, const char* savename )
     canv->cd(i+1);
     mGE_NHits[i]->Draw("AL");
   }
+  canv->Print(savename);
+}
 
+void StMuFcsRun22QaMaker::DrawGraphNhitsCut(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  canv->Divide(2,3);
+
+  //NHit QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mGE_NHitsCut[i]->Draw("AL");
+  }
   canv->Print(savename);
 }
 
@@ -1216,7 +1279,54 @@ void StMuFcsRun22QaMaker::DrawGraphESum(TCanvas* canv, const char* savename )
   mGE_ESum_Pres->Draw("AL");
 
   canv->Print(savename);
+}
 
+void StMuFcsRun22QaMaker::DrawGraphNClusters(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  canv->Divide(2,3);
+  //NClusters QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mGE_NClusters[i]->Draw("AL");
+  }
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawGraphNPoints(TCanvas* canv, const char* savename )
+{
+  canv->Clear();
+  canv->Divide(2,3);
+  //NPoints QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mGE_NPoints[i]->Draw("AL");
+  }
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawGraphCluEn(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,3);
+  //Cluster Energy QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mG_Clu_En[i]->Draw("AL");
+  }
+  canv->Print(savename);
+}
+
+void StMuFcsRun22QaMaker::DrawGraphPoiEn(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,3);
+  //Point Energy QA
+  for( UShort_t i=0; i<6/*kFcsNDet(use 6 so I don't need database access)*/; ++i ){
+    canv->cd(i+1);
+    mG_Poi_En[i]->Draw("AL");
+  }
+  canv->Print(savename);
 }
 
 void StMuFcsRun22QaMaker::PrintSpinBits()
@@ -1224,15 +1334,15 @@ void StMuFcsRun22QaMaker::PrintSpinBits()
   std::cout << "==================================================" << std::endl;
   if( mH1F_spin4Vbx7!=0 ){
     std::cout << "Spin from Bx7" << std::endl;
-    for( Int_t ibx7=1; ibx7<mH1F_spin4Vbx7->GetNbinsX(); ++ibx7 ){
-      std::cout << "|bx7:"<<ibx7 << "|spin4:"<<mH1F_spin4Vbx7->GetBinContent(ibx7) << std::endl;
+    for( Int_t ibx7=1; ibx7<=mH1F_spin4Vbx7->GetNbinsX(); ++ibx7 ){
+      std::cout << "|bx7:"<<ibx7-1 << "|spin4:"<<mH1F_spin4Vbx7->GetBinContent(ibx7) << std::endl;
     }
   }
   std::cout << "==================================================" << std::endl;
   if( mH1F_spin4Vbx48!=0 ){
     std::cout << "Spin from Bx48" << std::endl;
-    for( Int_t ibx48=1; ibx48<mH1F_spin4Vbx48->GetNbinsX(); ++ibx48 ){
-      std::cout << "|bx48:"<<ibx48 << "|spin4:"<<mH1F_spin4Vbx48->GetBinContent(ibx48) << std::endl;
+    for( Int_t ibx48=1; ibx48<=mH1F_spin4Vbx48->GetNbinsX(); ++ibx48 ){
+      std::cout << "|bx48:"<<ibx48-1 << "|spin4:"<<mH1F_spin4Vbx48->GetBinContent(ibx48) << std::endl;
     }
   }
   std::cout << "==================================================" << std::endl;

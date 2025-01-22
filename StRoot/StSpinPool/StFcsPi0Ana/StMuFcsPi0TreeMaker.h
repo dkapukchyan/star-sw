@@ -40,6 +40,8 @@
 
   @[January 8, 2025] > Fixed how histograms are loaded so it can work with multiple files. Added two graphs and methods for processing, filling, and plotting them to look at data over many runs; one for the peak of the invariant mass, the other for pi0 energy.
 
+  @[January 15, 2025] > Made #NENERGYBIN and #NPHIBIN public so I can use it outside the class. Added #MergeForTssa() that will also merge the NPi0 histograms so that I don't need to hadd after running the QA. In order for the code to work properly I had to fix the second argument in the array. I didn't seem to work with NPHIBIN so I need to be careful moving forward.
+
 */
 
 
@@ -56,6 +58,7 @@
 #include "TLeaf.h"
 #include "TH1F.h"
 #include "TLegend.h"
+#include "TF1.h"
 
 //STAR Headers
 #include "StEnumerations.h"
@@ -158,6 +161,11 @@ public:
   void FillGraphs(Int_t irun);
 
   void DrawQaGraphs(TCanvas* canv, const char* savename="testGraphPi0.png");
+
+  static const short NENERGYBIN = 6;    ///< Number of energy bins
+  static const short NPHIBIN = 4;       ///< Number of phi bins
+
+  void MergeForTssa(TH1* Total[][4]);
   
 protected:
   StMuDstMaker* mMuDstMkr        = 0;
@@ -259,8 +267,6 @@ protected:
   //(Need to reimplment looping over all possible combinations since I am not storing them anymore
   //(Need to mass cut to number of pi0s
   //(TH1* mH1F_AllPi0_xF = 0;             ///< Feynman-x (xF) of all pi0s
-  static const short NENERGYBIN = 6;    ///< Number of energy bins
-  static const short NPHIBIN = 4;       ///< Number of phi bins
   TH1* mH1F_NFoundPhiBin = 0;           ///< Number of valid phi bins found. This is a cross check to make sure that I am not double counting pi0s and finding more than one valid bin when I loop over the phi bins
   TH1* mH1F_AllCuts_xF = 0;             ///< Feynman-x (xF) of the pi0s that pass all the cuts
   TH1* mH1F_AllCuts_Pi0En = 0;          ///< Pi0 energy distribution with all cuts
@@ -272,7 +278,8 @@ protected:
   TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
 
   TGraphErrors* mGE_AllCuts_InvMass = 0;
-  TGraphErrors* mGE_AllCuts_Pi0En = 0;  
+  TGraphErrors* mGE_AllCuts_Pi0En = 0;
+  //TGraph* mG_TSSA = 0;
 
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
