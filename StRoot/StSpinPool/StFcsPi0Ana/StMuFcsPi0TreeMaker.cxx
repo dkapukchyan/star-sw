@@ -1,4 +1,4 @@
-#include "StEvent/StEnumerations.h"
+#include "StEnumerations.h"
 #include "StEvent/StEvent.h"
 #include "StEvent/StFcsCluster.h"
 #include "StEvent/StFcsCollection.h"
@@ -36,8 +36,9 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
   memset(mH1F_InvMassEpdCuts,0,sizeof(mH1F_InvMassEpdCuts));
   //memset(mH1F_InvMassZggCuts,0,sizeof(mH1F_InvMassZggCuts));
   //memset(mH1F_InvMassPtCuts, 0,sizeof(mH1F_InvMassPtCuts));
-  memset(mH1F_InvMassAllCutsByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
-  memset(mH1F_NPi0ByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
+  //memset(mH1F_InvMassAllCutsByEnByPhi, 0,sizeof(mH1F_mH1F_InvMassAllCutsByEnByPhi));
+  //memset(mH1F_NPi0ByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
+  memset(mH2F_NPi0_enVphi, 0,sizeof(mH2F_NPi0_enVphi));
 }
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
@@ -204,17 +205,33 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_AllCuts_xF,"H1F_AllCuts_xF","xF of pi0s after all cuts applied", 100,0,1);
   loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0En,"H1F_AllCuts_Pi0En","Energy of pi0s after all cuts applied", 100,0,100);
   //loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0Phi,"H1F_AllCuts_Pi0Phi","Phi of pi0s after all cuts applied", NPHIBIN,0,TMath::TwoPi());
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_etaVphi,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s", NPHIBIN*2,0,TMath::TwoPi(), 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_etaVphi,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s", NPHIBIN,0,TMath::TwoPi(), 70,0,7);
   //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5);
 			   
-  TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
-  TString phititletext[NPHIBIN] = { "0<=#phi<#frac{#pi}{4}", "#frac{#pi}{4}<=#phi<#frac{#pi}{2}", "#frac{#pi}{2}<=#phi<#frac{3#pi}{4}", "#frac{3#pi}{4}<=#phi<#pi" };
+  //TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
+  //TString phititletext[NPHIBIN] = { "0<=#phi<#frac{#pi}{4}", "#frac{#pi}{4}<=#phi<#frac{#pi}{2}", "#frac{#pi}{2}<=#phi<#frac{3#pi}{4}", "#frac{3#pi}{4}<=#phi<#pi" };
+  double pi  = TMath::Pi();
+  Double_t ebins[NENERGYBIN+1] = {0, 15, 20, 25, 30, 40, 55, 70, 100};
+
+  loaded += mHists->AddH2F(file,mH2F_NPi0_enVphi[0][0],"H2F_NPi0_enVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0_enVphi[0][1],"H2F_NPi0_enVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0_enVphi[1][0],"H2F_NPi0_enVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0_enVphi[1][1],"H2F_NPi0_enVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+
+  //[January 29, 2025] > [How to create a TH3F with fixed and variable bin sizes](https://root-forum.cern.ch/t/how-to-make-th3-histograms-with-variable-bin-edges/38789)
+  TAxis tmpphi(NPHIBIN,-pi/2.0,3.0*pi/2.0);
+  Double_t phiedges[NPHIBIN+1] = {0};
+  for( int i=0; i<25; ++i ){ phiedges[i] = tmpphi.GetBinUpEdge(i); }
+  TAxis tmpmass(500,0,1);
+  Double_t massedges[501] = {0};
+  for( int i=0; i<501; ++i ){ massedges[i] = tmpmass.GetBinUpEdge(i); }
+  loaded += mHists->AddH3F(file,mH3F_AllCutsInvMass_enVphi,"H3F_InvMass_envVphi","Invariant mass after all cuts by phi and energy binning", NPHIBIN,phiedges, NENERGYBIN,ebins, 500,massedges );
+  /*
   for( int ebin=0; ebin<NENERGYBIN; ++ebin ){
     for( int phibin=0; phibin<NPHIBIN; ++phibin ){
       TString histname = "H1F_InvMassEn" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
       TString histtitle = "Invariant Mass of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin] + ";InvMass (GeV);";
       loaded += mHists->AddH1F(file,mH1F_InvMassAllCutsByEnByPhi[ebin][phibin],histname.Data(),histtitle.Data(),500,0,1);
-
       histname = "H1F_NPi0En" + TString::Itoa(ebin,10) + "Phi" + TString::Itoa(phibin,10);
       histtitle = "Number of Pi0s with " + entitletext[ebin] + " and " + phititletext[phibin];
       loaded += mHists->AddH1F(file,mH1F_NPi0ByEnByPhi[ebin][phibin],histname.Data(),histtitle.Data(),4,0,4);
@@ -224,6 +241,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
       mH1F_NPi0ByEnByPhi[ebin][phibin]->GetXaxis()->SetBinLabel(4,"NPi0DownAtPhiPlusPi");
     }
   }
+  */
   return loaded;
 }
 
@@ -939,21 +957,21 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   }
 
   //XF = pi0Vert_LV.Pz()/255;
-  Double_t PiOverN = TMath::Pi()/static_cast<Double_t>(NPHIBIN);
-  Double_t PhiBin[NPHIBIN*2+1];  //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
-  for( short i=0; i<=2*NPHIBIN; ++i ){ PhiBin[i] = static_cast<Double_t>(i)*PiOverN; }
+  //Double_t PiOverN = TMath::Pi()/static_cast<Double_t>(NPHIBIN);
+  //Double_t PhiBin[NPHIBIN*2+1];  //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
+  //for( short i=0; i<=2*NPHIBIN; ++i ){ PhiBin[i] = static_cast<Double_t>(i)*PiOverN; }
   //{0.0, PiOver4, 2.0*PiOver4, 3.0*PiOver4, 4.0*PiOver4, 5.0*PiOver4, 6.0*PiOver4, 7.0*PiOver4, 8.0*PiOver4};
-  Int_t NPi0UpAtPhi[NENERGYBIN][NPHIBIN]         = {0};
-  Int_t NPi0DownAtPhi[NENERGYBIN][NPHIBIN]       = {0};
-  Int_t NPi0UpAtPhiPlusPi[NENERGYBIN][NPHIBIN]   = {0};
-  Int_t NPi0DownAtPhiPlusPi[NENERGYBIN][NPHIBIN] = {0};
+  //Int_t NPi0UpAtPhi[NENERGYBIN][NPHIBIN]         = {0};
+  //Int_t NPi0DownAtPhi[NENERGYBIN][NPHIBIN]       = {0};
+  //Int_t NPi0UpAtPhiPlusPi[NENERGYBIN][NPHIBIN]   = {0};
+  //Int_t NPi0DownAtPhiPlusPi[NENERGYBIN][NPHIBIN] = {0};
   Int_t ngoodpi0s = 0;
   //std::cout << "NPi0s:"<<mPi0Arr->GetEntriesFast() << std::endl;
   for( int i=0; i<mPi0Arr->GetEntriesFast(); ++i ){
     FcsPi0Candidate* pi0 = (FcsPi0Candidate*)mPi0Arr->At(i);
     if( pi0==0 ){ continue; }
     //pi0->Print();
-    float pi0en = pi0->mEn;
+    Double_t pi0en = pi0->mEn;
     //if( !emtrigfound )     { continue; }
     if( ! (-150<=usevertex && usevertex<=150) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
     if( pi0->mFromCluster ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Not a point - "<<pi0->mFromCluster<< std::endl;*/ continue; }
@@ -992,7 +1010,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     mH2F_AllCuts_PoiY_1V2->(ph1->mY,ph2->mY);
     */
 
-    //Get Pi0 projection to Ecal front face 
+    //Get Pi0 projection to Ecal front face @[Jan 27, 20254] > Get rid of don't need to project Just use TLorentzVector and use the TLorentzVector::phi() to get the phi
+    TLorentzVector pi0_lv = pi0->lv();
     double pi0_momentum[3] = {pi0->mPx,pi0->mPy,pi0->mPz};
     double pi0_vertex[3] = {0,0,usevertex};
     int det = 0; //North side if negative px
@@ -1002,20 +1021,21 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     StThreeVectorD pi0_xyz = mFcsDb->projectLine(det,pi0_momentum,pi0_vertex,0); //Project to front face of FCS
     mH2F_AllCuts_Pi0_yVx->Fill(pi0_xyz.x(),pi0_xyz.y());
 
-    short enbin = -1;
-    if( pi0en<=10 ){ enbin = 0; }
-    else if( pi0en>10 && pi0en<=30 ){ enbin=1; }
-    else if( pi0en>30 && pi0en<=50 ){ enbin=2; }
-    else if( pi0en>50 && pi0en<=70 ){ enbin=3; }
-    else if( pi0en>70 && pi0en<=100 ){ enbin=4; }
-    else{ enbin=5; }
-    Double_t phi = pi0->phi();
-    short phibin = -1;
-    if( phi<0 ){ phi += TMath::TwoPi(); } //atan2 gives negative angles but I don't want negative values in my array so just shift by 2pi
+    Double_t phi = pi0_lv.Phi(); //Range of this phi is -pi to pi
+    Double_t mpi = -TMath::Pi();
+    if( mpi<=phi && phi<mpi/2.0 ){ phi += TMath::TwoPi(); } //Since my binning goes from -pi/2 to 3pi/2 need to add 2pi to angles in the region from [-pi,-pi/2)
+    //@[Jan 27, 2025] > (Keep energy binnng and check energy plot for binning) Make a phi histogram one for blue (up & down) and yellow (up & down) from -Pi/2 to 3/2 Pi with whatever binning. bin 1 which is bottom most on left, with nbins/2, TH1F* mhphi[2][2] = {0}; //[blue,yellow] [up,down], Move to Ana code [mhasym[2] //[blue,yellow beam]. mhphi[0][0]->bin(1)*mhphi[0][1]->bin(1+nbin/2)]
     mH1F_AllCuts_xF->Fill( pi0->mPz/255 );
     mH1F_AllCuts_Pi0En->Fill( pi0en );
     mH2F_AllCuts_Pi0_etaVphi->Fill( phi,pi0->eta() );
-    short nfoundphibin = 0;
+    //short nfoundphibin = 0;
+    if( 0.1<=pi0->mass() && pi0->mass()<=0.2){
+      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0_enVphi[0][0]->Fill(phi,pi0en); }
+      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0_enVphi[0][1]->Fill(phi,pi0en); }
+      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0_enVphi[1][0]->Fill(phi,pi0en); }
+      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0_enVphi[1][1]->Fill(phi,pi0en); }
+    }
+    /*
     for( int iphi=0; iphi<NPHIBIN; ++iphi ){
       if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0UpAtPhi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on right side is N^{up}(phi)
       if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0UpAtPhiPlusPi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on left side is N^{up}(phi+pi)
@@ -1024,12 +1044,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
     if( phibin<0 ){ std::cout << "Couldn't find a valid phi bin" << std::endl; break; }
     mH1F_NFoundPhiBin->Fill(nfoundphibin);
-    mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
+    */
+    //mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
+    ((TH3*)mH3F_AllCutsInvMass_enVphi)->Fill(phi,pi0en,(Double_t)pi0->mass());
     mH1F_InvMassAllCuts->Fill(pi0->mass());
   }
   mH1F_Pi0MultAllCuts->Fill(ngoodpi0s);
   //std::cout << "NGoodPi0s:"<<ngoodpi0s << std::endl;
 
+  /*
   for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
     for( short phibin=0; phibin<NPHIBIN; ++phibin ){
       mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(1,NPi0UpAtPhi[ebin][phibin]);
@@ -1038,7 +1061,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       mH1F_NPi0ByEnByPhi[ebin][phibin]->SetBinContent(4,NPi0DownAtPhiPlusPi[ebin][phibin]);
     }
   }
-
+  */
   if( mPi0Tree!=0 ){ mPi0Tree->Fill(); }
 
   mEvtInfo->Clear();
@@ -1405,29 +1428,45 @@ void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) con
 
 void StMuFcsPi0TreeMaker::PaintInvMassCuts(TCanvas* canv, const char* savename ) const
 {
+  canv->Clear();
   for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
     canv->DivideSquare(NPHIBIN);
     for( short phibin=0; phibin<NPHIBIN; ++phibin ){
       canv->cd(phibin+1);
-      mH1F_InvMassAllCutsByEnByPhi[ebin][phibin]->Draw("hist e");
+      std::stringstream histname;
+      histname << "H1F_InvMass_en"<<ebin << "_phi"<<phibin;
+      TH1D* hist_proj = ((TH3*)mH3F_AllCutsInvMass_enVphi)->ProjectionZ( histname.str().c_str(), phibin+1,phibin+1, ebin+1,ebin+1 );
+      hist_proj->SetTitle( histname.str().c_str() );
+      hist_proj->Draw("hist e");
+      //mH1F_InvMassAllCutsByEnByPhi[ebin][phibin]->Draw("hist e");
     }
     canv->Print(savename);
-    canv->Clear();
+    canv->Clear();  //Should hopefully delete the projection histograms 
   }
 }
 
 void StMuFcsPi0TreeMaker::PaintNpi0(TCanvas* canv, const char* savename ) const
 {
-  //canv->Clear();
+  canv->Clear();
+  canv->Divide(2,2);
+  int ipad = 1;
+  for( int ibeam=0; ibeam<2; ++ibeam ){
+    for( int ispin=0; ispin<2; ++ispin ){
+      canv->cd(ipad++);
+      mH2F_NPi0_enVphi[ibeam][ispin]->Draw("colz");
+    }
+  }
+  /*
   for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
     canv->DivideSquare(NPHIBIN);
     for( short phibin=0; phibin<NPHIBIN; ++phibin ){
       canv->cd(phibin+1);
-      mH1F_NPi0ByEnByPhi[ebin][phibin]->Draw();
+      //mH1F_NPi0ByEnByPhi[ebin][phibin]->Draw();
     }
     canv->Print(savename);
     canv->Clear();
   }
+  */
 }
 
   
@@ -1455,11 +1494,42 @@ void StMuFcsPi0TreeMaker::FillGraphs(Int_t irun)
   return;
 }
 
-void StMuFcsPi0TreeMaker::MergeForTssa(TH1* Total[][4])
+
+void StMuFcsPi0TreeMaker::MergeForTssa( TH1* totalhist[][2], TH3* mergedinvmass )
 {
-  for( int i=0; i<NENERGYBIN; ++i ){
-    for( int j=0; j<NPHIBIN; ++j ){
-      Total[i][j]->Add(mH1F_NPi0ByEnByPhi[i][j]);
+  if( mH1F_RndmSpin->GetBinContent(1)>0.1 ){ return; } //Don't merge histograms from files with random spin patterns
+  for( int ibeam=0; ibeam<2; ++ibeam ){
+    for( int ispin=0; ispin<2; ++ispin ){
+      totalhist[ibeam][ispin]->Add(mH2F_NPi0_enVphi[ibeam][ispin]);
+    }
+  }
+  mergedinvmass->Add(mH3F_AllCutsInvMass_enVphi);
+}
+
+void StMuFcsPi0TreeMaker::DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] )
+{
+  Double_t pi = TMath::Pi();
+  //TH1* h1_rawasymVphi[2][NENERGYBIN];  //Histograms of computed raw asymmetries for blue and yellow beams for each energy bin
+  //memset(h1_rawasymVphi,0,sizeof(h1_rawasymVphi));
+  for( int ibeam = 0; ibeam<2; ++ibeam ){
+    for( int iebin = 0; iebin<NENERGYBIN; ++iebin ){
+      std::stringstream ss_hname;
+      ss_hname << "H1_rawasymVphi_"<< (ibeam==0?"Blue":"Yellow") << "_En" << iebin;
+      std::stringstream ss_htitle;
+      ss_htitle << "Raw Asymmetry vs. Phi for "<<  (ibeam==0?"Blue":"Yellow") << " Beam Ebin=" << iebin << ";phi;Raw AN";
+      h1_rawasymVphi[ibeam][iebin] = new TH1F(ss_hname.str().c_str(),ss_htitle.str().c_str(),NPHIBIN/2,-pi/2.0,pi/2.0);
+      //AnAtPhi->SetNameTitle("GE_AnAtPhi","A_N for Pi0;cos(phi);A_N");
+      for( int iphibin=0; iphibin<NPHIBIN/2 ; ++iphibin ){
+	Double_t nupdown = sqrt(npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1,iebin+1)) * npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1+NPHIBIN/2,iebin+1)));
+	Double_t ndownup = sqrt(npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1,iebin+1)) * npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1+NPHIBIN/2,iebin+1)));
+	Double_t numerator = nupdown - ndownup;
+	Double_t denominator = nupdown + ndownup;
+	//std::cout << "|iphibin:"<<iphibin << "|iebin:"<<iebin << "|ibeam:"<<ibeam << "|numer:"<<numerator << "|denom:"<<denominator << std::endl;
+	if( denominator != 0){
+	  h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1,numerator/denominator);
+	}
+	else{ h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1,0); } //If denomnator is zero set bin to zero to avoid bad division
+      }
     }
   }
 }

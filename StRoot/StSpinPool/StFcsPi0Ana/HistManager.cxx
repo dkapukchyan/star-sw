@@ -112,6 +112,35 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
   return status;//1 if histogram loaded, 0 if new
 }
 
+UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t* ybins)
+{
+  UInt_t status = 0;
+  if( h2!=0 ){
+    //Here I am using bit 22 since that is unused by TH1
+    //std::cout << " + |HistManager::AddH2F|"<<h2->GetName()<<"|kND:"<<h2->TestBit(kNotDeleted) <<"|22:"<< h2->TestBit(22) << std::endl;
+    if( h2->TestBit(22) ){ delete h2; h2=0; } //It is true that the file was loaded so safe to change pointer without delete
+    else{ Add(h2); return status; } //Object was new so stop and return 0 and re-add to array
+    //h2 = 0; //@[Dec, 16, 2024] > Hack to make loading files work
+  }
+  if( file!=0 ){ h2 = (TH1*)file->Get(name); }
+  if( h2==0 ){
+    //h2 = (TH2*)FindObject(name);
+    //if( h2==0 ){
+
+    h2 = new TH2F(name,title, nbinsx,xlow,xhigh, nbinsy,ybins);
+    h2->Sumw2();
+    //}
+    //else{ return 1; }
+  }
+  else{
+    h2->SetBit(22);
+    ++status;
+  }
+  h2->SetTitle(title);
+  Add(h2);
+  return status;//1 if histogram loaded, 0 if new
+}
+
 UInt_t HistManager::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
 {
   if( arr==0 ){ return 0; }
@@ -146,6 +175,35 @@ UInt_t HistManager::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const 
     Add(h2);
   }
   return status; 
+}
+
+UInt_t HistManager::AddH3F(TFile* file,  TH1*& h3, const char* name, const char* title,  Int_t nbinsx, Double_t* xbins, Int_t nbinsy, Double_t* ybins, Int_t nbinsz, Double_t *zbins)
+{
+  UInt_t status = 0;
+  if( h3!=0 ){
+    //Here I am using bit 22 since that is unused by TH1
+    //std::cout << " + |HistManager::AddH3F|"<<h3->GetName()<<"|kND:"<<h3->TestBit(kNotDeleted) <<"|22:"<< h3->TestBit(22) << std::endl;
+    if( h3->TestBit(22) ){ delete h3; h3=0; } //It is true that the file was loaded so safe to change pointer without delete
+    else{ Add(h3); return status; } //Object was new so stop and return 0 and re-add to array
+    //h3 = 0; //@[Dec, 16, 2024] > Hack to make loading files work
+  }
+  if( file!=0 ){ h3 = (TH1*)file->Get(name); }
+  if( h3==0 ){
+    //h3 = (TH2*)FindObject(name);
+    //if( h2==0 ){
+
+    h3 = new TH3F(name,title, nbinsx,xbins, nbinsy,ybins, nbinsz, zbins);
+    h3->Sumw2();
+    //}
+    //else{ return 1; }
+  }
+  else{
+    h3->SetBit(22);
+    ++status;
+  }
+  h3->SetTitle(title);
+  Add(h3);
+  return status;//1 if histogram loaded, 0 if new
 }
 
 void HistManager::Draw(Option_t* option)

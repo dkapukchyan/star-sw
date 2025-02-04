@@ -42,6 +42,8 @@
 
   @[January 15, 2025] > Made #NENERGYBIN and #NPHIBIN public so I can use it outside the class. Added #MergeForTssa() that will also merge the NPi0 histograms so that I don't need to hadd after running the QA. In order for the code to work properly I had to fix the second argument in the array. I didn't seem to work with NPHIBIN so I need to be careful moving forward.
 
+  @[February 3, 2025] > Changed the energy and phi binning. Changed the "NPi0" histogram arrays of phi and energy to 2D histograms where the histogram now bins the phi and energy bins rather than by an array. It is still an array but now the array represents different beam and spin states. Also, changed the invariant mass histogram with all the cuts from an array of different energies and phi values to a 3d histogram where the x and y bins reprsent the phi and energy bins respectively. Changed #MergeTssa() to merge the new 2d and 3d histograms of #mH2F_NPi0_enVphi and #mH3F_AllCutsInvMass_enVphi. Added static function #DoTssaAna() which will take as input a 2x2 array of 2d histograms (matching the form of #mH2F_NPi0_enVphi) and compute the transverse single spin asymmetry for each energy bin and beam species generating a new array of 1D histograms that are the phi and raw asymmetry. Modified the draw functions to compensate for the changed histograms.
+
 */
 
 
@@ -162,10 +164,11 @@ public:
 
   void DrawQaGraphs(TCanvas* canv, const char* savename="testGraphPi0.png");
 
-  static const short NENERGYBIN = 6;    ///< Number of energy bins
-  static const short NPHIBIN = 4;       ///< Number of phi bins
+  static const short NENERGYBIN = 8;     ///< Number of energy bins
+  static const short NPHIBIN = 24;       ///< Number of phi bins
 
-  void MergeForTssa(TH1* Total[][4]);
+  void MergeForTssa(TH1* totalhist[][2], TH3* mergedinvmass);
+  static void DoTssaAna(TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] );    //Compute asymmetry from npi0 array of [blue,yellow][spin up,down] and return an array of raw assymtries by [blue,yellow][energybin]
   
 protected:
   StMuDstMaker* mMuDstMkr        = 0;
@@ -274,8 +277,10 @@ protected:
   TH1* mH2F_AllCuts_Pi0_etaVphi = 0;    ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
   //TH1* mH2F_AllCuts_Poi_yVx = 0;        ///< Point y vs. x distributions after all cuts this gets complicated because you have two point
   TH1* mH2F_AllCuts_Pi0_yVx = 0;        ///< Pi0 FCS projected y vs. x distributions after all cuts
-  TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
-  TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
+  //TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
+  //TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
+  TH1* mH3F_AllCutsInvMass_enVphi = 0;
+  TH1* mH2F_NPi0_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down]
 
   TGraphErrors* mGE_AllCuts_InvMass = 0;
   TGraphErrors* mGE_AllCuts_Pi0En = 0;

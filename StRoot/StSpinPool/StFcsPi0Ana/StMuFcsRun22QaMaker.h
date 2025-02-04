@@ -43,6 +43,8 @@
   @[January 9, 2024] > Added #PrintSpinBits() to help with printing the spin4 bits to cross check with the spin database.
 
   @[January 21, 2025] > Added more graphs for the run by run qa. These are related to the cluster and point energy, and multiplicity. Also, added #GraphAverage() that is used to check if the graphs for the various triggers are zero or not. This is used to avoid plotting triggers that had 0 for all runs. Added a histogram and a graph to check hit multiplicity with some cuts applied.
+
+  @[February 1, 2025] > Small fix for including StEnumerations.h
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */

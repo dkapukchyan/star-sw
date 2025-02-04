@@ -23,6 +23,7 @@
   @[October 21, 2024] > Changed #mEpdHitNmip in #FcsPhotonCandidate to default to -1. This is so that I can have an additional check for if the candidate intersected any EPD tile even if it was not hit
   @[October 31, 2024] > Changed Double_t to Float_t for many values to conserve on disk space for the trees
   @[November 22, 2024] > In #FcsPi0Candidate made all the functions related to kinematic variables const and added the Pt value to the printout so that I can check it against the Pt trigger threshold more easily.
+  @[January 29, 2025] > In #FcsPi0Candidate added #lv() which returns a #TLorentzVector of the Pi0 candidate based on its px,py,pz,energy
 
 */
 
@@ -139,6 +140,7 @@ public:
   Float_t mPy = 0;            ///< Y-Momentum from Lorentz vector of two reconstructed candidates
   Float_t mPz = 0;            ///< Z-Momentum from Lorentz vector of two reconstructed candidates
   Float_t mEn = 0;            ///< Energy from Lorentz vector of two reconstructed candidates
+  TLorentzVector lv();        ///< TLorentz vector for this condidate constructed from #mPx, #mPy, #mPz, and #mEn
   
   Float_t mEta = -1;          ///< Pseudorapidity from the lorentz vector
   Float_t eta() const;        ///< Needed since in simulations the stored eta was not there when reconstructing from simulated photons

@@ -15,6 +15,7 @@
   @[September 9, 2024] > Clean up extraneous code and added #getFileName() for mHists
   @[September 18, 2024] > Made the variables related to computing the vertex members of the class and added get functions for them
   @[January 8, 2025] > Fixed comments to be ROOT friendly. Fixed how histograms are loaded so it can work with multiple files. Added a graph for EPD vertex QA over many runs and methods for processing, filling, and plotting the EPD vertex over time.
+  @[February 1, 2025] > Small fix for including StEnumerations.h
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */

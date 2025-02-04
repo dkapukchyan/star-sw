@@ -154,6 +154,13 @@ FcsPi0Candidate::FcsPi0Candidate()
 FcsPi0Candidate::~FcsPi0Candidate()
 {}
 
+TLorentzVector FcsPi0Candidate::lv()
+{
+  TLorentzVector v;
+  v.SetPxPyPzE(mPx,mPy,mPz,mEn);
+  return v;
+}
+
 Float_t FcsPi0Candidate::eta() const
 { if( mEta<0 ){ return asinh(mPz/pt()); }else{ return mEta; } }
 
