@@ -47,6 +47,35 @@ UInt_t HistManager::AddH1F(TFile* file, TH1*& h1, const char* name, const char* 
   return status;//1 if histogram loaded or exists, 0 otherwise
 }
 
+UInt_t HistManager::AddH1D(TFile* file, TH1*& h1, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
+{
+  UInt_t status = 0;
+  //std::cout << "HistManager::AddH1F|h1:"<< h1 << std::endl;
+  if( h1!=0 ){
+    //std::cout << " + |HistManager::AddH1F|"<<h1->GetName()<<"|kND:"<<h1->TestBit(kNotDeleted) <<"|22:"<< h1->TestBit(22) << std::endl;
+    //Here I am using bit 22 since that is unused by TH1
+    if( h1->TestBit(22) ){ delete h1; h1=0; } //It is true that it was loaded from the file so safe to delete pointer and reset as long as TH1::AddDirectory(kFALSE) is called since deleting/closing a #TFile deletes the histograms even if this object is set as the owner, which causes undefined behavior for the status bits which this class needs
+    else{ Add(h1); return status; } //Object was new so stop and return 0 and re-add to array
+    //h1 = 0; //@[Dec, 16, 2024] > Hack to make loading files work
+  }
+  if( file!=0 ){ h1 = (TH1*)file->Get(name); }
+  if( h1==0 ){
+    //h1 = (TH1*)FindObject(name);
+    //if( h1==0 ){
+      h1 = new TH1D(name,title,nbins,xlow,xhigh);
+      h1->Sumw2();
+      //}
+      //else{ return 1; }
+  }
+  else{
+    h1->SetBit(22);
+    ++status;
+  }
+  h1->SetTitle(title);
+  Add(h1);
+  return status;//1 if histogram loaded or exists, 0 otherwise
+}
+
 UInt_t HistManager::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbins, Double_t xlow, Double_t xhigh)
 {
   if( arr==0 ){ return 0; }

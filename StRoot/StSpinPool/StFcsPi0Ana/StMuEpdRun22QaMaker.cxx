@@ -3,7 +3,7 @@
 #include "StEvent/StFcsCluster.h"
 #include "StEvent/StFcsCollection.h"
 #include "StEvent/StFcsHit.h"
-#include "StEventTypes.h"
+#include "StEvent/StEventTypes.h"
 #include "StFcsDbMaker/StFcsDbMaker.h"
 #include "StMessMgr.h"
 #include "StMuDSTMaker/COMMON/StMuTypes.hh"
@@ -311,6 +311,19 @@ void StMuEpdRun22QaMaker::DrawVertex(TCanvas* canv, const char* savename)
   if( mH2F_VertexZ_vpdVzdc!=0 ){ mH2F_VertexZ_vpdVzdc->Draw("colz"); }
   canv->cd(6)->SetLogz(true);
   if( mH2F_VertexZ_zdcVbbc!=0 ){ mH2F_VertexZ_zdcVbbc->Draw("colz"); }
+  canv->Print(savename);
+}
+
+void StMuEpdRun22QaMaker::DrawVertexNoZdc(TCanvas* canv, const char* savename)
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  canv->cd(1)->SetLogz(true);
+  if( mH2F_VertexZ_vpdVepd!=0 ){ mH2F_VertexZ_vpdVepd->SetStats(0); mH2F_VertexZ_vpdVepd->Draw("colz"); }
+  canv->cd(2)->SetLogz(true);
+  if( mH2F_VertexZ_bbcVepd!=0 ){ mH2F_VertexZ_bbcVepd->SetStats(0); mH2F_VertexZ_bbcVepd->Draw("colz"); }
+  canv->cd(3)->SetLogz(true);
+  if( mH2F_VertexZ_vpdVbbc!=0 ){ mH2F_VertexZ_vpdVbbc->SetStats(0); mH2F_VertexZ_vpdVbbc->Draw("colz"); }
   canv->Print(savename);
 }
 

@@ -44,6 +44,8 @@
 
   @[February 3, 2025] > Changed the energy and phi binning. Changed the "NPi0" histogram arrays of phi and energy to 2D histograms where the histogram now bins the phi and energy bins rather than by an array. It is still an array but now the array represents different beam and spin states. Also, changed the invariant mass histogram with all the cuts from an array of different energies and phi values to a 3d histogram where the x and y bins reprsent the phi and energy bins respectively. Changed #MergeTssa() to merge the new 2d and 3d histograms of #mH2F_NPi0_enVphi and #mH3F_AllCutsInvMass_enVphi. Added static function #DoTssaAna() which will take as input a 2x2 array of 2d histograms (matching the form of #mH2F_NPi0_enVphi) and compute the transverse single spin asymmetry for each energy bin and beam species generating a new array of 1D histograms that are the phi and raw asymmetry. Modified the draw functions to compensate for the changed histograms.
 
+  @[March 17, 2025] > Finalizedish code for dissertation with all neccessary functionality added to get a  result including calculating luminosities, polarizations, and signal and background fits and subtraction. Modified #LoadDataFromFile() to be able to handle more histograms. Added more painting functions for the different analysis functionality and other histograms that was added. MergeTssa(), DoTssaAna(), DoTssaFit(), DoPi0Fits(), DoBgCorrectedAn(), ReadPolFile() are all functions that were added and modified to allow the A_N calculation to happen in both pre and post data processing. Added histograms for the polarization. Added more invariant mass histograms at different cut criteria. Added "NPi0" histograms for the signal region and two background regions. Added struct #PolData which is filled with the polarization data from the RHIC polarimeter website (and is saved elsewhere specially formatted to be read by this class) 
+
 */
 
 
@@ -138,24 +140,30 @@ public:
   //#endif
   void AddTrig(const char* trigname ){ mTargetTrig.emplace_back(trigname); }  //function to set trigger ids to use. Does not check for repetition so need to be a good user
   void IgnoreTrig(bool value=true){ mIgnoreTrig = value; }
-  void LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
+  UInt_t LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
   virtual UInt_t LoadHists(TFile* file);
 
   virtual void Print(Option_t* opt="") const; //"e" for event, "t" for trigger, "g" for photon, "p" for pi0, "a" for all
 
   static std::vector<Double_t> ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex);
 
-  void PaintEventQa(TCanvas* canv,  const char* savename="testevent.png")    const;
-  void PaintPhotonQa(TCanvas* canv, const char* savename="testphoton.png")   const;
-  void PaintBestPi0(TCanvas* canv,  const char* savename="testbestpi0.png")  const;
-  void PaintEpdPhPi0(TCanvas* canv, const char* savename="testepdphpi0.png") const;
-  void PaintEpdChPi0(TCanvas* canv, const char* savename="testepdchpi0.png") const;
+  void PaintEventQa(TCanvas* canv,  const char* savename = "testevent.png")    const;
+  void PaintPolarization(TCanvas* canv, const char* savename = "testpolarization.png") const;
+  void PaintPhotonQa(TCanvas* canv, const char* savename = "testphoton.png")   const;
+  void PaintBestPi0(TCanvas* canv,  const char* savename = "testbestpi0.png")  const;
+  void PaintEpdPhPi0(TCanvas* canv, const char* savename = "testepdphpi0.png") const;
+  void PaintEpdChPi0(TCanvas* canv, const char* savename = "testepdchpi0.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
   void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
   void PaintPi0Cuts(TCanvas* canv, const char* savename = "testpi0cuts.png") const;
   void PaintInvMassCuts(TCanvas* canv, const char* savename = "testinvmasscuts.pdf") const;
-  void PaintNpi0(TCanvas* canv, const char* savename = "testnpi0.pdf") const;
+  void PaintNpi0Inc(TCanvas* canv, const char* savename = "testnpi0inc.png") const;
+  void PaintNpi0Bg1(TCanvas* canv, const char* savename = "testnpi0bg1.png") const;
+  void PaintNpi0Bg2(TCanvas* canv, const char* savename = "testnpi0bg2.png") const;
+
+  void PaintPhotonQaForDefense(TCanvas* canv, const char* savename)   const;
+  void PaintPi0QaForDefense(TCanvas* canv, const char* savename) const;
 
   static void AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title="" );
 
@@ -167,8 +175,16 @@ public:
   static const short NENERGYBIN = 8;     ///< Number of energy bins
   static const short NPHIBIN = 24;       ///< Number of phi bins
 
-  void MergeForTssa(TH1* totalhist[][2], TH3* mergedinvmass);
-  static void DoTssaAna(TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] );    //Compute asymmetry from npi0 array of [blue,yellow][spin up,down] and return an array of raw assymtries by [blue,yellow][energybin]
+  void MergeForTssa( TH1* totalhistinc[][2], TH1* totalhistbg1[][2], TH1* totalhistbg2[][2], TH3* mergedinvmass, TH1* mergedpolblue, TH1* mergedpolyell, TH1* mergedpolblueerr, TH1* mergedpolyellerr );
+  static void DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] );    ///< Compute asymmetry from npi0 array of [blue,yellow][spin up,down] and return an array of raw assymtries by [blue,yellow][energybin]
+  static void DoTssaFit(TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN], TH1* h1_bluepoldata, TH1* h1_yellowpoldata, TH1* h1_AnResult[]);
+  static void DoPi0Fits(TH3* mH1F_invmass, TH1* hist_proj[] );
+  static void DoBgCorrectedAn(TH1* h1_invmass_en[], TH1* h1_an_inc, TH1* h1_an_bg, TH1* h1_anresult );
+  Int_t ReadPolFile(const char* filename="Run22PolForJobs.txt");        ///< Function to read the polarization data file that is custom made for this class
+
+  static Double_t pol4bg(Double_t* x, Double_t* par);      ///< disjoint 4th order polynomial to exclude signal range
+  static Double_t skewgaus(Double_t*x, Double_t* par);     ///< Skewed Gaussian
+  static Double_t pol4skewgaus(Double_t*x, Double_t* par); ///< fourth order polynomial + skewed Gaussian
   
 protected:
   StMuDstMaker* mMuDstMkr        = 0;
@@ -207,7 +223,11 @@ protected:
   //TClonesArray* mBestPharr = 0;         ///< #TClonesArray of #FcsPhotonCandidates which are highest energy pairs
   TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the best pi0 candidates for analysis
   
-  TH1* mH1F_Entries = 0;                ///< Number of events processed no cuts (i.e. "Make" calls)
+  TH1* mH1D_Entries = 0;                ///< bin1=Number of events processed no cuts (i.e. "Make" calls), bin2=blue polarization sum no event cut, bin3=yellow polarization sum no event cut, bin4=Number of events trigger cut, bin5=blue polarization sum event cut,  , bin6=yellow polarization sum event cut
+  TH1* mH1D_BluePol = 0;                ///< Distribution of Blue beam polarization in %
+  TH1* mH1D_YellowPol = 0;              ///< Distribution of Yellow beam Polarization in %
+  TH1* mH1D_BluePolErr = 0;             ///< Distribution of Blue beam polarization error in %
+  TH1* mH1D_YellowPolErr = 0;           ///< Distribution of Yellow beam Polarization error in %
   TH1* mH1F_Triggers = 0;               ///< Triggers used in analysis
   TH1* mH2F_foundVvertex = 0;           ///< found vertex bit vs. Vertex
   TH1* mH1F_RndmSpin = 0;               ///< Single bin histogram to know if random spins are being used or grabbing from database
@@ -265,7 +285,9 @@ protected:
   TObjArray* mH1F_InvMassEpdCuts[2];         ///< Invariant Mass using different epd nmip cuts and all triggers or only EM triggers
   //TH1* mH1F_InvMassZggCuts[2][8];          ///< Invariant Mass using different zgg cuts and all triggers or only EM triggers
   //TH1* mH1F_InvMassEnBins[2][4][3];        ///< Invariant Mass in different energy bins after each cut, fidicual volume cut, Zgg cut, Epd photon cut, and all triggers or only EM triggers
-  TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied
+  TH1* mH1F_InvMassAllButEpdCut = 0;         ///< Invariant Mass of highest energy point pairs after all cuts except the EPD nmip cut
+  TH1* mH1F_InvMassAllCutsEpdCh = 0;         ///< Invariant Mass of highest point pairs after all cuts but using the "charged" particle criteria
+  TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied and the "neutral" particle criteria for EPD nmip
   TH1* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
   //(Need to reimplment looping over all possible combinations since I am not storing them anymore
   //(Need to mass cut to number of pi0s
@@ -280,7 +302,9 @@ protected:
   //TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
   //TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
   TH1* mH3F_AllCutsInvMass_enVphi = 0;
-  TH1* mH2F_NPi0_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down]
+  TH1* mH2F_NPi0Inc_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.1-0.2
+  TH1* mH2F_NPi0Bg1_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.3-0.4
+  TH1* mH2F_NPi0Bg2_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.7-0.9
 
   TGraphErrors* mGE_AllCuts_InvMass = 0;
   TGraphErrors* mGE_AllCuts_Pi0En = 0;
@@ -289,7 +313,24 @@ protected:
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
   Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
-  UShort_t mTreeOnBitMap = 0x7;         /// Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
+  UShort_t mTreeOnBitMap = 0x7;         ///< Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
+
+  /*Simple data struct to hold polarization information from file only important values are kept*/
+  struct PolData
+  {
+    Int_t mFillNum = 0;              //! Fill Number
+    Int_t mBeamEn = 0;               //! Beam energy
+    Int_t mStartTime = 0;            //! Start time of fill
+    Double_t mBlueP0 = 0;            //! Blue beam intial polarization in %
+    Double_t mBlueErrP0 = 0;         //! Blue beam intial polarization error in %
+    Double_t mBluedPdT = 0;          //! Blue beam polarization decay in %/hour
+    Double_t mBlueErrdPdT = 0;       //! Blue beam polarization decay error in %/hour
+    Double_t mYellowP0 = 0;          //! Yellow beam intial polarization in %
+    Double_t mYellowErrP0 = 0;       //! Yellow beam intial polarization error in %
+    Double_t mYellowdPdT = 0;        //! Yellow beam polarization decay in %/hour
+    Double_t mYellowErrdPdT = 0;     //! Yellow beam polarization decay error in %/hour
+  };
+  std::map<Int_t,PolData*> mPolarizationData;   ///< Map of polarization data from file with fill number as key to quickly look up from data structure
   
 private:
   HistManager* mHists = 0;            ///< Manage loading and saving histograms

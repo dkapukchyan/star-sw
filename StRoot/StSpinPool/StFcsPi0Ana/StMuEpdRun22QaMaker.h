@@ -16,6 +16,7 @@
   @[September 18, 2024] > Made the variables related to computing the vertex members of the class and added get functions for them
   @[January 8, 2025] > Fixed comments to be ROOT friendly. Fixed how histograms are loaded so it can work with multiple files. Added a graph for EPD vertex QA over many runs and methods for processing, filling, and plotting the EPD vertex over time.
   @[February 1, 2025] > Small fix for including StEnumerations.h
+  @[March 21, 2025] > Added a new plotting function #DrawVertexNoZdc() since ZDC was not used in this analysis.
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -92,6 +93,7 @@ class StMuEpdRun22QaMaker : public StMaker
   void DrawEpdTacQa(TCanvas* canv, const char* savename);      //!< Draw the histograms related to the TAC difference, single page
   void DrawEpdTacCutQa(TCanvas* canv, const char* savename);   //!< Draw the histograms related to the TAC difference with cuts, single page
   void DrawEpdTacAdcQa(TCanvas* canv, const char* savename);   //!< Draw the TAC vs. ADC histograms for all channels, savename should be some kind of pdf as it will encompass many pages
+  void DrawVertexNoZdc(TCanvas* canv, const char* savename);   //!< Draw 2D vertex correlation histograms, single page no ZDC
 
   Int_t LoadGraphsFromFile(TFile* file, TObjArray* graphs );
   void FillGraphs(Int_t irun);

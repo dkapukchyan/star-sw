@@ -24,6 +24,7 @@
   @[October 31, 2024] > Changed Double_t to Float_t for many values to conserve on disk space for the trees
   @[November 22, 2024] > In #FcsPi0Candidate made all the functions related to kinematic variables const and added the Pt value to the printout so that I can check it against the Pt trigger threshold more easily.
   @[January 29, 2025] > In #FcsPi0Candidate added #lv() which returns a #TLorentzVector of the Pi0 candidate based on its px,py,pz,energy
+  @[February 5, 2025] > Clarified a comment
 
 */
 
@@ -49,7 +50,7 @@ public:
   FcsEventInfo();
   ~FcsEventInfo();
 
-  Int_t mRunTime = -1;       ///< Time of the run
+  Int_t mRunTime = -1;       ///< Time of the run (actually time of event)
   Int_t mRunNum = -1;        ///< Run number for event
   UInt_t mFill = 0;          ///< Fill number for event
   UInt_t mEvent = -1;        ///< STAR Event Id
