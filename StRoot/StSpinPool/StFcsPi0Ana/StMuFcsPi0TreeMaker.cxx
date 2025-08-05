@@ -29,6 +29,9 @@
 
 ClassImp(StMuFcsPi0TreeMaker)
 
+//const double StMuFcsPi0TreeMaker::xfbins[] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.4, 0.44, 0.48, 0.52};
+const Double_t StMuFcsPi0TreeMaker::xfbins[] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5}; //@[August 4, 2025] > New xF binning
+
 StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
 {
   mSpinRndm.SetSeed(0);
@@ -38,9 +41,9 @@ StMuFcsPi0TreeMaker::StMuFcsPi0TreeMaker(const Char_t* name) : StMaker(name)
   //memset(mH1F_InvMassPtCuts, 0,sizeof(mH1F_InvMassPtCuts));
   //memset(mH1F_InvMassAllCutsByEnByPhi, 0,sizeof(mH1F_mH1F_InvMassAllCutsByEnByPhi));
   //memset(mH1F_NPi0ByEnByPhi, 0,sizeof(mH1F_NPi0ByEnByPhi));
-  memset(mH2F_NPi0Inc_enVphi, 0,sizeof(mH2F_NPi0Inc_enVphi));
-  memset(mH2F_NPi0Bg1_enVphi, 0,sizeof(mH2F_NPi0Bg1_enVphi));
-  memset(mH2F_NPi0Bg2_enVphi, 0,sizeof(mH2F_NPi0Bg2_enVphi));
+  memset(mH2F_NPi0Inc_xfVphi, 0,sizeof(mH2F_NPi0Inc_xfVphi));
+  memset(mH2F_NPi0Bg1_xfVphi, 0,sizeof(mH2F_NPi0Bg1_xfVphi));
+  memset(mH2F_NPi0Bg2_xfVphi, 0,sizeof(mH2F_NPi0Bg2_xfVphi));
 }
 
 StMuFcsPi0TreeMaker::~StMuFcsPi0TreeMaker()
@@ -124,7 +127,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   if( mHists==0 ){ return 0; }
   UInt_t loaded = 0;
   //loaded += mHists->AddH1F(file,mH1F_Entries,"H1_Entries", "Number of entries;", 3,-0.5, 2.5);
-  loaded += mHists->AddH1D(file,mH1D_Entries,"H1D_Entries", "Number of entries", 1,-0.5,0.5 );
+  loaded += mHists->AddH1D(file,mH1D_Entries,     "H1D_Entries", "Number of entries", 1,-0.5,0.5 );
   loaded += mHists->AddH1D(file,mH1D_BluePol,     "H1D_BluePol",     "Blue Beam Polarization;%", 1000,0,100 );
   loaded += mHists->AddH1D(file,mH1D_YellowPol,   "H1D_YellowPol",   "Yellow Beam Polarization;%", 1000,0,100 );
   loaded += mHists->AddH1D(file,mH1D_BluePolErr,  "H1D_BluePolErr",  "Blue Beam Polarization Error;%", 500,0,10 );
@@ -207,14 +210,21 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH1FArr(file,mH1F_InvMassPtCuts,8,"H1F_InvMassPtCuts",500,0,1);
   loaded += mHists->AddH1F(file,mH1F_InvMassAllButEpdCut, "H1F_InvMassAllButEpdCut", "Invariant mass of two highest photon pairs with all cuts except EPD nmip",500,0,1);
   loaded += mHists->AddH1F(file,mH1F_InvMassAllCutsEpdCh, "H1F_InvMassAllCutsEpdCh", "Invariant mass of two highest photon pairs with all cuts but charged epd nmip", 500,0,1);
-  loaded += mHists->AddH1F(file,mH1F_InvMassAllCuts,"H1F_AllInvMassCuts","Invariant Mass of two photons after all cuts applied;M_{inv} (GeV/c^{2})", 500,0,1);
+  loaded += mHists->AddH1F(file,mH1F_InvMassAllCuts,"H1F_InvMassAllCuts","Invariant Mass of two photons after all cuts applied;M_{inv} (GeV/c^{2})", 500,0,1);
   loaded += mHists->AddH1F(file,mH1F_Pi0MultAllCuts,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts", 20,0,20);
   //loaded += mHists->AddH2F(file,mH2F_AllCuts_Poi_yVx,"H2F_AllCuts_Poi_yVx","Point distribution y vs. x after all cuts", 400,-200,200, 300,-150,150);
   loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_yVx,"H2F_AllCuts_Pi0_yVx","#pi^{0} distribution projected to FCS y vs. x after all cuts;x (cm);y (cm)", 400,-200,200, 300,-150,150);
 
-  loaded += mHists->AddH1F(file,mH1F_NFoundPhiBin,"H1F_NFoundPhiBin","Number of found phi bins",3,0,3);
+  //loaded += mHists->AddH1F(file,mH1F_NFoundPhiBin,"H1F_NFoundPhiBin","Number of found phi bins",3,0,3);
   loaded += mHists->AddH1F(file,mH1F_AllCuts_xF,"H1F_AllCuts_xF","xF of pi0s after all cuts applied", 100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_AllCuts_xFZoom,"H1F_AllCuts_xFZoom","xF of pi0s after all cuts applied", 200,0,0.5);
+  loaded += mHists->AddH1F(file,mH1F_AllCuts_Zgg,"H1F_AllCuts_Zgg","Z_{gg} of pi0s after all cuts applied",100,0,1);
+  loaded += mHists->AddH1F(file,mH1F_AllCuts_Dgg,"H1F_AllCuts_Dgg","D_{gg} of pi0s after all cuts applied",100,0,100);
   loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0En,"H1F_AllCuts_Pi0En","Energy of pi0s after all cuts applied;(GeV);", 200,0,200);
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_massVen,"H2F_AllCuts_Pi0_massVen","Invariant mass of pi0 vs. pi0 Energy after all cuts applied;Energy (GeV);Inv. Mass", 200,0,200, 500,0,1);
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_xfVen,"H2F_AllCuts_Pi0_xfVen","Pi0 x_{F} vs. energy after all cuts applied;Energy (GeV);x_F", 200,0,200, 200,0,0.5);
+  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_ptVeta,"H2F_AllCuts_Pi0_ptVeta","Pi0 p_{T} vs. eta after all cuts applied;Energy (GeV);x_F", 100,0,50, 200,0,0.5);
+  
   //loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0Phi,"H1F_AllCuts_Pi0Phi","Phi of pi0s after all cuts applied", NPHIBIN,0,TMath::TwoPi());
   loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_etaVphi,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
   //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5);
@@ -222,22 +232,24 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
   //TString phititletext[NPHIBIN] = { "0<=#phi<#frac{#pi}{4}", "#frac{#pi}{4}<=#phi<#frac{#pi}{2}", "#frac{#pi}{2}<=#phi<#frac{3#pi}{4}", "#frac{3#pi}{4}<=#phi<#pi" };
   double pi  = TMath::Pi();
-  Double_t ebins[NENERGYBIN+1] = {0, 15, 20, 25, 30, 40, 55, 70, 100};
+  //Double_t xfbins[NXFBIN+1] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.4, 0.44, 0.48, 0.52};
+  //Double_t xfbins[NXFBIN+1] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5};
 
-  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_enVphi[0][0],"H2F_NPi0Inc_enVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_enVphi[0][1],"H2F_NPi0Inc_enVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_enVphi[1][0],"H2F_NPi0Inc_enVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_enVphi[1][1],"H2F_NPi0Inc_enVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[0][0],"H2F_NPi0Inc_xfVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  std::cout << "|firsthist:"<<std::endl;
+  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[0][1],"H2F_NPi0Inc_xfVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[1][0],"H2F_NPi0Inc_xfVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[1][1],"H2F_NPi0Inc_xfVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
 
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_enVphi[0][0],"H2F_NPi0Bg1_enVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_enVphi[0][1],"H2F_NPi0Bg1_enVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_enVphi[1][0],"H2F_NPi0Bg1_enVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_enVphi[1][1],"H2F_NPi0Bg1_enVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_xfVphi[0][0],"H2F_NPi0Bg1_xfVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_xfVphi[0][1],"H2F_NPi0Bg1_xfVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_xfVphi[1][0],"H2F_NPi0Bg1_xfVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg1_xfVphi[1][1],"H2F_NPi0Bg1_xfVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.3<=M<=0.4", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
 
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_enVphi[0][0],"H2F_NPi0Bg2_enVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_enVphi[0][1],"H2F_NPi0Bg2_enVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_enVphi[1][0],"H2F_NPi0Bg2_enVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
-  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_enVphi[1][1],"H2F_NPi0Bg2_enVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NENERGYBIN,ebins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_xfVphi[0][0],"H2F_NPi0Bg2_xfVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_xfVphi[0][1],"H2F_NPi0Bg2_xfVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_xfVphi[1][0],"H2F_NPi0Bg2_xfVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
+  loaded += mHists->AddH2F(file,mH2F_NPi0Bg2_xfVphi[1][1],"H2F_NPi0Bg2_xfVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.7<=M<=0.9", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
 
   //[January 29, 2025] > [How to create a TH3F with fixed and variable bin sizes](https://root-forum.cern.ch/t/how-to-make-th3-histograms-with-variable-bin-edges/38789)
   TAxis tmpphi(NPHIBIN,-pi/2.0,3.0*pi/2.0);
@@ -246,7 +258,7 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   TAxis tmpmass(500,0,1);
   Double_t massedges[501] = {0};
   for( int i=0; i<501; ++i ){ massedges[i] = tmpmass.GetBinUpEdge(i); }
-  loaded += mHists->AddH3F(file,mH3F_AllCutsInvMass_enVphi,"H3F_InvMass_envVphi","Invariant mass after all cuts by phi and energy binning", NPHIBIN,phiedges, NENERGYBIN,ebins, 500,massedges );
+  loaded += mHists->AddH3F(file,mH3F_AllCutsInvMass_xfVphi,"H3F_InvMass_envVphi","Invariant mass after all cuts by phi and energy binning", NPHIBIN,phiedges, NXFBIN,xfbins, 500,massedges );
   /*
   for( int ebin=0; ebin<NENERGYBIN; ++ebin ){
     for( int phibin=0; phibin<NPHIBIN; ++phibin ){
@@ -762,7 +774,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     if( iclus->mEpdHitNmip>-0.1){ //Only include candidates who have their nmip value set
       if( iclus->mEpdHitNmip<mEpdNmipCut ){ goodclusphotonsidx.emplace_back(ic); }
       else{ goodcluselectronsidx.emplace_back(ic); }
-    }    
+    }
     for( Int_t jc=ic+1; jc<clustersize; jc++ ){
       FcsPhotonCandidate* jclus = (FcsPhotonCandidate*) mPhArr->UncheckedAt(jc);
       if( !(jclus->mFromCluster) ){ std::cout << "MAJOR ERROR - cluster size of array found a point crashing" << std::endl; exit(0); }
@@ -1108,6 +1120,13 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     if( !exceedtrigpt ){ continue; }
     //epd photon cut, mFromPh can only be -1,0,1 for less than epd cut (neutral), no epd cut, greater than epd cut (charged); respectively
     //if( pi0->mFromPh != -1 ){ continue; } //Check to force mFromPh to always be -1 (neutral)
+    if( pi0->mFromPh==0 ){
+      FcsPhotonCandidate* ph1 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton1Idx);
+      FcsPhotonCandidate* ph2 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton2Idx);
+      if( ph1->mEpdHitNmip>mEpdNmipCut || ph2->mEpdHitNmip>mEpdNmipCut ){
+	//Fill hisotrams with only one satisfying criteria
+      }
+    }
     if( pi0->mFromPh>=0   ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; } //Ensure pi0 is coming from photon cut
     //std::cout << "StMuFcsPi0TreeMaker::Make() - Passed all cuts!" << std::endl;
     ++ngoodpi0s;
@@ -1134,28 +1153,36 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     Double_t phi = pi0_lv.Phi(); //Range of this phi is -pi to pi
     Double_t mpi = -TMath::Pi();
     if( mpi<=phi && phi<mpi/2.0 ){ phi += TMath::TwoPi(); } //Since my binning goes from -pi/2 to 3pi/2 need to add 2pi to angles in the region from [-pi,-pi/2)
+    Double_t pi0xf = (pi0->mPz)/255.0;
+    Double_t pi0mass = (Double_t)pi0->mass();
     //@[Jan 27, 2025] > (Keep energy binnng and check energy plot for binning) Make a phi histogram one for blue (up & down) and yellow (up & down) from -Pi/2 to 3/2 Pi with whatever binning. bin 1 which is bottom most on left, with nbins/2, TH1F* mhphi[2][2] = {0}; //[blue,yellow] [up,down], Move to Ana code [mhasym[2] //[blue,yellow beam]. mhphi[0][0]->bin(1)*mhphi[0][1]->bin(1+nbin/2)]
-    mH1F_AllCuts_xF->Fill( pi0->mPz/255.0 );
+    mH1F_AllCuts_xF->Fill( pi0xf );
+    mH1F_AllCuts_xFZoom->Fill( pi0xf );
+    mH1F_AllCuts_Zgg->Fill( pi0->mZgg );
+    mH1F_AllCuts_Dgg->Fill( pi0->mDgg );
     mH1F_AllCuts_Pi0En->Fill( pi0en );
-    mH2F_AllCuts_Pi0_etaVphi->Fill( phi,pi0->eta() );
+    mH2F_AllCuts_Pi0_massVen->Fill( pi0en,pi0mass );
+    mH2F_AllCuts_Pi0_xfVen->Fill( pi0en,pi0xf );
+    mH2F_AllCuts_Pi0_ptVeta->Fill( pi0_lv.Eta(),pi0_lv.Pt() );
+    mH2F_AllCuts_Pi0_etaVphi->Fill( phi,pi0_lv.Eta() );
     //short nfoundphibin = 0;
-    if( 0.1<=pi0->mass() && pi0->mass()<=0.2){
-      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Inc_enVphi[0][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Inc_enVphi[0][1]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Inc_enVphi[1][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Inc_enVphi[1][1]->Fill(phi,pi0en); }
+    if( 0.1<=pi0mass && pi0mass<=0.2){
+      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Inc_xfVphi[0][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Inc_xfVphi[0][1]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Inc_xfVphi[1][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Inc_xfVphi[1][1]->Fill(phi,pi0xf); }
     }
-    if( 0.3<=pi0->mass() && pi0->mass()<=0.4){
-      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Bg1_enVphi[0][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Bg1_enVphi[0][1]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Bg1_enVphi[1][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg1_enVphi[1][1]->Fill(phi,pi0en); }
+    if( 0.3<=pi0mass && pi0mass<=0.4){
+      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Bg1_xfVphi[0][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Bg1_xfVphi[0][1]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Bg1_xfVphi[1][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg1_xfVphi[1][1]->Fill(phi,pi0xf); }
     }
-    if( 0.7<=pi0->mass() && pi0->mass()<=0.9){
-      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Bg2_enVphi[0][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Bg2_enVphi[0][1]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Bg2_enVphi[1][0]->Fill(phi,pi0en); }
-      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg2_enVphi[1][1]->Fill(phi,pi0en); }
+    if( 0.7<=pi0mass && pi0mass<=0.9){
+      if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Bg2_xfVphi[0][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->BlueSpin()==-1   ){ mH2F_NPi0Bg2_xfVphi[0][1]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Bg2_xfVphi[1][0]->Fill(phi,pi0xf); }
+      if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg2_xfVphi[1][1]->Fill(phi,pi0xf); }
     }
     /*
     for( int iphi=0; iphi<NPHIBIN; ++iphi ){
@@ -1168,8 +1195,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     mH1F_NFoundPhiBin->Fill(nfoundphibin);
     */
     //mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
-    ((TH3*)mH3F_AllCutsInvMass_enVphi)->Fill(phi,pi0en,(Double_t)pi0->mass());
-    mH1F_InvMassAllCuts->Fill(pi0->mass());
+    ((TH3*)mH3F_AllCutsInvMass_xfVphi)->Fill(phi,pi0xf,pi0mass);
+    mH1F_InvMassAllCuts->Fill(pi0mass);
   }
   mH1F_Pi0MultAllCuts->Fill(ngoodpi0s);
   //std::cout << "NGoodPi0s:"<<ngoodpi0s << std::endl;
@@ -1572,12 +1599,15 @@ void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) con
 {
   canv->Clear();
   canv->Divide(3,3);
-  canv->cd(1);
-  mH1F_NFoundPhiBin->Draw("hist e");
-  canv->cd(2);
+  canv->cd(1)->SetLogy();
+  //mH1F_NFoundPhiBin->Draw("hist e");
   mH1F_AllCuts_xF->Draw("hist e");
-  canv->cd(3)->SetLogy();
-  mH1F_AllCuts_Pi0En->Draw("hist e");
+  canv->cd(2)->SetLogy();
+  mH1F_AllCuts_xFZoom->Draw("hist e");  
+  //canv->cd(3)->SetLogy();
+  //mH1F_AllCuts_Pi0En->Draw("hist e");
+  canv->cd(3);
+  mH2F_AllCuts_Pi0_massVen->Draw("colz");
   canv->cd(4);
   //mH1F_AllCuts_Pi0Phi->Draw("hist e");
   mH2F_AllCuts_Pi0_etaVphi->Draw("colz");
@@ -1600,13 +1630,13 @@ void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) con
 void StMuFcsPi0TreeMaker::PaintInvMassCuts(TCanvas* canv, const char* savename ) const
 {
   canv->Clear();
-  for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
+  for( short ixbin=0; ixbin<NXFBIN; ++ixbin ){
     canv->DivideSquare(NPHIBIN);
     for( short phibin=0; phibin<NPHIBIN; ++phibin ){
       canv->cd(phibin+1);
       std::stringstream histname;
-      histname << "H1F_InvMass_en"<<ebin << "_phi"<<phibin;
-      TH1D* hist_proj = ((TH3*)mH3F_AllCutsInvMass_enVphi)->ProjectionZ( histname.str().c_str(), phibin+1,phibin+1, ebin+1,ebin+1 );
+      histname << "H1F_InvMass_en"<<ixbin << "_phi"<<phibin;
+      TH1D* hist_proj = ((TH3*)mH3F_AllCutsInvMass_xfVphi)->ProjectionZ( histname.str().c_str(), phibin+1,phibin+1, ixbin+1,ixbin+1 );
       hist_proj->SetTitle( histname.str().c_str() );
       hist_proj->Draw("hist e");
       //mH1F_InvMassAllCutsByEnByPhi[ebin][phibin]->Draw("hist e");
@@ -1624,8 +1654,8 @@ void StMuFcsPi0TreeMaker::PaintNpi0Inc(TCanvas* canv, const char* savename ) con
   for( int ibeam=0; ibeam<2; ++ibeam ){
     for( int ispin=0; ispin<2; ++ispin ){
       canv->cd(ipad++);
-      mH2F_NPi0Inc_enVphi[ibeam][ispin]->SetStats(0);
-      mH2F_NPi0Inc_enVphi[ibeam][ispin]->Draw("colz");
+      mH2F_NPi0Inc_xfVphi[ibeam][ispin]->SetStats(0);
+      mH2F_NPi0Inc_xfVphi[ibeam][ispin]->Draw("colz");
     }
   }
   canv->Print(savename);
@@ -1650,8 +1680,8 @@ void StMuFcsPi0TreeMaker::PaintNpi0Bg1(TCanvas* canv, const char* savename ) con
   for( int ibeam=0; ibeam<2; ++ibeam ){
     for( int ispin=0; ispin<2; ++ispin ){
       canv->cd(ipad++);
-      mH2F_NPi0Bg1_enVphi[ibeam][ispin]->SetStats(0);
-      mH2F_NPi0Bg1_enVphi[ibeam][ispin]->Draw("colz");
+      mH2F_NPi0Bg1_xfVphi[ibeam][ispin]->SetStats(0);
+      mH2F_NPi0Bg1_xfVphi[ibeam][ispin]->Draw("colz");
     }
   }
   canv->Print(savename);
@@ -1665,8 +1695,8 @@ void StMuFcsPi0TreeMaker::PaintNpi0Bg2(TCanvas* canv, const char* savename ) con
   for( int ibeam=0; ibeam<2; ++ibeam ){
     for( int ispin=0; ispin<2; ++ispin ){
       canv->cd(ipad++);
-      mH2F_NPi0Bg2_enVphi[ibeam][ispin]->SetStats(0);
-      mH2F_NPi0Bg2_enVphi[ibeam][ispin]->Draw("colz");
+      mH2F_NPi0Bg2_xfVphi[ibeam][ispin]->SetStats(0);
+      mH2F_NPi0Bg2_xfVphi[ibeam][ispin]->Draw("colz");
     }
   }
   canv->Print(savename);
@@ -1717,12 +1747,12 @@ void StMuFcsPi0TreeMaker::MergeForTssa( TH1* totalhistinc[][2], TH1* totalhistbg
   if( mH1F_RndmSpin->GetBinContent(1)>0.1 ){ return; } //Don't merge histograms from files with random spin patterns
   for( int ibeam=0; ibeam<2; ++ibeam ){
     for( int ispin=0; ispin<2; ++ispin ){
-      totalhistinc[ibeam][ispin]->Add(mH2F_NPi0Inc_enVphi[ibeam][ispin]);
-      totalhistbg1[ibeam][ispin]->Add(mH2F_NPi0Bg1_enVphi[ibeam][ispin]);
-      totalhistbg2[ibeam][ispin]->Add(mH2F_NPi0Bg2_enVphi[ibeam][ispin]);
+      totalhistinc[ibeam][ispin]->Add(mH2F_NPi0Inc_xfVphi[ibeam][ispin]);
+      totalhistbg1[ibeam][ispin]->Add(mH2F_NPi0Bg1_xfVphi[ibeam][ispin]);
+      totalhistbg2[ibeam][ispin]->Add(mH2F_NPi0Bg2_xfVphi[ibeam][ispin]);
     }
   }
-  mergedinvmass->Add(mH3F_AllCutsInvMass_enVphi);
+  mergedinvmass->Add(mH3F_AllCutsInvMass_xfVphi);
   mergedpolblue->Add(mH1D_BluePol);
   mergedpolblueerr->Add(mH1D_BluePolErr);
   mergedpolyell->Add(mH1D_YellowPol);
@@ -1730,20 +1760,20 @@ void StMuFcsPi0TreeMaker::MergeForTssa( TH1* totalhistinc[][2], TH1* totalhistbg
   //mergedpoldata->Add(mH1D_Entries);
 }
 
-void StMuFcsPi0TreeMaker::DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] )
+void StMuFcsPi0TreeMaker::DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NXFBIN] )
 {
   //Double_t pi = TMath::Pi();
   //TH1* h1_rawasymVphi[2][NENERGYBIN];  //Histograms of computed raw asymmetries for blue and yellow beams for each energy bin
   //memset(h1_rawasymVphi,0,sizeof(h1_rawasymVphi));
   
   //for( int ibeam = 0; ibeam<2; ++ibeam ){
-  for( int iebin = 0; iebin<NENERGYBIN; ++iebin ){
+  for( int ixbin = 0; ixbin<NXFBIN; ++ixbin ){
     int ibeam = 0; //Blue beam first since that uses the normal STAR direction convention
     for( int iphibin=0; iphibin<NPHIBIN/2 ; ++iphibin ){
-      Double_t nupatphi         = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1,iebin+1));
-      Double_t ndownatphipluspi = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1+NPHIBIN/2,iebin+1));
-      Double_t ndownatphi       = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1,iebin+1));
-      Double_t nupatphipluspi   = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1+NPHIBIN/2,iebin+1));
+      Double_t nupatphi         = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1,ixbin+1));
+      Double_t ndownatphipluspi = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1+NPHIBIN/2,ixbin+1));
+      Double_t ndownatphi       = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1,ixbin+1));
+      Double_t nupatphipluspi   = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1+NPHIBIN/2,ixbin+1));
       
       Double_t nupdown = sqrt( nupatphi * ndownatphipluspi );
       Double_t ndownup = sqrt( ndownatphi * nupatphipluspi );
@@ -1757,21 +1787,21 @@ void StMuFcsPi0TreeMaker::DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuF
 	Double_t AnErr = sqrt(ndownatphi*nupatphi*nupatphipluspi + ndownatphipluspi*nupatphi*nupatphipluspi + ndownatphi*ndownatphipluspi*nupatphi + ndownatphi*ndownatphipluspi*nupatphipluspi)/(denominator*denominator);
 	//std::cout << " + |An:"<<numerator/denominator<< "|nu0_err:"<<nupatphi_err << "|ndp_err:"<<ndownatphipluspi_err << "|nd0_err:"<<ndownatphi_err << "|nup_err:"<< nupatphipluspi_err << "|AnErr:"<<AnErr << std::endl;
 	  
-	h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1,numerator/denominator);
-	h1_rawasymVphi[ibeam][iebin]->SetBinError(iphibin+1,AnErr);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinContent(iphibin+1,numerator/denominator);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinError(iphibin+1,AnErr);
       }
       else{
 	//If denomnator is zero set bin to zero to avoid bad division and set large error
-	h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1,0);
-	h1_rawasymVphi[ibeam][iebin]->SetBinError(iphibin+1,1);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinContent(iphibin+1,0);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinError(iphibin+1,1);
       }
     }
     ibeam = 1; //Yellow beam next since need to flip the order because "left" for yellow is the opposite of the "left" for blue
     for( int iphibin=NPHIBIN/2; iphibin<NPHIBIN; ++iphibin ){
-      Double_t nupatphi         = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1,iebin+1));
-      Double_t ndownatphipluspi = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1-NPHIBIN/2,iebin+1));
-      Double_t ndownatphi       = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1,iebin+1));
-      Double_t nupatphipluspi   = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1-NPHIBIN/2,iebin+1));
+      Double_t nupatphi         = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1,ixbin+1));
+      Double_t ndownatphipluspi = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1-NPHIBIN/2,ixbin+1));
+      Double_t ndownatphi       = npi0[ibeam][1]->GetBinContent(npi0[ibeam][1]->GetBin(iphibin+1,ixbin+1));
+      Double_t nupatphipluspi   = npi0[ibeam][0]->GetBinContent(npi0[ibeam][0]->GetBin(iphibin+1-NPHIBIN/2,ixbin+1));
       
       Double_t nupdown = sqrt( nupatphi * ndownatphipluspi );
       Double_t ndownup = sqrt( ndownatphi * nupatphipluspi );
@@ -1784,19 +1814,19 @@ void StMuFcsPi0TreeMaker::DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuF
 	// Propagate errors for A_N
 	Double_t AnErr = sqrt(ndownatphi*nupatphi*nupatphipluspi + ndownatphipluspi*nupatphi*nupatphipluspi + ndownatphi*ndownatphipluspi*nupatphi + ndownatphi*ndownatphipluspi*nupatphipluspi)/(denominator*denominator);
 	//std::cout << " + |An:"<<numerator/denominator << "|AnErr:"<<AnErr << std::endl;
-	h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1-NPHIBIN/2,numerator/denominator); //instead of flipping can also multiply by -1
-	h1_rawasymVphi[ibeam][iebin]->SetBinError(iphibin+1-NPHIBIN/2,AnErr);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinContent(iphibin+1-NPHIBIN/2,numerator/denominator); //instead of flipping can also multiply by -1
+	h1_rawasymVphi[ibeam][ixbin]->SetBinError(iphibin+1-NPHIBIN/2,AnErr);
       }
       else{
 	//If denomnator is zero set bin to zero to avoid bad division and set large error
-	h1_rawasymVphi[ibeam][iebin]->SetBinContent(iphibin+1-NPHIBIN/2,0);
-	h1_rawasymVphi[ibeam][iebin]->SetBinError(iphibin+1-NPHIBIN/2,1);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinContent(iphibin+1-NPHIBIN/2,0);
+	h1_rawasymVphi[ibeam][ixbin]->SetBinError(iphibin+1-NPHIBIN/2,1);
       }
     }
   }
 }
 
-void StMuFcsPi0TreeMaker::DoTssaFit( TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN], TH1* h1_bluepoldata, TH1* h1_yellowpoldata, TH1* h1_AnResult[] )
+void StMuFcsPi0TreeMaker::DoTssaFit( TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NXFBIN], TH1* h1_bluepoldata, TH1* h1_yellowpoldata, TH1* h1_AnResult[] )
 {
   Double_t pi = TMath::Pi();
   //Double_t ebins[NENERGYBIN+1] = {0, 15, 20, 25, 30, 40, 55, 70, 100};  //Copied from above
@@ -1804,7 +1834,7 @@ void StMuFcsPi0TreeMaker::DoTssaFit( TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::
   //h1_AnResult[1] = new TH1D("H1D_AnResultYellow","A_N vs. Energy;Energy;A_N",StMuFcsPi0TreeMaker::NENERGYBIN,ebins);
   //Double_t nentries = h1_poldata->GetBinContent(1);
   for( int ibeam = 0; ibeam<2; ++ibeam ){
-    for( int iebin = 0; iebin<NENERGYBIN; ++iebin ){
+    for( int ixbin = 0; ixbin<NXFBIN; ++ixbin ){
       //std::stringstream ss_fname;
       //ss_fname << "AnFit_" << ibeam << "_" << iebin;
       //TF1* AnFit = new TF1("AnFit","[0]*cos(x+[1])+[2]",-pi/2.0,pi/2.0);
@@ -1812,20 +1842,20 @@ void StMuFcsPi0TreeMaker::DoTssaFit( TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::
       AnFit->SetParName(0,"A");
       AnFit->SetParName(1,"#phi_{0}");
       //AnFit->SetParName(2,"yoff");
-      h1_rawasymVphi[ibeam][iebin]->Fit(AnFit,"R");
+      h1_rawasymVphi[ibeam][ixbin]->Fit(AnFit,"R");
       Double_t rawasym = AnFit->GetParameter(0);
       //Double_t totalpolpercent = h1_poldata->GetBinContent(ibeam+2);  //Since blue beam [0] was stored in bin 2 and yellow beam [1] was stored in bin 3
       //Double_t lumcorrectedpol = totalpolpercent/nentries;            //luminosity corrected polarization
       Double_t lumcorrectedpol = (ibeam==0)?(h1_bluepoldata->GetMean()/100.0):(h1_yellowpoldata->GetMean()/100.0); //Divide by 100 since value is a percent
-      h1_AnResult[ibeam]->SetBinContent( iebin+1, rawasym/lumcorrectedpol );
-      h1_AnResult[ibeam]->SetBinError( iebin+1, AnFit->GetParError(0)/lumcorrectedpol );
+      h1_AnResult[ibeam]->SetBinContent( ixbin+1, rawasym/lumcorrectedpol );
+      h1_AnResult[ibeam]->SetBinError( ixbin+1, AnFit->GetParError(0)/lumcorrectedpol );
     }
   }
 }
 
 void StMuFcsPi0TreeMaker::DoPi0Fits(TH3* mH3F_invmass, TH1* hist_proj[] )
 {
-  for( short ebin=0; ebin<NENERGYBIN; ++ebin ){
+  for( short ebin=0; ebin<NXFBIN; ++ebin ){
     if( hist_proj[ebin]==0 ){
       std::stringstream histname;
       histname << "H1F_InvMass_en"<<ebin;
@@ -1896,23 +1926,23 @@ void StMuFcsPi0TreeMaker::DoBgCorrectedAn(TH1* h1_invmass_en[], TH1* h1_an_inc, 
   if( h1_invmass_en==0 ){ return; }
   if( h1_an_inc==0 ){ return; }
   if( h1_an_bg==0 ){ return; }
-  for( Int_t iebin=0; iebin<NENERGYBIN; ++iebin ){
+  for( Int_t ixbin=0; ixbin<NXFBIN; ++ixbin ){
     TF1* bgfunc = 0;
-    if( iebin<=(NENERGYBIN-1) ){ bgfunc = h1_invmass_en[iebin]->GetFunction("BgGlobalFit"); }
-    //if( iebin<4 ){ bgfunc = h1_invmass_en[iebin]->GetFunction("BgGlobalFit"); }
-    else{ bgfunc = h1_invmass_en[iebin]->GetFunction("Bg2Fit"); }  //For all but the last energy bin this function had the most reasonable background shape(*/
+    if( ixbin<=(NXFBIN-1) ){ bgfunc = h1_invmass_en[ixbin]->GetFunction("BgGlobalFit"); }
+    //if( ixbin<4 ){ bgfunc = h1_invmass_en[ixbin]->GetFunction("BgGlobalFit"); }
+    else{ bgfunc = h1_invmass_en[ixbin]->GetFunction("Bg2Fit"); }  //For all but the last energy bin this function had the most reasonable background shape(*/
     if( bgfunc==0 ){ continue; }
-    Double_t xlowbin = h1_invmass_en[iebin]->FindBin(0.1);
-    Double_t xhighbin = h1_invmass_en[iebin]->FindBin(0.2);
-    Double_t npi0_inc = h1_invmass_en[iebin]->Integral(xlowbin,xhighbin,"width");
+    Double_t xlowbin = h1_invmass_en[ixbin]->FindBin(0.1);
+    Double_t xhighbin = h1_invmass_en[ixbin]->FindBin(0.2);
+    Double_t npi0_inc = h1_invmass_en[ixbin]->Integral(xlowbin,xhighbin,"width");
     Double_t npi0_bg = bgfunc->Integral(0.1,0.2);
     Double_t ratio = npi0_bg/npi0_inc;
-    Double_t ansignal = (h1_an_inc->GetBinContent(iebin+1) - ratio*h1_an_bg->GetBinContent(iebin+1)) / (1.0-ratio);
-    Double_t aninc_err = h1_an_inc->GetBinError(iebin+1);
-    Double_t anbg_err = h1_an_bg->GetBinError(iebin+1);
+    Double_t ansignal = (h1_an_inc->GetBinContent(ixbin+1) - ratio*h1_an_bg->GetBinContent(ixbin+1)) / (1.0-ratio);
+    Double_t aninc_err = h1_an_inc->GetBinError(ixbin+1);
+    Double_t anbg_err = h1_an_bg->GetBinError(ixbin+1);
     Double_t ansig_err = (1.0/(1.0-ratio))*sqrt(aninc_err*aninc_err + ratio*ratio*anbg_err*anbg_err);
-    h1_anresult->SetBinContent(iebin+1, ansignal);
-    h1_anresult->SetBinError(iebin+1, ansig_err );
+    h1_anresult->SetBinContent(ixbin+1, ansignal);
+    h1_anresult->SetBinError(ixbin+1, ansig_err );
   }
 }
 

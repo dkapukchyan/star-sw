@@ -21,7 +21,7 @@
 
 #include <fstream>
 
-#include "StMessMgr.h"
+#include "St_base/StMessMgr.h"
 #include "StMaker.h"
 
 class StFcsRun22TriggerMap : public StMaker

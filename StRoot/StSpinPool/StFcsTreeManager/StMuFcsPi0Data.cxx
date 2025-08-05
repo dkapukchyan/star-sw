@@ -177,7 +177,7 @@ Float_t FcsPi0Candidate::theta() const
 { return 2.0*atan(exp(-1.0*eta())); }
 
 Float_t FcsPi0Candidate::mass() const
-{ return sqrt(mEn*mEn - ptot()*ptot()); }
+{ return sqrt(mEn*mEn - (mPx*mPx + mPy*mPy + mPz*mPz)); }
 
 Bool_t FcsPi0Candidate::IsEqual(const TObject* obj) const
 {

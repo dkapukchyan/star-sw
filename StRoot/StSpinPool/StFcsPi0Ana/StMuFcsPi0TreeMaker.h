@@ -44,7 +44,13 @@
 
   @[February 3, 2025] > Changed the energy and phi binning. Changed the "NPi0" histogram arrays of phi and energy to 2D histograms where the histogram now bins the phi and energy bins rather than by an array. It is still an array but now the array represents different beam and spin states. Also, changed the invariant mass histogram with all the cuts from an array of different energies and phi values to a 3d histogram where the x and y bins reprsent the phi and energy bins respectively. Changed #MergeTssa() to merge the new 2d and 3d histograms of #mH2F_NPi0_enVphi and #mH3F_AllCutsInvMass_enVphi. Added static function #DoTssaAna() which will take as input a 2x2 array of 2d histograms (matching the form of #mH2F_NPi0_enVphi) and compute the transverse single spin asymmetry for each energy bin and beam species generating a new array of 1D histograms that are the phi and raw asymmetry. Modified the draw functions to compensate for the changed histograms.
 
-  @[March 17, 2025] > Finalizedish code for dissertation with all neccessary functionality added to get a  result including calculating luminosities, polarizations, and signal and background fits and subtraction. Modified #LoadDataFromFile() to be able to handle more histograms. Added more painting functions for the different analysis functionality and other histograms that was added. MergeTssa(), DoTssaAna(), DoTssaFit(), DoPi0Fits(), DoBgCorrectedAn(), ReadPolFile() are all functions that were added and modified to allow the A_N calculation to happen in both pre and post data processing. Added histograms for the polarization. Added more invariant mass histograms at different cut criteria. Added "NPi0" histograms for the signal region and two background regions. Added struct #PolData which is filled with the polarization data from the RHIC polarimeter website (and is saved elsewhere specially formatted to be read by this class) 
+  @[March 17, 2025] > Finalizedish code for dissertation with all neccessary functionality added to get a  result including calculating luminosities, polarizations, and signal and background fits and subtraction. Modified #LoadDataFromFile() to be able to handle more histograms. Added more painting functions for the different analysis functionality and other histograms that was added. MergeTssa(), DoTssaAna(), DoTssaFit(), DoPi0Fits(), DoBgCorrectedAn(), ReadPolFile() are all functions that were added and modified to allow the A_N calculation to happen in both pre and post data processing. Added histograms for the polarization. Added more invariant mass histograms at different cut criteria. Added "NPi0" histograms for the signal region and two background regions. Added struct #PolData which is filled with the polarization data from the RHIC polarimeter website (and is saved elsewhere specially formatted to be read by this class)
+
+  @[June 29, 2025] > Made a hack so that rather than energy it is binned in xf. The names and symbols still say energy but it is really xf. Added Zgg and Dgg histograms for the pi0 after all cuts.
+
+  @[July 31, 2025] > Properly changed all the energy naming to x_{Feynmann} (x_F,xf) and changed slightly the xf binning ranges
+
+  @[August 4, 2025] > Added some more histograms to help understand the data
 
 */
 
@@ -172,12 +178,20 @@ public:
 
   void DrawQaGraphs(TCanvas* canv, const char* savename="testGraphPi0.png");
 
-  static const short NENERGYBIN = 8;     ///< Number of energy bins
+  //static const short NENERGYBIN = 8;     ///< Number of energy bins
+  static const short NXFBIN = 8;         ///< Number of x_F bins (should match energy binning)
   static const short NPHIBIN = 24;       ///< Number of phi bins
 
+  //Double_t ebins[NENERGYBIN+1] = {0, 15, 20, 25, 30, 40, 55, 70, 100};
+  //static const Double_t xfbins[NXFBIN+1] = {0, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.5}; //@[June 28, 2025] > xF binning such that statistics are even across bins
+  //static constexpr Double_t xfbins[NXFBIN+1] = {0, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.12, 0.5}; //@[June 28, 2025] > Trying as static data member
+  //const static double xfbins[NXFBIN+1];  //@[July 31, 2025] > Can't use constexpr with ROOT 5 but this is the right c++ 11 way to do it
+  //Double_t xfbins[NXFBIN+1] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5}; //@[June 28, 2025] > Really fine xF binning to check which is the best xF binning
+  static const Double_t xfbins[NXFBIN+1];// = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5}; //@[August 4, 2025] > New xF binning
+
   void MergeForTssa( TH1* totalhistinc[][2], TH1* totalhistbg1[][2], TH1* totalhistbg2[][2], TH3* mergedinvmass, TH1* mergedpolblue, TH1* mergedpolyell, TH1* mergedpolblueerr, TH1* mergedpolyellerr );
-  static void DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN] );    ///< Compute asymmetry from npi0 array of [blue,yellow][spin up,down] and return an array of raw assymtries by [blue,yellow][energybin]
-  static void DoTssaFit(TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NENERGYBIN], TH1* h1_bluepoldata, TH1* h1_yellowpoldata, TH1* h1_AnResult[]);
+  static void DoTssaAna( TH1* npi0[][2], TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NXFBIN] );    ///< Compute asymmetry from npi0 array of [blue,yellow][spin up,down] and return an array of raw assymtries by [blue,yellow][energybin]
+  static void DoTssaFit(TH1* h1_rawasymVphi[][StMuFcsPi0TreeMaker::NXFBIN], TH1* h1_bluepoldata, TH1* h1_yellowpoldata, TH1* h1_AnResult[]);
   static void DoPi0Fits(TH3* mH1F_invmass, TH1* hist_proj[] );
   static void DoBgCorrectedAn(TH1* h1_invmass_en[], TH1* h1_an_inc, TH1* h1_an_bg, TH1* h1_anresult );
   Int_t ReadPolFile(const char* filename="Run22PolForJobs.txt");        ///< Function to read the polarization data file that is custom made for this class
@@ -289,22 +303,28 @@ protected:
   TH1* mH1F_InvMassAllCutsEpdCh = 0;         ///< Invariant Mass of highest point pairs after all cuts but using the "charged" particle criteria
   TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied and the "neutral" particle criteria for EPD nmip
   TH1* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
-  //(Need to reimplment looping over all possible combinations since I am not storing them anymore
-  //(Need to mass cut to number of pi0s
+
   //(TH1* mH1F_AllPi0_xF = 0;             ///< Feynman-x (xF) of all pi0s
-  TH1* mH1F_NFoundPhiBin = 0;           ///< Number of valid phi bins found. This is a cross check to make sure that I am not double counting pi0s and finding more than one valid bin when I loop over the phi bins
-  TH1* mH1F_AllCuts_xF = 0;             ///< Feynman-x (xF) of the pi0s that pass all the cuts
-  TH1* mH1F_AllCuts_Pi0En = 0;          ///< Pi0 energy distribution with all cuts
+  //TH1* mH1F_NFoundPhiBin = 0;           ///< Number of valid phi bins found. This is a cross check to make sure that I am not double counting pi0s and finding more than one valid bin when I loop over the phi bins
+  TH1* mH1F_AllCuts_xF = 0;               ///< Feynman-x (xF) of the pi0s that pass all the cuts
+  TH1* mH1F_AllCuts_xFZoom = 0;           ///< Feynman-x (xF) of the pi0s that pass all the cuts on a smaller scale and more bining
+  TH1* mH1F_AllCuts_Zgg = 0;              ///< Zgg after all cuts
+  TH1* mH1F_AllCuts_Dgg = 0;              ///< Dgg after all cuts
+  TH1* mH1F_AllCuts_Pi0En = 0;            ///< Pi0 energy distribution with all cuts
+  TH1* mH2F_AllCuts_Pi0_massVen = 0;      ///< Pi0 Invariant mass vs. energy with all cuts
+  TH1* mH2F_AllCuts_Pi0_xfVen = 0;        ///< Pi0 xF vs. Energy
+  TH1* mH2F_AllCuts_Pi0_ptVeta = 0;       ///< Pi0 p_T vs. psuedorapidity (eta)
   //TH1* mH1F_AllCuts_Pi0Phi = 0;         ///< Pi0 phi distribution with all cuts
-  TH1* mH2F_AllCuts_Pi0_etaVphi = 0;    ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
+  TH1* mH2F_AllCuts_Pi0_etaVphi = 0;      ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
   //TH1* mH2F_AllCuts_Poi_yVx = 0;        ///< Point y vs. x distributions after all cuts this gets complicated because you have two point
-  TH1* mH2F_AllCuts_Pi0_yVx = 0;        ///< Pi0 FCS projected y vs. x distributions after all cuts
+  TH1* mH2F_AllCuts_Pi0_yVx = 0;          ///< Pi0 FCS projected y vs. x distributions after all cuts
   //TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
   //TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
-  TH1* mH3F_AllCutsInvMass_enVphi = 0;
-  TH1* mH2F_NPi0Inc_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.1-0.2
-  TH1* mH2F_NPi0Bg1_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.3-0.4
-  TH1* mH2F_NPi0Bg2_enVphi[2][2];           ///< energy and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.7-0.9
+  TH1* mH3F_AllCutsInvMass_xfVphi = 0;      ///< Pi0 invariant mass after all cuts vs. xf vs. phi used for the fits to estimate background
+  TH1* mH2F_NPi0Inc_xfVphi[2][2];           ///< x_F and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.1-0.2
+  TH1* mH2F_NPi0Bg1_xfVphi[2][2];           ///< x_F and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.3-0.4
+  TH1* mH2F_NPi0Bg2_xfVphi[2][2];           ///< x_F and phi where pi0 candidate was found [blue,yellow][up,down] for invariant mass range of 0.7-0.9
+  //Add mass vs. energy hisotgram??
 
   TGraphErrors* mGE_AllCuts_InvMass = 0;
   TGraphErrors* mGE_AllCuts_Pi0En = 0;

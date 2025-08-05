@@ -14,7 +14,7 @@ HistManager::~HistManager()
 TFile* HistManager::InitFile(const char* fname, Option_t* option, const char* ftitle, Int_t compress )
 {
   TString name(fname);
-  if( name.Length()!=0 && mOutputFile==0 ){ std::cout << "NEWFILE" << std::endl; mOutputFile = new TFile(fname,option,ftitle,compress); }
+  if( name.Length()!=0 && mOutputFile==0 ){ /*std::cout << "NEWFILE" << std::endl;*/ mOutputFile = new TFile(fname,option,ftitle,compress); }
   return mOutputFile;
 }
 
@@ -126,7 +126,6 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
   if( h2==0 ){
     //h2 = (TH2*)FindObject(name);
     //if( h2==0 ){
-
     h2 = new TH2F(name,title, nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
     h2->Sumw2();
     //}
@@ -155,7 +154,6 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
   if( h2==0 ){
     //h2 = (TH2*)FindObject(name);
     //if( h2==0 ){
-
     h2 = new TH2F(name,title, nbinsx,xlow,xhigh, nbinsy,ybins);
     h2->Sumw2();
     //}
@@ -168,6 +166,15 @@ UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* 
   h2->SetTitle(title);
   Add(h2);
   return status;//1 if histogram loaded, 0 if new
+}
+
+UInt_t HistManager::AddH2F(TFile* file, TH1*& h, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, const Int_t nbinsy, const Double_t* ybins)
+{
+  Double_t nonconst_ybins[nbinsy+1];
+  for( int i=0; i<nbinsy+1; ++i ){
+    nonconst_ybins[i] = ybins[i];
+  }
+  return AddH2F(file,h,name,title,nbinsx,xlow,xhigh,nbinsy,nonconst_ybins);
 }
 
 UInt_t HistManager::AddH2FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
@@ -233,6 +240,15 @@ UInt_t HistManager::AddH3F(TFile* file,  TH1*& h3, const char* name, const char*
   h3->SetTitle(title);
   Add(h3);
   return status;//1 if histogram loaded, 0 if new
+}
+
+UInt_t HistManager::AddH3F(TFile* file,  TH1*& h, const char* name, const char* title,  Int_t nbinsx, Double_t* xbins, const Int_t nbinsy, const Double_t* ybins, Int_t nbinsz, Double_t *zbins)
+{
+  Double_t nonconst_ybins[nbinsy+1];
+  for( int i=0; i<nbinsy+1; ++i ){
+    nonconst_ybins[i] = ybins[i];
+  }
+  return AddH3F(file,h,name,title,nbinsx,xbins,nbinsy,nonconst_ybins,nbinsz,zbins);
 }
 
 void HistManager::Draw(Option_t* option)

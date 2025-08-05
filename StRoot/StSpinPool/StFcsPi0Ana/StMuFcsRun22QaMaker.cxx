@@ -236,20 +236,21 @@ UInt_t StMuFcsRun22QaMaker::LoadHists(TFile* file)
     }
   }
   
-  
-  loaded += mHists->AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
-  loaded += mHists->AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
-  loaded += mHists->AddH2F(file,mH2F_CluHigh_dggVesum,"H2F_CluHigh_dggVesum","Highest two energy clusters Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
-  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVesum,"H2F_CluHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVdgg,"H2F_CluHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVzgg,"H2F_CluHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+  if( mBestMassOn ){
+    loaded += mHists->AddH2F(file,mH2F_CluHigh_angleVesum,"H2F_CluHigh_angleVesum", "Highest two energy clusters opening angle vs. total cluster energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
+    loaded += mHists->AddH2F(file,mH2F_CluHighEn_lowVhigh,"H2F_CluHighEn_lowVhigh","Highest two energy clusters energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
+    loaded += mHists->AddH2F(file,mH2F_CluHigh_dggVesum,"H2F_CluHigh_dggVesum","Highest two energy clusters Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
+    loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVesum,"H2F_CluHigh_invmassVesum","Highest two energy clusters invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+    loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVdgg,"H2F_CluHigh_invmassVdgg","Highest two energy clusters invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+    loaded += mHists->AddH2F(file,mH2F_CluHigh_invmassVzgg,"H2F_CluHigh_invmassVzgg","Highest two energy clusters invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
 
-  loaded += mHists->AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total point energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
-  loaded += mHists->AddH2F(file,mH2F_PoiHighEn_lowVhigh,"H2F_PoiHighEn_lowVhigh","Highest two energy points energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
-  loaded += mHists->AddH2F(file,mH2F_PoiHigh_dggVesum,"H2F_PoiHigh_dggVesum","Highest two energy points Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
-  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
-  loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+    loaded += mHists->AddH2F(file,mH2F_PoiHigh_angleVesum,"H2F_PoiHigh_angleVesum", "Highest two energy points opening angle vs. total point energy;esum (GeV);opening angle",100,0,100, 60,0,TMath::Pi());
+    loaded += mHists->AddH2F(file,mH2F_PoiHighEn_lowVhigh,"H2F_PoiHighEn_lowVhigh","Highest two energy points energies energy 1 vs. energy 2;E1 (GeV); E2(GeV)", 100,0,100, 100,0,100);
+    loaded += mHists->AddH2F(file,mH2F_PoiHigh_dggVesum,"H2F_PoiHigh_dggVesum","Highest two energy points Dgg vs. energy sum;esum (GeV);Dgg (cm)", 100,0,100, 100,0,100);
+    loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVesum,"H2F_PoiHigh_invmassVesum","Highest two energy points invariant mass vs. energy sum;esum (GeV);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+    loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVdgg,"H2F_PoiHigh_invmassVdgg","Highest two energy points invariant mass vs. Dgg;Dgg (cm);invariant mass (GeV/c^2)", 100,0,100, 100,0,1.0);
+    loaded += mHists->AddH2F(file,mH2F_PoiHigh_invmassVzgg,"H2F_PoiHigh_invmassVzgg","Highest two energy points invariant mass vs. Zgg;Zgg |E1-E2|/(E1+E2);invariant mass (GeV/c^2)", 100,0,1.0, 100,0,1.0);
+  }
   
   return loaded;
 }
@@ -562,34 +563,36 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	StThreeVectorD iclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
 	StLorentzVectorD iclu_p = mFcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
 
-	if( idet<=kFcsEcalSouthDetId ){
-	  if( iclus==(nc-1) ){ continue; }
-	  for( unsigned int j=iclus+1; j<nc; j++ ){
-	    StMuFcsCluster* cluj = (StMuFcsCluster*)clusters->At(j);
-	    float jclu_energy = cluj->energy();
-	    float jclu_x = cluj->x();
-	    float jclu_y = cluj->y();
-	    StThreeVectorD jclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, jclu_x, jclu_y );
-	    double ensum = iclu_energy + jclu_energy;
-	    float zgg = (fabs(iclu_energy - jclu_energy)) / (ensum);
-	    StLorentzVectorD jclu_p = mFcsDb->getLorentzVector( jclu_pos, jclu_energy, 0 );
+	if( mBestMassOn ){
+	  if( idet<=kFcsEcalSouthDetId ){
+	    if( iclus==(nc-1) ){ continue; }
+	    for( unsigned int j=iclus+1; j<nc; j++ ){
+	      StMuFcsCluster* cluj = (StMuFcsCluster*)clusters->At(j);
+	      float jclu_energy = cluj->energy();
+	      float jclu_x = cluj->x();
+	      float jclu_y = cluj->y();
+	      StThreeVectorD jclu_pos = mFcsDb->getStarXYZfromColumnRow( idet, jclu_x, jclu_y );
+	      double ensum = iclu_energy + jclu_energy;
+	      float zgg = (fabs(iclu_energy - jclu_energy)) / (ensum);
+	      StLorentzVectorD jclu_p = mFcsDb->getLorentzVector( jclu_pos, jclu_energy, 0 );
 	  
-	    if( jclu_energy<mEnCut ){ continue; }
-	    if( zgg>0.7 ){ continue; }
-	    if( ensum>bestclu_totale ){
-	      check_fillclu = true;
-	      bestclu_invmass = ((iclu_p + jclu_p).m());
-	      bestclu_totale = ensum;
-	      bestclu_dgg = sqrt( (iclu_pos[0]-jclu_pos[0])*(iclu_pos[0]-jclu_pos[0]) + (iclu_pos[1]-jclu_pos[1])*(iclu_pos[1]-jclu_pos[1]) + (iclu_pos[2]-jclu_pos[2])*(iclu_pos[2]-jclu_pos[2]) );
-	      bestclu_zgg = zgg;
-	      double cluidotj = iclu_pos[0]*jclu_pos[0] + iclu_pos[1]*jclu_pos[1] + iclu_pos[2]*jclu_pos[2];          //dot product of vectors for the current cluster position and cluster j position
-	      double iclumag = sqrt( iclu_pos[0]*iclu_pos[0] + iclu_pos[1]*iclu_pos[1] + iclu_pos[2]*iclu_pos[2] );  //magnitude of position vector for current cluster
-	      double jclumag = sqrt( jclu_pos[0]*jclu_pos[0] + jclu_pos[1]*jclu_pos[1] + jclu_pos[2]*jclu_pos[2] );//magnitude of position vector for cluster j
-	      bestclu_opening_angle = acos( cluidotj / (iclumag*jclumag) );
-	      if( iclu_energy>jclu_energy ){ bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = jclu_energy; }
-	      else                         { bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = iclu_energy; }
-	    }
-	  }//jclu
+	      if( jclu_energy<mEnCut ){ continue; }
+	      if( zgg>0.7 ){ continue; }
+	      if( ensum>bestclu_totale ){
+		check_fillclu = true;
+		bestclu_invmass = ((iclu_p + jclu_p).m());
+		bestclu_totale = ensum;
+		bestclu_dgg = sqrt( (iclu_pos[0]-jclu_pos[0])*(iclu_pos[0]-jclu_pos[0]) + (iclu_pos[1]-jclu_pos[1])*(iclu_pos[1]-jclu_pos[1]) + (iclu_pos[2]-jclu_pos[2])*(iclu_pos[2]-jclu_pos[2]) );
+		bestclu_zgg = zgg;
+		double cluidotj = iclu_pos[0]*jclu_pos[0] + iclu_pos[1]*jclu_pos[1] + iclu_pos[2]*jclu_pos[2];          //dot product of vectors for the current cluster position and cluster j position
+		double iclumag = sqrt( iclu_pos[0]*iclu_pos[0] + iclu_pos[1]*iclu_pos[1] + iclu_pos[2]*iclu_pos[2] );  //magnitude of position vector for current cluster
+		double jclumag = sqrt( jclu_pos[0]*jclu_pos[0] + jclu_pos[1]*jclu_pos[1] + jclu_pos[2]*jclu_pos[2] );//magnitude of position vector for cluster j
+		bestclu_opening_angle = acos( cluidotj / (iclumag*jclumag) );
+		if( iclu_energy>jclu_energy ){ bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = jclu_energy; }
+		else                         { bestclu_hightowerenergy = iclu_energy; bestclu_lowtowerenergy = iclu_energy; }
+	      }
+	    }//jclu
+	  }
 	}
       }//iclu
     }
@@ -609,35 +612,37 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
 	mH2F_Poi_yVx[idet]->Fill(ipoi_x,ipoi_y);
 	StThreeVectorD ipoi_pos = mFcsDb->getStarXYZfromColumnRow( idet, ipoi_x, ipoi_y );
 	StLorentzVectorD ipoi_p = mFcsDb->getLorentzVector(ipoi_pos, ipoi_energy, 0);
-      
-	if( idet<=kFcsEcalSouthDetId ){
-	  if( ipoint==(np-1) ){ continue; }
-	  for( unsigned int j=(ipoint+1); j<np; ++j ){
-	    StMuFcsPoint* poij = (StMuFcsPoint*)points->At(j);
-	    float jpoi_energy = poij->energy();
-	    float poiesum = ipoi_energy+jpoi_energy;
-	    float zgg = (fabs(ipoi_energy - jpoi_energy)) / (poiesum);
-	    StThreeVectorD jpoi_pos = mFcsDb->getStarXYZfromColumnRow(idet, poij->x(), poij->y());
-	    StLorentzVectorD jpoi_p = mFcsDb->getLorentzVector(jpoi_pos, jpoi_energy, 0);
 
-	    if( idet<=kFcsEcalSouthDetId ){
-	      if( jpoi_energy<mEnCut ){ continue; }
-	      if( zgg>=0.7 ){ continue; }
-	      if( poiesum>bestpoi_totale ){
-		check_fillpoi = true;
-		bestpoi_invmass = (ipoi_p + jpoi_p).m();
-		bestpoi_totale = poiesum;
-		bestpoi_dgg = sqrt( (ipoi_pos[0]-jpoi_pos[0])*(ipoi_pos[0]-jpoi_pos[0]) + (ipoi_pos[1]-jpoi_pos[1])*(ipoi_pos[1]-jpoi_pos[1]) + (ipoi_pos[2]-jpoi_pos[2])*(ipoi_pos[2]-jpoi_pos[2]) );
-		bestpoi_zgg = zgg;
-		double poiidotj = ipoi_pos[0]*jpoi_pos[0] + ipoi_pos[1]*jpoi_pos[1] + ipoi_pos[2]*jpoi_pos[2];          //dot product of vectors for the current point position and point j position
-		double ipoimag = sqrt( ipoi_pos[0]*ipoi_pos[0] + ipoi_pos[1]*ipoi_pos[1] + ipoi_pos[2]*ipoi_pos[2] );  //magnitude of position vector for current point
-		double jpoimag = sqrt( jpoi_pos[0]*jpoi_pos[0] + jpoi_pos[1]*jpoi_pos[1] + jpoi_pos[2]*jpoi_pos[2] );//magnitude of position vector for point j
-		bestpoi_opening_angle = acos( poiidotj / (ipoimag*jpoimag) );
-		if( ipoi_energy>jpoi_energy ){ bestpoi_hightowerenergy = ipoi_energy; bestpoi_lowtowerenergy = jpoi_energy; }
-		else                         { bestpoi_hightowerenergy = jpoi_energy; bestpoi_lowtowerenergy = ipoi_energy; }
+	if( mBestMassOn ){
+	  if( idet<=kFcsEcalSouthDetId ){
+	    if( ipoint==(np-1) ){ continue; }
+	    for( unsigned int j=(ipoint+1); j<np; ++j ){
+	      StMuFcsPoint* poij = (StMuFcsPoint*)points->At(j);
+	      float jpoi_energy = poij->energy();
+	      float poiesum = ipoi_energy+jpoi_energy;
+	      float zgg = (fabs(ipoi_energy - jpoi_energy)) / (poiesum);
+	      StThreeVectorD jpoi_pos = mFcsDb->getStarXYZfromColumnRow(idet, poij->x(), poij->y());
+	      StLorentzVectorD jpoi_p = mFcsDb->getLorentzVector(jpoi_pos, jpoi_energy, 0);
+
+	      if( idet<=kFcsEcalSouthDetId ){
+		if( jpoi_energy<mEnCut ){ continue; }
+		if( zgg>=0.7 ){ continue; }
+		if( poiesum>bestpoi_totale ){
+		  check_fillpoi = true;
+		  bestpoi_invmass = (ipoi_p + jpoi_p).m();
+		  bestpoi_totale = poiesum;
+		  bestpoi_dgg = sqrt( (ipoi_pos[0]-jpoi_pos[0])*(ipoi_pos[0]-jpoi_pos[0]) + (ipoi_pos[1]-jpoi_pos[1])*(ipoi_pos[1]-jpoi_pos[1]) + (ipoi_pos[2]-jpoi_pos[2])*(ipoi_pos[2]-jpoi_pos[2]) );
+		  bestpoi_zgg = zgg;
+		  double poiidotj = ipoi_pos[0]*jpoi_pos[0] + ipoi_pos[1]*jpoi_pos[1] + ipoi_pos[2]*jpoi_pos[2];          //dot product of vectors for the current point position and point j position
+		  double ipoimag = sqrt( ipoi_pos[0]*ipoi_pos[0] + ipoi_pos[1]*ipoi_pos[1] + ipoi_pos[2]*ipoi_pos[2] );  //magnitude of position vector for current point
+		  double jpoimag = sqrt( jpoi_pos[0]*jpoi_pos[0] + jpoi_pos[1]*jpoi_pos[1] + jpoi_pos[2]*jpoi_pos[2] );//magnitude of position vector for point j
+		  bestpoi_opening_angle = acos( poiidotj / (ipoimag*jpoimag) );
+		  if( ipoi_energy>jpoi_energy ){ bestpoi_hightowerenergy = ipoi_energy; bestpoi_lowtowerenergy = jpoi_energy; }
+		  else                         { bestpoi_hightowerenergy = jpoi_energy; bestpoi_lowtowerenergy = ipoi_energy; }
+		}
 	      }
-	    }
-	  }//j point
+	    }//j point
+	  }
 	}
       }//i point
     }
@@ -648,21 +653,23 @@ Int_t StMuFcsRun22QaMaker::FillFcsInfo()
   mH1F_Hit_ESum[1]->Fill(esum[1]);
   mH1F_Hit_ESum[2]->Fill(esum[2]);
 
-  if( check_fillclu ){
-    mH2F_CluHigh_angleVesum->Fill(bestclu_totale,bestclu_opening_angle);
-    mH2F_CluHighEn_lowVhigh->Fill(bestclu_lowtowerenergy,bestclu_hightowerenergy);
-    mH2F_CluHigh_dggVesum->Fill(bestclu_totale,bestclu_dgg);
-    mH2F_CluHigh_invmassVesum->Fill(bestclu_totale,bestclu_invmass);
-    mH2F_CluHigh_invmassVdgg->Fill(bestclu_dgg,bestclu_invmass);
-    mH2F_CluHigh_invmassVzgg->Fill(bestclu_zgg,bestclu_invmass);
-  }
-  if( check_fillpoi ){
-    mH2F_PoiHigh_angleVesum->Fill(bestpoi_totale,bestpoi_opening_angle);
-    mH2F_PoiHighEn_lowVhigh->Fill(bestpoi_lowtowerenergy,bestpoi_hightowerenergy);
-    mH2F_PoiHigh_dggVesum->Fill(bestpoi_totale,bestpoi_dgg);
-    mH2F_PoiHigh_invmassVesum->Fill(bestpoi_totale,bestpoi_invmass);
-    mH2F_PoiHigh_invmassVdgg->Fill(bestpoi_dgg,bestpoi_invmass);
-    mH2F_PoiHigh_invmassVzgg->Fill(bestpoi_zgg,bestpoi_invmass);
+  if( mBestMassOn ){
+    if( check_fillclu ){
+      mH2F_CluHigh_angleVesum->Fill(bestclu_totale,bestclu_opening_angle);
+      mH2F_CluHighEn_lowVhigh->Fill(bestclu_lowtowerenergy,bestclu_hightowerenergy);
+      mH2F_CluHigh_dggVesum->Fill(bestclu_totale,bestclu_dgg);
+      mH2F_CluHigh_invmassVesum->Fill(bestclu_totale,bestclu_invmass);
+      mH2F_CluHigh_invmassVdgg->Fill(bestclu_dgg,bestclu_invmass);
+      mH2F_CluHigh_invmassVzgg->Fill(bestclu_zgg,bestclu_invmass);
+    }
+    if( check_fillpoi ){
+      mH2F_PoiHigh_angleVesum->Fill(bestpoi_totale,bestpoi_opening_angle);
+      mH2F_PoiHighEn_lowVhigh->Fill(bestpoi_lowtowerenergy,bestpoi_hightowerenergy);
+      mH2F_PoiHigh_dggVesum->Fill(bestpoi_totale,bestpoi_dgg);
+      mH2F_PoiHigh_invmassVesum->Fill(bestpoi_totale,bestpoi_invmass);
+      mH2F_PoiHigh_invmassVdgg->Fill(bestpoi_dgg,bestpoi_invmass);
+      mH2F_PoiHigh_invmassVzgg->Fill(bestpoi_zgg,bestpoi_invmass);
+    }
   }
   
   return kStOk;
@@ -982,20 +989,22 @@ void StMuFcsRun22QaMaker::DrawFcsClusterQa(TCanvas* canv, const char* savename)
 void StMuFcsRun22QaMaker::DrawFcsClusterPi0(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(3,2);
-  canv->cd(1);
-  mH2F_CluHigh_angleVesum->Draw("colz");
-  canv->cd(2);
-  mH2F_CluHighEn_lowVhigh->Draw("colz");
-  canv->cd(3);
-  mH2F_CluHigh_dggVesum->Draw("colz");
-  canv->cd(4);
-  mH2F_CluHigh_invmassVesum->Draw("colz");
-  canv->cd(5);
-  mH2F_CluHigh_invmassVdgg->Draw("colz");
-  canv->cd(6);
-  mH2F_CluHigh_invmassVzgg->Draw("colz");
-  canv->Print(savename);
+  if( mBestMassOn ){
+    canv->Divide(3,2);
+    canv->cd(1);
+    mH2F_CluHigh_angleVesum->Draw("colz");
+    canv->cd(2);
+    mH2F_CluHighEn_lowVhigh->Draw("colz");
+    canv->cd(3);
+    mH2F_CluHigh_dggVesum->Draw("colz");
+    canv->cd(4);
+    mH2F_CluHigh_invmassVesum->Draw("colz");
+    canv->cd(5);
+    mH2F_CluHigh_invmassVdgg->Draw("colz");
+    canv->cd(6);
+    mH2F_CluHigh_invmassVzgg->Draw("colz");
+    canv->Print(savename);
+  }
 }
 void StMuFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
 {
@@ -1017,20 +1026,22 @@ void StMuFcsRun22QaMaker::DrawFcsPointQa(TCanvas* canv, const char* savename)
 void StMuFcsRun22QaMaker::DrawFcsPointPi0(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(3,2);
-  canv->cd(1);
-  mH2F_PoiHigh_angleVesum->Draw("colz");
-  canv->cd(2);
-  mH2F_PoiHighEn_lowVhigh->Draw("colz");
-  canv->cd(3);
-  mH2F_PoiHigh_dggVesum->Draw("colz");
-  canv->cd(4);
-  mH2F_PoiHigh_invmassVesum->Draw("colz");
-  canv->cd(5);
-  mH2F_PoiHigh_invmassVdgg->Draw("colz");
-  canv->cd(6);
-  mH2F_PoiHigh_invmassVzgg->Draw("colz");
-  canv->Print(savename);
+  if( mBestMassOn ){
+    canv->Divide(3,2);
+    canv->cd(1);
+    mH2F_PoiHigh_angleVesum->Draw("colz");
+    canv->cd(2);
+    mH2F_PoiHighEn_lowVhigh->Draw("colz");
+    canv->cd(3);
+    mH2F_PoiHigh_dggVesum->Draw("colz");
+    canv->cd(4);
+    mH2F_PoiHigh_invmassVesum->Draw("colz");
+    canv->cd(5);
+    mH2F_PoiHigh_invmassVdgg->Draw("colz");
+    canv->cd(6);
+    mH2F_PoiHigh_invmassVzgg->Draw("colz");
+    canv->Print(savename);
+  }
 }
 
 Int_t StMuFcsRun22QaMaker::MakeGraph(TFile* file, TObjArray* grapharr, TGraph*& graph, const char* name, const char* title )

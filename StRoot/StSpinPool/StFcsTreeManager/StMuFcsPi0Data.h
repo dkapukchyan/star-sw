@@ -112,7 +112,7 @@ public:
 
   TLorentzVector lvRaw();        ///< TLorentz vector for this condidate with 0,0,0 vertex momentum
   TLorentzVector lvVert();       ///< TLorentz vector for this candidate with vertex momentum
-  Float_t magPosition();        ///< Magnitude of postiion vector i.e. sqrt(#mX^2+#mY^2+#mZ^2)
+  Float_t magPosition();         ///< Magnitude of postiion vector i.e. sqrt(#mX^2+#mY^2+#mZ^2)
 
   virtual Bool_t IsSortable() const {return kTRUE; }  ///< I guess this is flag to indicate to ROOT that object is sortable
   virtual Bool_t IsEqual(const TObject* obj) const;   ///< if comparing clusters to points return false. otherwise if comparing clusters to clusters (or points to points) check if energy matches

@@ -45,6 +45,8 @@
   @[January 21, 2025] > Added more graphs for the run by run qa. These are related to the cluster and point energy, and multiplicity. Also, added #GraphAverage() that is used to check if the graphs for the various triggers are zero or not. This is used to avoid plotting triggers that had 0 for all runs. Added a histogram and a graph to check hit multiplicity with some cuts applied.
 
   @[February 1, 2025] > Small fix for including StEnumerations.h
+
+  @[July 31, 2025] > Added #mBestMassOn which will turn on and off the histograms and code for finding the highest energy cluster or point and filling the relevant histograms. This can be used to speed up the QA code if you don't care about the best invariant mass in your QA and slightly reduces the memory impact
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -115,6 +117,7 @@ class StMuFcsRun22QaMaker : public StMaker
   void setFcsAdcTbOn(bool value=true)  { mFcsAdcTbOn = value; }
   void setEpdAdcQaOn(bool value=true)  { mEpdAdcQaOn = value; }
   void setEpdTacQaOn(bool value=true)  { mEpdTacQaOn = value; }
+  void setBestMassOn(bool value=true)  { mBestMassOn = value; }
 
   //virtual void Paint(Option_t opt="");
   void DrawEventInfo(TCanvas* canv, const char* savename);
@@ -242,6 +245,7 @@ protected:
   bool mFcsAdcTbOn = true;             ///< For turning on/off Adc V tb histograms for the FCS
   bool mEpdAdcQaOn = true;             ///< For turning on/off Qt V Dep histograms from the EPD data
   bool mEpdTacQaOn = true;             ///< For turning on/off Tac V PeakX histograms from the EPD data
+  bool mBestMassOn = true;             ///< For turning on/off finding the best cluster and point mass pair
 
   TGraph* mG_Entries = 0;                ///< Graph for number of entries vs. Run Index
   TGraph* mG_Triggers[65];               ///< Graph for number of events in a given trigger vs. run number
