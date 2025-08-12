@@ -194,12 +194,19 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
   loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
-  //loaded += mHists->AddH1F(file,mH1F_2ndBestPi0Mass,"H1F_2ndBestPi0Mass", "Second best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
-  //loaded += mHists->AddH1F(file,mH1F_3rdBestPi0Mass,"H1F_3rdBestPi0Mass", "Third best candidate for pi0 mass;Invariant Mass (GeV)", 500,0,1 );
-  //loaded += mHists->AddH1F(file,mH1F_LowPointMult,"H1F_LowPointMult", "Using best pi0 mass with point multiplicity (<4);Invariant Mass (GeV)", 500,0,1);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhPointMult,"H1F_EpdSinglePhPointMult","Point Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhZgg,"H1F_EpdSinglePhZgg","Z_{gg} of Pi0s with all cuts and EPD cut on only one photon;Z_{gg};", 100,0,1);
+  loaded += mHists->AddH2F(file,mH2F_EpdSinglePh_etaVphi,"H1F_EpdSinglePh_etaVphi","#eta vs. #phi of Pi0s with all cuts and EPD cut on only one photon;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhEn,"H1F_EpdSinglePhEn","Energy of Pi0s with all cuts and EPD cut on only one photon;Energy (GeV)", 1000,0,200);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhPt,"H1F_EpdSinglePhPt","p_{T} of Pi0s with all cuts and EPD cut on only one photon;#p_{T} (GeV)", 100,0,10);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhAllInvMass,"H1F_EpdSinglePhAllInvMass","Invariant mass of all point pair combinations after all cuts and Epd cut on single photon;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
-  //loaded += mHists->AddH1F(file,mH1F_GoodPointMult,"H1F_GoodPointMult","Point Multiplicity used for pi0 candidate pairs from photons with EPD cut;Point Multiplicity", 30,0,30);
-  //loaded += mHists->AddH1F(file,mH1F_PointsEpd,"H1F_PointsEpd","Number of points with EPD nmip cut;Point Multiplicty",30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChPointMult,"H1F_EpdSingleChPointMult","Point Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChZgg,"H1F_EpdSingleChZgg","Z_{gg} of Pi0s with all cuts and EPD cut on only one electron;Z_{gg};", 100,0,1);
+  loaded += mHists->AddH2F(file,mH2F_EpdSingleCh_etaVphi,"H1F_EpdSingleCh_etaVphi","#eta vs. #phi of Pi0s with all cuts and EPD cut on only one electron;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChEn,"H1F_EpdSingleChEn","Energy of Pi0s with all cuts and EPD cut on only one electron;Energy (GeV)", 1000,0,200);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChPt,"H1F_EpdSingleChPt","p_{T} of Pi0s with all cuts and EPD cut on only one electron;#p_{T} (GeV)", 100,0,10);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChAllInvMass,"H1F_EpdSingleChAllInvMass","Invariant mass of all point pair combinations after all cuts and Epd cut on single electron;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
 
   if( mH1F_InvMassEpdCuts[0]==0 ){ mH1F_InvMassEpdCuts[0] = new TObjArray(); }
@@ -210,23 +217,35 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //loaded += mHists->AddH1FArr(file,mH1F_InvMassPtCuts,8,"H1F_InvMassPtCuts",500,0,1);
   loaded += mHists->AddH1F(file,mH1F_InvMassAllButEpdCut, "H1F_InvMassAllButEpdCut", "Invariant mass of two highest photon pairs with all cuts except EPD nmip",500,0,1);
   loaded += mHists->AddH1F(file,mH1F_InvMassAllCutsEpdCh, "H1F_InvMassAllCutsEpdCh", "Invariant mass of two highest photon pairs with all cuts but charged epd nmip", 500,0,1);
-  loaded += mHists->AddH1F(file,mH1F_InvMassAllCuts,"H1F_InvMassAllCuts","Invariant Mass of two photons after all cuts applied;M_{inv} (GeV/c^{2})", 500,0,1);
-  loaded += mHists->AddH1F(file,mH1F_Pi0MultAllCuts,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts", 20,0,20);
-  //loaded += mHists->AddH2F(file,mH2F_AllCuts_Poi_yVx,"H2F_AllCuts_Poi_yVx","Point distribution y vs. x after all cuts", 400,-200,200, 300,-150,150);
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_yVx,"H2F_AllCuts_Pi0_yVx","#pi^{0} distribution projected to FCS y vs. x after all cuts;x (cm);y (cm)", 400,-200,200, 300,-150,150);
 
+  if( mH1F_InvMassAllCuts==0 ){ mH1F_InvMassAllCuts = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_InvMassAllCuts,5,"H1F_InvMassAllCuts","Invariant Mass of two photons after all cuts applied;M_{inv} (GeV/c^{2})", 500,0,1);
+  if( mH1F_Pi0MultAllCuts==0 ){ mH1F_Pi0MultAllCuts = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_Pi0MultAllCuts,5,"H1F_Pi0MultAllCuts","Number of potential pi0s per event after all cuts;NGoodPi0", 20,0,20);
+  //loaded += mHists->AddH2F(file,mH2F_AllCuts_Poi_yVx,"H2F_AllCuts_Poi_yVx","Point distribution y vs. x after all cuts", 400,-200,200, 300,-150,150);
+  if( mH2F_AllCuts_Pi0_yVx==0 ){ mH2F_AllCuts_Pi0_yVx = new TObjArray(); }
+  loaded += mHists->AddH2FArr(file,mH2F_AllCuts_Pi0_yVx,5,"H2F_AllCuts_Pi0_yVx","#pi^{0} distribution projected to FCS y vs. x after all cuts;x (cm);y (cm)", 400,-200,200, 300,-150,150);
   //loaded += mHists->AddH1F(file,mH1F_NFoundPhiBin,"H1F_NFoundPhiBin","Number of found phi bins",3,0,3);
-  loaded += mHists->AddH1F(file,mH1F_AllCuts_xF,"H1F_AllCuts_xF","xF of pi0s after all cuts applied", 100,0,1);
-  loaded += mHists->AddH1F(file,mH1F_AllCuts_xFZoom,"H1F_AllCuts_xFZoom","xF of pi0s after all cuts applied", 200,0,0.5);
-  loaded += mHists->AddH1F(file,mH1F_AllCuts_Zgg,"H1F_AllCuts_Zgg","Z_{gg} of pi0s after all cuts applied",100,0,1);
-  loaded += mHists->AddH1F(file,mH1F_AllCuts_Dgg,"H1F_AllCuts_Dgg","D_{gg} of pi0s after all cuts applied",100,0,100);
-  loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0En,"H1F_AllCuts_Pi0En","Energy of pi0s after all cuts applied;(GeV);", 200,0,200);
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_massVen,"H2F_AllCuts_Pi0_massVen","Invariant mass of pi0 vs. pi0 Energy after all cuts applied;Energy (GeV);Inv. Mass", 200,0,200, 500,0,1);
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_xfVen,"H2F_AllCuts_Pi0_xfVen","Pi0 x_{F} vs. energy after all cuts applied;Energy (GeV);x_F", 200,0,200, 200,0,0.5);
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_ptVeta,"H2F_AllCuts_Pi0_ptVeta","Pi0 p_{T} vs. eta after all cuts applied;Energy (GeV);x_F", 100,0,50, 200,0,0.5);
+  if( mH1F_AllCuts_xF==0 ){ mH1F_AllCuts_xF = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_AllCuts_xF,5,"H1F_AllCuts_xF","xF of pi0s after all cuts applied;x_{F}", 100,0,1);
+  if( mH1F_AllCuts_xFZoom==0 ){ mH1F_AllCuts_xFZoom = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_AllCuts_xFZoom,5,"H1F_AllCuts_xFZoom","xF of pi0s after all cuts applied;x_{F}", 200,0,0.5);
+  if( mH1F_AllCuts_Zgg==0 ){ mH1F_AllCuts_Zgg = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_AllCuts_Zgg,5,"H1F_AllCuts_Zgg","Z_{gg} of pi0s after all cuts applied;Z_{gg}",100,0,1);
+  if( mH1F_AllCuts_Dgg==0 ){ mH1F_AllCuts_Dgg = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_AllCuts_Dgg,5,"H1F_AllCuts_Dgg","D_{gg} of pi0s after all cuts applied;D_{gg} (cm)",100,0,100);
+  if( mH1F_AllCuts_Pi0En==0 ){ mH1F_AllCuts_Pi0En = new TObjArray(); }
+  loaded += mHists->AddH1FArr(file,mH1F_AllCuts_Pi0En,5,"H1F_AllCuts_Pi0En","Energy of pi0s after all cuts applied;(GeV)", 200,0,200);
+  if( mH2F_AllCuts_Pi0_massVen==0 ){ mH2F_AllCuts_Pi0_massVen = new TObjArray(); }
+  loaded += mHists->AddH2FArr(file,mH2F_AllCuts_Pi0_massVen,5,"H2F_AllCuts_Pi0_massVen","Invariant mass of pi0 vs. pi0 Energy after all cuts applied;Energy (GeV);M_{inv} (GeV/c^{2})", 200,0,200, 500,0,1);
+  if( mH2F_AllCuts_Pi0_xfVen==0 ){ mH2F_AllCuts_Pi0_xfVen = new TObjArray(); }
+  loaded += mHists->AddH2FArr(file,mH2F_AllCuts_Pi0_xfVen,5,"H2F_AllCuts_Pi0_xfVen","Pi0 x_{F} vs. energy after all cuts applied;Energy (GeV);x_{F}", 200,0,200, 200,0,0.5);
+  if( mH2F_AllCuts_Pi0_ptVeta==0 ){  mH2F_AllCuts_Pi0_ptVeta = new TObjArray(); }
+  loaded += mHists->AddH2FArr(file,mH2F_AllCuts_Pi0_ptVeta,5,"H2F_AllCuts_Pi0_ptVeta","Pi0 p_{T} vs. eta after all cuts applied;#eta;p_{T}", 100,0,10, 100,0,50);
   
   //loaded += mHists->AddH1F(file,mH1F_AllCuts_Pi0Phi,"H1F_AllCuts_Pi0Phi","Phi of pi0s after all cuts applied", NPHIBIN,0,TMath::TwoPi());
-  loaded += mHists->AddH2F(file,mH2F_AllCuts_Pi0_etaVphi,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
+  if( mH2F_AllCuts_Pi0_etaVphi==0 ){ mH2F_AllCuts_Pi0_etaVphi = new TObjArray(); }
+  loaded += mHists->AddH2FArr(file,mH2F_AllCuts_Pi0_etaVphi,5,"H2F_AllCuts_Pi0_etaVphi","Eta vs. Phi distriubtion of pi0s;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
   //loaded += mHists->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","EpdNmip;cluster;nmip", 2,0,2, 50,0,5);
 			   
   //TString entitletext[NENERGYBIN] = { "En<=10", "10<En<=30", "30<En<=50", "50<En<=70", "70<En<=100", "En>100" };
@@ -236,7 +255,6 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   //Double_t xfbins[NXFBIN+1] = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5};
 
   loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[0][0],"H2F_NPi0Inc_xfVphi_blue_up","Number of Pi0s in a given energy and phi bin for blue beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
-  std::cout << "|firsthist:"<<std::endl;
   loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[0][1],"H2F_NPi0Inc_xfVphi_blue_down","Number of Pi0s in a given energy and phi bin for blue beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
   loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[1][0],"H2F_NPi0Inc_xfVphi_yellow_up","Number of Pi0s in a given energy and phi bin for yellow beam spin up 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
   loaded += mHists->AddH2F(file,mH2F_NPi0Inc_xfVphi[1][1],"H2F_NPi0Inc_xfVphi_yellow_down","Number of Pi0s in a given energy and phi bin for yellow beam spin down 0.1<=M<=0.2", NPHIBIN,-pi/2.0,3.0*pi/2.0, NXFBIN,xfbins );
@@ -477,9 +495,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   //std::cout  << " + "<<"|eventnum:"<< mH1D_Entries->GetBinContent(1)  <<"|fillnum:"<<fillnum << "|evttime:"<<evttime << "|polblue:"<<polblue << "|polyellow:"<<polyellow << "|totpolblue:"<<mH1D_Entries->GetBinContent(2) << "|totpolyellow:"<<mH1D_Entries->GetBinContent(3) << std::endl;
   
   //Filter with Trigger Information first
-  bool validtrigfound = false;
-  bool emtrigfound = false;
-  if( mIgnoreTrig ){ validtrigfound = true; } //If ignoring triggers then set validtrigfound to true so event is not skipped
+  if( mIgnoreTrig ){ mValidTrigFound = true; } //If ignoring triggers then set mValidTrigFound to true so event is not skipped
   StMuTriggerIdCollection* TrigMuColl = &(mMuEvent->triggerIdCollection());
   if( !TrigMuColl ){ LOG_ERROR <<"StMuFcsPi0TreeMaker::FillEventInfo - !TrigMuColl" <<endl; return kStErr; }
   const StTriggerId& trgIDs = TrigMuColl->nominal();
@@ -493,7 +509,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	for( unsigned int j=0; j<mTargetTrig.size(); ++j ){
 	  if( mTargetTrig.at(j)==thistrig ){
 	    mNTrig++;
-	    validtrigfound=true;
+	    mValidTrigFound=true;
 	    mH1F_Triggers->Fill( thistrig.c_str(), 1);
 	  }
 	}
@@ -501,12 +517,16 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       if( thistrig=="fcsEM0" || thistrig=="fcsEM1" || thistrig=="fcsEM2" || thistrig=="fcsEM3"
 	  || thistrig=="fcsEM0_tpc" || thistrig=="fcsEM1_tpc" || thistrig=="fcsEM2_tpc" || thistrig=="fcsEM3_tpc" )
 	{
-	  emtrigfound = true;
+	  if( thistrig=="fcsEM0" || thistrig=="fcsEM0_tpc" ){ mTrigEm0 = 1; }
+	  if( thistrig=="fcsEM1" || thistrig=="fcsEM1_tpc" ){ mTrigEm1 = 2; }
+	  if( thistrig=="fcsEM2" || thistrig=="fcsEM2_tpc" ){ mTrigEm2 = 3; }
+	  if( thistrig=="fcsEM3" || thistrig=="fcsEM3_tpc" ){ mTrigEm3 = 4; }
+	  mEmTrigFound = true;
 	}
     }
     else{ mNTrig = ntrig; }
   }
-  if( !validtrigfound ){ mNTrig=0; return kStSkip; } //Reset trigger array size before going to next event
+  if( !mValidTrigFound ){ mNTrig=0; return kStSkip; } //Reset trigger array size before going to next event
 
   //mH1D_Entries->Fill(3); //This is just counting valid make calls (i.e. increment bin 4 by 1)
   //mH1D_Entries->Fill(4,polblue);      //bin5 (x=4) is sum of blue polarization no cuts
@@ -708,7 +728,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex));
     if( !(ph->mFromCluster) ){
       mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
-      if( -150<=usevertex && usevertex<=150 ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
+      if( mVertexCutLow<=usevertex && usevertex<=mVertexCutHigh ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
     }
     //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
     //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
@@ -903,7 +923,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
     else{
       ++n_noepdproj;
-      if( -150<=usevertex && usevertex<=150 ){ ++n_noepdproj_vcut; }
+      if( mVertexCutLow<=usevertex && usevertex<=mVertexCutHigh ){ ++n_noepdproj_vcut; }
     }
     
     if( ip==(mPhArr->GetEntriesFast()-1) ){ continue; }
@@ -939,12 +959,12 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       }
       //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
       mH1F_AllPointPairMass->Fill(pi0Vert_LV.Mag());
-      if( -150<=usevertex && usevertex<=150 ){
+      if( mVertexCutLow<=usevertex && usevertex<=mVertexCutHigh ){
 	if( FcsPi0Candidate::zgg(*ipoi,*jpoi)<=0.7 ){
 	  //Add pt cut based on trigger
 	  bool exceedtrigpt = false;
 	  if( !mIgnoreTrig ){
-	    if( emtrigfound ){
+	    if( mEmTrigFound ){
 	      if( mFcsTrigMap!=0 ){
 		for( Int_t itrig=0; itrig<mNTrig; ++itrig ){
 		  Float_t ptthres = mFcsTrigMap->GetPtThr(mTriggers[itrig]);
@@ -967,7 +987,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   for( short i=0; i<NEPDCUTS; ++i ){
     if( firstphotoncut[i]!=0 && secondphotoncut[i]!=0 ){
       TLorentzVector pi0Vert_LV = firstphotoncut[i]->lvVert() + secondphotoncut[i]->lvVert();
-      if( emtrigfound ){ ((TH1*)mH1F_InvMassEpdCuts[1]->UncheckedAt(i))->Fill(pi0Vert_LV.Mag()); }
+      if( mEmTrigFound ){ ((TH1*)mH1F_InvMassEpdCuts[1]->UncheckedAt(i))->Fill(pi0Vert_LV.Mag()); }
       ((TH1*)mH1F_InvMassEpdCuts[0]->UncheckedAt(i))->Fill(pi0Vert_LV.Mag());
     }
   }
@@ -1053,12 +1073,12 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       }
       //std::cout << "|idx1:"<<pi0c->mPhoton1Idx << "|idx2:"<<pi0c->mPhoton2Idx << "|pointmass:"<<pi0c->mInvMass <<  std::endl;
       mH1F_EpdChAllPoints->Fill(pi0Vert_LV.Mag());
-      if( -150<=usevertex && usevertex<=150 ){
+      if( mVertexCutLow<=usevertex && usevertex<=mVertexCutHigh ){
 	if( FcsPi0Candidate::zgg(*iepdch,*jepdch)<=0.7 ){
 	  //Add pt cut based on trigger
 	  bool exceedtrigpt = false;
 	  if( !mIgnoreTrig ){
-	    if( emtrigfound ){
+	    if( mEmTrigFound ){
 	      if( mFcsTrigMap!=0 ){
 		for( Int_t itrig=0; itrig<mNTrig; ++itrig ){
 		  Float_t ptthres = mFcsTrigMap->GetPtThr(mTriggers[itrig]);
@@ -1075,25 +1095,19 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }
   }
 
-  //XF = pi0Vert_LV.Pz()/255;
-  //Double_t PiOverN = TMath::Pi()/static_cast<Double_t>(NPHIBIN);
-  //Double_t PhiBin[NPHIBIN*2+1];  //Last element is to make sure it comes full circle and checking if phi is between 7Pi/4 to 8Pi/4 is easier than 7Pi/4 and 0
-  //for( short i=0; i<=2*NPHIBIN; ++i ){ PhiBin[i] = static_cast<Double_t>(i)*PiOverN; }
-  //{0.0, PiOver4, 2.0*PiOver4, 3.0*PiOver4, 4.0*PiOver4, 5.0*PiOver4, 6.0*PiOver4, 7.0*PiOver4, 8.0*PiOver4};
-  //Int_t NPi0UpAtPhi[NENERGYBIN][NPHIBIN]         = {0};
-  //Int_t NPi0DownAtPhi[NENERGYBIN][NPHIBIN]       = {0};
-  //Int_t NPi0UpAtPhiPlusPi[NENERGYBIN][NPHIBIN]   = {0};
-  //Int_t NPi0DownAtPhiPlusPi[NENERGYBIN][NPHIBIN] = {0};
   Int_t ngoodpi0s = 0;
+  Int_t ngoodsingleph = 0;
+  Int_t ngoodsinglech = 0;
   //std::cout << "NPi0s:"<<mPi0Arr->GetEntriesFast() << std::endl;
+  short emtrig[5] = {0, mTrigEm0, mTrigEm1, mTrigEm2, mTrigEm3 };
   for( int i=0; i<mPi0Arr->GetEntriesFast(); ++i ){
     FcsPi0Candidate* pi0 = (FcsPi0Candidate*)mPi0Arr->At(i);
     if( pi0==0 ){ continue; }
     //pi0->Print();
     Double_t pi0en = pi0->mEn;
     //mFbool mPh
-    //if( !emtrigfound )     { continue; }
-    if( ! (-150<=usevertex && usevertex<=150) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
+    //if( !mEmTrigFound )     { continue; }
+    if( ! (mVertexCutLow<=usevertex && usevertex<=mVertexCutHigh) ){ /*std::cout << " StMuFcsPi0TreeMaker::Make() - Failed vertex cut:"<<usevertex << std::endl;*/ continue; }
     if( pi0->mFromCluster ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Not a point - "<<pi0->mFromCluster<< std::endl;*/ continue; }
     if( pi0->mZgg>0.7     ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed Zgg:"<< pi0->mZgg << std::endl;*/ continue; }
     //Add pt cut based on trigger
@@ -1101,33 +1115,50 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     //Float_t trigptthr = -1;
     //std::string trigname = "";
     if( !mIgnoreTrig ){
-      if( !emtrigfound ){ continue; }
+      if( !mEmTrigFound ){ continue; }
       if( mFcsTrigMap!=0 ){
 	for( Int_t itrig=0; itrig<mNTrig; ++itrig ){
 	  Float_t ptthres = mFcsTrigMap->GetPtThr(mTriggers[itrig]);
 	  std::string thistrig = mFcsTrigMap->nameFromId(mTriggers[itrig],mMuEvent->runNumber());
-	  /*
-	    if( thistrig=="fcsEM0" || thistrig=="fcsEM1" || thistrig=="fcsEM2" || thistrig=="fcsEM3"
-	    || thistrig=="fcsEM0_tpc" || thistrig=="fcsEM1_tpc" || thistrig=="fcsEM2_tpc" || thistrig=="fcsEM3_tpc" )
-	    {
-	    }
-	  */
 	  if( pi0->pt()>=ptthres ){ exceedtrigpt=true; /*trigptthr=ptthres; trigname=thistrig;*/ }
 	}
       }
     }
     else{ exceedtrigpt = true; }
     if( !exceedtrigpt ){ continue; }
+
+    TLorentzVector pi0_lv = pi0->lv();
+    Double_t phi = pi0_lv.Phi(); //Range of this phi is -pi to pi
+    Double_t mpi = -TMath::Pi();
+    if( mpi<=phi && phi<mpi/2.0 ){ phi += TMath::TwoPi(); } //Since my binning goes from -pi/2 to 3pi/2 need to add 2pi to angles in the region from [-pi,-pi/2)
+    Double_t pi0xf = static_cast<Double_t>(pi0->mPz) / static_cast<Double_t>(poldat->mBeamEn);
+    Double_t pi0mass = (Double_t)pi0->mass();
+    
     //epd photon cut, mFromPh can only be -1,0,1 for less than epd cut (neutral), no epd cut, greater than epd cut (charged); respectively
     //if( pi0->mFromPh != -1 ){ continue; } //Check to force mFromPh to always be -1 (neutral)
     if( pi0->mFromPh==0 ){
       FcsPhotonCandidate* ph1 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton1Idx);
       FcsPhotonCandidate* ph2 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton2Idx);
-      if( ph1->mEpdHitNmip>mEpdNmipCut || ph2->mEpdHitNmip>mEpdNmipCut ){
-	//Fill hisotrams with only one satisfying criteria
+      if( ph1->mEpdHitNmip<mEpdNmipCut || ph2->mEpdHitNmip<mEpdNmipCut ){ //This is negation of mFromPh==1
+	//Fill hisotrams with only one photon satisfying epd cut criteria for nuetral particles (photons)
+	mH1F_EpdSinglePhZgg->Fill(pi0->mZgg);
+	mH2F_EpdSinglePh_etaVphi->Fill(phi,pi0_lv.Eta());
+	mH1F_EpdSinglePhEn->Fill(pi0en);
+	mH1F_EpdSinglePhPt->Fill(pi0_lv.Pt());
+	mH1F_EpdSinglePhAllInvMass->Fill(pi0mass);
+	++ngoodsingleph;
+      }
+      if( ph1->mEpdHitNmip>=mEpdNmipCut || ph2->mEpdHitNmip>=mEpdNmipCut ){ //This is negation of mFromPh==-1
+	//Fill hisotrams with only one photon satisfying epd cut criteria for charged particle
+	mH1F_EpdSingleChZgg->Fill(pi0->mZgg);
+	mH2F_EpdSingleCh_etaVphi->Fill(phi,pi0_lv.Eta());
+	mH1F_EpdSingleChEn->Fill(pi0en);
+	mH1F_EpdSingleChPt->Fill(pi0_lv.Pt());
+	mH1F_EpdSingleChAllInvMass->Fill(pi0mass);
+	++ngoodsinglech;
       }
     }
-    if( pi0->mFromPh>=0   ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; } //Ensure pi0 is coming from photon cut
+    if( pi0->mFromPh>=0   ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; } //Ensure pi0 is coming from dual photon cut
     //std::cout << "StMuFcsPi0TreeMaker::Make() - Passed all cuts!" << std::endl;
     ++ngoodpi0s;
     //std::cout << " + |Ntrig:"<<mNTrig << "|trigname:"<<trigname << "|trigpt:"<<trigptthr;
@@ -1140,7 +1171,9 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     */
 
     //Get Pi0 projection to Ecal front face @[Jan 27, 20254] > Get rid of don't need to project Just use TLorentzVector and use the TLorentzVector::phi() to get the phi
-    TLorentzVector pi0_lv = pi0->lv();
+    //std::cout << "  + |pi0->pt():"<<pi0->pt() << "|pi0_lv.Pt():"<<pi0_lv.Pt() << std::endl;
+    //std::cout << "    - |pi0->mPz:"<<pi0->mPz << "|pi0_lv.Pz():"<<pi0_lv.Pz() << std::endl;
+    //std::cout << "    - |pi0->eta():"<<pi0->eta() << "|pi0_lv.Eta():"<<pi0_lv.Eta() << std::endl;
     double pi0_momentum[3] = {pi0->mPx,pi0->mPy,pi0->mPz};
     double pi0_vertex[3] = {0,0,usevertex};
     int det = 0; //North side if negative px
@@ -1148,23 +1181,25 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     if( pi0_momentum[2]>=0 && pi0_momentum[0]>=0 ){ det=1; }
     if( pi0_momentum[2]<0  && pi0_momentum[0]<0  ){ det=1; }
     StThreeVectorD pi0_xyz = mFcsDb->projectLine(det,pi0_momentum,pi0_vertex,0); //Project to front face of FCS
-    mH2F_AllCuts_Pi0_yVx->Fill(pi0_xyz.x(),pi0_xyz.y());
-
-    Double_t phi = pi0_lv.Phi(); //Range of this phi is -pi to pi
-    Double_t mpi = -TMath::Pi();
-    if( mpi<=phi && phi<mpi/2.0 ){ phi += TMath::TwoPi(); } //Since my binning goes from -pi/2 to 3pi/2 need to add 2pi to angles in the region from [-pi,-pi/2)
-    Double_t pi0xf = (pi0->mPz)/255.0;
-    Double_t pi0mass = (Double_t)pi0->mass();
+    
     //@[Jan 27, 2025] > (Keep energy binnng and check energy plot for binning) Make a phi histogram one for blue (up & down) and yellow (up & down) from -Pi/2 to 3/2 Pi with whatever binning. bin 1 which is bottom most on left, with nbins/2, TH1F* mhphi[2][2] = {0}; //[blue,yellow] [up,down], Move to Ana code [mhasym[2] //[blue,yellow beam]. mhphi[0][0]->bin(1)*mhphi[0][1]->bin(1+nbin/2)]
-    mH1F_AllCuts_xF->Fill( pi0xf );
-    mH1F_AllCuts_xFZoom->Fill( pi0xf );
-    mH1F_AllCuts_Zgg->Fill( pi0->mZgg );
-    mH1F_AllCuts_Dgg->Fill( pi0->mDgg );
-    mH1F_AllCuts_Pi0En->Fill( pi0en );
-    mH2F_AllCuts_Pi0_massVen->Fill( pi0en,pi0mass );
-    mH2F_AllCuts_Pi0_xfVen->Fill( pi0en,pi0xf );
-    mH2F_AllCuts_Pi0_ptVeta->Fill( pi0_lv.Eta(),pi0_lv.Pt() );
-    mH2F_AllCuts_Pi0_etaVphi->Fill( phi,pi0_lv.Eta() );
+    for( short i=0; i<5; ++i ){
+      if( emtrig[i]>=0 ){
+	((TH2*) mH2F_AllCuts_Pi0_yVx->UncheckedAt(i))->Fill(pi0_xyz.x(),pi0_xyz.y());
+	((TH1*) mH1F_AllCuts_xF->UncheckedAt(i))->Fill( pi0xf );
+	((TH1*) mH1F_AllCuts_xFZoom->UncheckedAt(i))->Fill( pi0xf );
+	((TH1*) mH1F_AllCuts_Zgg->UncheckedAt(i))->Fill( pi0->mZgg );
+	((TH1*) mH1F_AllCuts_Dgg->UncheckedAt(i))->Fill( pi0->mDgg );
+	((TH1*) mH1F_AllCuts_Pi0En->UncheckedAt(i))->Fill( pi0en );
+	((TH2*) mH2F_AllCuts_Pi0_massVen->UncheckedAt(i))->Fill( pi0en,pi0mass );
+	((TH2*) mH2F_AllCuts_Pi0_xfVen->UncheckedAt(i))->Fill( pi0en,pi0xf );
+	((TH2*) mH2F_AllCuts_Pi0_ptVeta->UncheckedAt(i))->Fill( pi0_lv.Eta(),pi0_lv.Pt() );
+	((TH2*) mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(i))->Fill( phi,pi0_lv.Eta() );
+	((TH1*) mH1F_InvMassAllCuts->UncheckedAt(i))->Fill(pi0mass);
+      }
+    }
+    //mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
+    ((TH3*) mH3F_AllCutsInvMass_xfVphi)->Fill(phi,pi0xf,pi0mass);    
     //short nfoundphibin = 0;
     if( 0.1<=pi0mass && pi0mass<=0.2){
       if( mEvtInfo->BlueSpin()==1    ){ mH2F_NPi0Inc_xfVphi[0][0]->Fill(phi,pi0xf); }
@@ -1184,21 +1219,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       if( mEvtInfo->YellowSpin()==1  ){ mH2F_NPi0Bg2_xfVphi[1][0]->Fill(phi,pi0xf); }
       if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg2_xfVphi[1][1]->Fill(phi,pi0xf); }
     }
-    /*
-    for( int iphi=0; iphi<NPHIBIN; ++iphi ){
-      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0UpAtPhi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on right side is N^{up}(phi)
-      if( mEvtInfo->BlueSpin()==1  && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0UpAtPhiPlusPi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin up and on left side is N^{up}(phi+pi)
-      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi]<=phi   && phi<PhiBin[iphi+1] ){ ++NPi0DownAtPhi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin down and on right side is N^{down}(phi)
-      if( mEvtInfo->BlueSpin()==-1 && PhiBin[iphi+4]<=phi && phi<PhiBin[iphi+5] ){ ++NPi0DownAtPhiPlusPi[enbin][iphi]; phibin=iphi; ++nfoundphibin; } //Spin down and on left side is N^{down}(phi+pi)
-    }
-    if( phibin<0 ){ std::cout << "Couldn't find a valid phi bin" << std::endl; break; }
-    mH1F_NFoundPhiBin->Fill(nfoundphibin);
-    */
-    //mH1F_InvMassAllCutsByEnByPhi[enbin][phibin]->Fill(pi0->mass());
-    ((TH3*)mH3F_AllCutsInvMass_xfVphi)->Fill(phi,pi0xf,pi0mass);
-    mH1F_InvMassAllCuts->Fill(pi0mass);
   }
-  mH1F_Pi0MultAllCuts->Fill(ngoodpi0s);
+  mH1F_EpdSinglePhPointMult->Fill(ngoodsingleph);
+  mH1F_EpdSingleChPointMult->Fill(ngoodsinglech);
+  for( short i=0; i<5; ++i ){
+    //std::cout << " - |emtrig["<<i<<"]:"<<emtrig[i] <<"|n:"<<ngoodpi0s << std::endl;
+    if( emtrig[i]>=0 ){
+      ((TH1*) mH1F_Pi0MultAllCuts->UncheckedAt(i))->Fill(ngoodpi0s);
+    }
+  }
   //std::cout << "NGoodPi0s:"<<ngoodpi0s << std::endl;
 
   /*
@@ -1213,6 +1242,14 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   */
   if( mPi0Tree!=0 ){ mPi0Tree->Fill(); }
 
+  //Reset Variables
+  mValidTrigFound = false;
+  mEmTrigFound = false;
+  mTrigEm0 = -1;
+  mTrigEm1 = -1;
+  mTrigEm2 = -1;
+  mTrigEm3 = -1;
+  
   mEvtInfo->Clear();
   mNTrig = 0; //Since ROOT only writes up to the size of mNTrig then only need to reset this back to zero and next loop will overwrite array as neccessary
   mPhArr->Clear();
@@ -1511,10 +1548,10 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   mH1F_InvMassAllButEpdCut->SetStats(0);
   mH1F_InvMassAllButEpdCut->SetLineColor(kBlack);
   legendpad11->AddEntry(mH1F_InvMassAllButEpdCut,"No Epd nmip cut","fle");
-  mH1F_InvMassAllCuts->Draw("hist e same");
-  mH1F_InvMassAllCuts->SetStats(0);
-  mH1F_InvMassAllCuts->SetLineColor(kBlue);
-  legendpad11->AddEntry(mH1F_InvMassAllCuts,"Epd nmip<0.7","fle");
+  mH1F_InvMassAllCuts->UncheckedAt(0)->Draw("hist e same");
+  ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->SetStats(0);
+  ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->SetLineColor(kBlue);
+  legendpad11->AddEntry(mH1F_InvMassAllCuts->UncheckedAt(0),"Epd nmip<0.7","fle");
   mH1F_InvMassAllCutsEpdCh->Draw("hist e same");
   mH1F_InvMassAllCutsEpdCh->SetStats(0);
   mH1F_InvMassAllCutsEpdCh->SetLineColor(kGreen+2);
@@ -1523,7 +1560,7 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
 
   canv->cd(12);
   TLegend* legpad12 = new TLegend(0.5,0.5,0.93,0.93,"","nbNDC");
-  TH1* h1allcutmass = mH1F_InvMassAllCuts->DrawNormalized("hist e"); //Draw this first as it has the largest y-value
+  TH1* h1allcutmass = ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->DrawNormalized("hist e"); //Draw this first as it has the largest y-value
   h1allcutmass->SetTitle("Normalized Invariant Mass distributions after most cuts");
   h1allcutmass->SetStats(0);
   h1allcutmass->SetLineColor(kBlue);
@@ -1601,27 +1638,27 @@ void StMuFcsPi0TreeMaker::PaintPi0Cuts(TCanvas* canv, const char* savename ) con
   canv->Divide(3,3);
   canv->cd(1)->SetLogy();
   //mH1F_NFoundPhiBin->Draw("hist e");
-  mH1F_AllCuts_xF->Draw("hist e");
+  mH1F_AllCuts_xF->UncheckedAt(0)->Draw("hist e");
   canv->cd(2)->SetLogy();
-  mH1F_AllCuts_xFZoom->Draw("hist e");  
+  mH1F_AllCuts_xFZoom->UncheckedAt(0)->Draw("hist e");  
   //canv->cd(3)->SetLogy();
   //mH1F_AllCuts_Pi0En->Draw("hist e");
   canv->cd(3);
-  mH2F_AllCuts_Pi0_massVen->Draw("colz");
+  mH2F_AllCuts_Pi0_massVen->UncheckedAt(0)->Draw("colz");
   canv->cd(4);
   //mH1F_AllCuts_Pi0Phi->Draw("hist e");
-  mH2F_AllCuts_Pi0_etaVphi->Draw("colz");
+  mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(0)->Draw("colz");
   canv->cd(5);
-  mH1F_InvMassAllCuts->Draw("hist e");
+  mH1F_InvMassAllCuts->UncheckedAt(0)->Draw("hist e");
   canv->cd(6)->SetLogy();
   mH1F_NBadEpdProj->Draw("hist e");
   mH1F_NBadEpdProjVcut->Draw("hist e same");
   canv->cd(7);
-  mH2F_AllCuts_Pi0_yVx->Draw("colz");
+  mH2F_AllCuts_Pi0_yVx->UncheckedAt(0)->Draw("colz");
   canv->cd(8);
-  mH1F_Pi0MultAllCuts->Draw("hist e");
+  mH1F_Pi0MultAllCuts->UncheckedAt(0)->Draw("hist e");
   canv->cd(9);
-  TH1* h1f_multcut_clone = (TH1*)mH1F_Pi0MultAllCuts->Clone("h1f_multcut_clone");
+  TH1* h1f_multcut_clone = (TH1*)mH1F_Pi0MultAllCuts->UncheckedAt(0)->Clone("h1f_multcut_clone");
   h1f_multcut_clone->SetBinContent(1,0); //Artifically delete all entries in zero bin to zoom in on the higher regions
   h1f_multcut_clone->Draw("hist e");
   canv->Print(savename);
@@ -1716,13 +1753,13 @@ void StMuFcsPi0TreeMaker::FillGraphs(Int_t irun)
 {
   //TF1* pi0gausfit = new TF1("pi0gausfit","gaus(0)",0.1,0.2);
   //mH1F_InvMassAllCuts->Fit(pi0gausfit,"RQN");
-  mGE_AllCuts_InvMass->SetPoint(irun,irun,mH1F_InvMassAllCuts->GetMean());
-  mGE_AllCuts_InvMass->SetPointError(irun,0,mH1F_InvMassAllCuts->GetRMS());
+  mGE_AllCuts_InvMass->SetPoint(irun,irun,((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->GetMean());
+  mGE_AllCuts_InvMass->SetPointError(irun,0,((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->GetRMS());
   //delete pi0gausfit;
   //pi0gausfit = 0;
 
-  mGE_AllCuts_Pi0En->SetPoint(irun,irun,mH1F_AllCuts_Pi0En->GetMean());
-  mGE_AllCuts_Pi0En->SetPointError(irun,0,mH1F_AllCuts_Pi0En->GetRMS());
+  mGE_AllCuts_Pi0En->SetPoint(irun,irun,((TH1*)mH1F_AllCuts_Pi0En->UncheckedAt(0))->GetMean());
+  mGE_AllCuts_Pi0En->SetPointError(irun,0,((TH1*)mH1F_AllCuts_Pi0En->UncheckedAt(0))->GetRMS());
 
   return;
 }
@@ -1744,7 +1781,7 @@ void StMuFcsPi0TreeMaker::DrawQaGraphs(TCanvas* canv, const char* savename)
 
 void StMuFcsPi0TreeMaker::MergeForTssa( TH1* totalhistinc[][2], TH1* totalhistbg1[][2], TH1* totalhistbg2[][2], TH3* mergedinvmass, TH1* mergedpolblue, TH1* mergedpolyell, TH1* mergedpolblueerr, TH1* mergedpolyellerr )
 {
-  if( mH1F_RndmSpin->GetBinContent(1)>0.1 ){ return; } //Don't merge histograms from files with random spin patterns
+  if( mH1F_RndmSpin->GetBinContent(1)>0.1 ){ std::cout << "  + RandomSpinFound" << std::endl; return; } //Don't merge histograms from files with random spin patterns
   for( int ibeam=0; ibeam<2; ++ibeam ){
     for( int ispin=0; ispin<2; ++ispin ){
       totalhistinc[ibeam][ispin]->Add(mH2F_NPi0Inc_xfVphi[ibeam][ispin]);
@@ -2033,17 +2070,17 @@ void StMuFcsPi0TreeMaker::PaintPi0QaForDefense(TCanvas* canv, const char* savena
   canv->Divide(3,2);
 
   canv->cd(1)->SetLogy();
-  mH1F_AllCuts_Pi0En->Draw("hist e");
+  mH1F_AllCuts_Pi0En->UncheckedAt(0)->Draw("hist e");
 
   canv->cd(2);
-  mH2F_AllCuts_Pi0_etaVphi->Draw("colz");
+  mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(0)->Draw("colz");
 
   canv->cd(3);
-  mH1F_InvMassAllCuts->Draw("hist e");
+  mH1F_InvMassAllCuts->UncheckedAt(0)->Draw("hist e");
 
   canv->cd(4)->SetLogz();
-  mH2F_AllCuts_Pi0_yVx->SetStats(0);
-  mH2F_AllCuts_Pi0_yVx->Draw("colz");
+  ((TH1*)mH2F_AllCuts_Pi0_yVx->UncheckedAt(0))->SetStats(0);
+  mH2F_AllCuts_Pi0_yVx->UncheckedAt(0)->Draw("colz");
 
   canv->cd(5);//->SetLogy();
   TH1* h1phzgg = mH1F_EpdPhZgg->DrawNormalized("hist e same");
@@ -2051,7 +2088,7 @@ void StMuFcsPi0TreeMaker::PaintPi0QaForDefense(TCanvas* canv, const char* savena
   
   canv->cd(6);
   TLegend* legpad12 = new TLegend(0.5,0.5,0.93,0.93,"","nbNDC");
-  TH1* h1allcutmass = mH1F_InvMassAllCuts->DrawNormalized("hist e"); //Draw this first as it has the largest y-value
+  TH1* h1allcutmass = ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->DrawNormalized("hist e"); //Draw this first as it has the largest y-value
   h1allcutmass->SetTitle("Normalized Invariant Mass distributions after most cuts;M_{inv} (GeV/c^{2});");
   h1allcutmass->SetStats(0);
   h1allcutmass->SetLineColor(kBlue);
@@ -2065,6 +2102,59 @@ void StMuFcsPi0TreeMaker::PaintPi0QaForDefense(TCanvas* canv, const char* savena
   legpad12->AddEntry(h1allcutbutepd,"No EPD nmip cut","fle");
   legpad12->AddEntry(h1allcutepdch,"EPD nmip>=0.7","fle");
   legpad12->Draw();
+  
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintAllHistOneTrigger(TCanvas* canv, int trigidx, const char* savename) const
+{
+  canv->Clear();
+  canv->Divide(4,3);
+
+  canv->cd(1);
+  mH1F_InvMassAllCuts->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(2);
+  mH1F_Pi0MultAllCuts->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(3);
+  mH1F_AllCuts_xF->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(4);
+  mH1F_AllCuts_xFZoom->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(5);
+  mH1F_AllCuts_Zgg->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(6);
+  mH1F_AllCuts_Dgg->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(7);
+  mH1F_AllCuts_Pi0En->UncheckedAt(trigidx)->Draw("hist e");
+  canv->cd(8);
+  mH2F_AllCuts_Pi0_massVen->UncheckedAt(trigidx)->Draw("colz");
+  canv->cd(9);
+  mH2F_AllCuts_Pi0_xfVen->UncheckedAt(trigidx)->Draw("colz");
+  canv->cd(10);
+  mH2F_AllCuts_Pi0_ptVeta->UncheckedAt(trigidx)->Draw("colz");
+  canv->cd(11);
+  mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(trigidx)->Draw("colz");
+  canv->cd(12);
+  mH2F_AllCuts_Pi0_yVx->UncheckedAt(trigidx)->Draw("colz");
+  
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintOneHistAllTrigger(TCanvas* canv, TObjArray* histarr, const char* drawoption, const char* savename) const
+{
+  canv->Clear();
+  canv->Divide(3,2);
+
+  TString opt(drawoption);
+  canv->cd(1);
+  histarr->UncheckedAt(0)->Draw(opt.Data());
+  canv->cd(2);
+  histarr->UncheckedAt(1)->Draw(opt.Data());
+  canv->cd(3);
+  histarr->UncheckedAt(2)->Draw(opt.Data());
+  canv->cd(4);
+  histarr->UncheckedAt(3)->Draw(opt.Data());
+  canv->cd(5);
+  histarr->UncheckedAt(4)->Draw(opt.Data());
   
   canv->Print(savename);
 }

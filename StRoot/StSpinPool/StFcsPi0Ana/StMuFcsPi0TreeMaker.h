@@ -50,7 +50,9 @@
 
   @[July 31, 2025] > Properly changed all the energy naming to x_{Feynmann} (x_F,xf) and changed slightly the xf binning ranges
 
-  @[August 4, 2025] > Added some more histograms to help understand the data
+  @[August 4, 2025] > Added histograms to help understand the data
+
+  @[August 11, 2025] > Changed some histograms to be split by the 4 different EM triggers. Added code and histograms to look at pi0s where one of the points satisfy the photon or charged criteria from the EPD
 
 */
 
@@ -167,6 +169,22 @@ public:
   void PaintNpi0Inc(TCanvas* canv, const char* savename = "testnpi0inc.png") const;
   void PaintNpi0Bg1(TCanvas* canv, const char* savename = "testnpi0bg1.png") const;
   void PaintNpi0Bg2(TCanvas* canv, const char* savename = "testnpi0bg2.png") const;
+  
+  void PaintAllHistOneTrigger(TCanvas* canv, int trigidx, const char* savename) const;
+  
+  void PaintOneHistAllTrigger(TCanvas* canv, TObjArray* histarr, const char* drawoption, const char* savename) const;
+  void PaintAllTrigInvMass(TCanvas* canv, const char* savename="testAllTrigInvMass.png") const{ PaintOneHistAllTrigger(canv,mH1F_InvMassAllCuts,"hist e",savename); }
+  void PaintAllTrigPi0Mult(TCanvas* canv, const char* savename="testAllTrigPi0Mult.png") const{ PaintOneHistAllTrigger(canv,mH1F_Pi0MultAllCuts,"hist e",savename); }
+  void PaintAllTrigxF(TCanvas* canv, const char* savename="testAllTrigxF.png") const{ PaintOneHistAllTrigger(canv,mH1F_AllCuts_xF,"hist e",savename); }
+  void PaintAllTrigxFZoom(TCanvas* canv, const char* savename="testAllTrigxFZoom.png") const{ PaintOneHistAllTrigger(canv,mH1F_AllCuts_xFZoom,"hist e",savename); }
+  void PaintAllTrigZgg(TCanvas* canv, const char* savename="testAllTrigZgg.png") const{ PaintOneHistAllTrigger(canv,mH1F_AllCuts_Zgg,"hist e",savename); }
+  void PaintAllTrigDgg(TCanvas* canv, const char* savename="testAllTrigDgg.png") const{ PaintOneHistAllTrigger(canv,mH1F_AllCuts_Dgg,"hist e",savename); }
+  void PaintAllTrigPi0En(TCanvas* canv, const char* savename="testAllTrigPi0En.png") const{ PaintOneHistAllTrigger(canv,mH1F_AllCuts_Pi0En,"hist e",savename); }
+  void PaintAllTrigPi0massVen(TCanvas* canv, const char* savename="testAllTrigPi0massVen.png") const{ PaintOneHistAllTrigger(canv,mH2F_AllCuts_Pi0_massVen,"colz",savename); }
+  void PaintAllTrigPi0xfVen(TCanvas* canv, const char* savename="testAllTrigPi0xfVen.png") const{ PaintOneHistAllTrigger(canv,mH2F_AllCuts_Pi0_xfVen,"colz",savename); }
+  void PaintAllTrigPi0ptVeta(TCanvas* canv, const char* savename="testAllTrigPi0ptVeta.png") const{ PaintOneHistAllTrigger(canv,mH2F_AllCuts_Pi0_ptVeta,"colz",savename); }
+  void PaintAllTrigPi0etaVphi(TCanvas* canv, const char* savename="testAllTrigPi0etaVphi.png") const{ PaintOneHistAllTrigger(canv,mH2F_AllCuts_Pi0_etaVphi,"colz",savename); }
+  void PaintAllTrigPi0yVx(TCanvas* canv, const char* savename="testAllTrigPi0yVx.png") const{ PaintOneHistAllTrigger(canv,mH2F_AllCuts_Pi0_yVx,"colz",savename); }
 
   void PaintPhotonQaForDefense(TCanvas* canv, const char* savename)   const;
   void PaintPi0QaForDefense(TCanvas* canv, const char* savename) const;
@@ -289,6 +307,20 @@ protected:
   TH1* mH1F_EpdChPt = 0;                ///< Pt for EpdCh
   TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles
 
+  TH1* mH1F_EpdSinglePhPointMult = 0;         ///< Point multiplicty for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhZgg = 0;               ///< Zgg for all point pairs that pass a single photon requirment on Epd
+  TH1* mH2F_EpdSinglePh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhEn = 0;                ///< Energy for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhPt = 0;                ///< Pt for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single photon that passed the photon level cut
+
+  TH1* mH1F_EpdSingleChPointMult = 0;         ///< Point multiplicty for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChZgg = 0;               ///< Zgg for all point pairs that pass a single electron requirment on Epd
+  TH1* mH2F_EpdSingleCh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChEn = 0;                ///< Energy for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChPt = 0;                ///< Pt for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single electron that passed the electron level cut
+
   //Also separate low point multiplicity events
   //TH1* mH1F_2ndBestPi0Mass = 0;
   //TH1* mH1F_3rdBestPi0Mass = 0;
@@ -301,23 +333,23 @@ protected:
   //TH1* mH1F_InvMassEnBins[2][4][3];        ///< Invariant Mass in different energy bins after each cut, fidicual volume cut, Zgg cut, Epd photon cut, and all triggers or only EM triggers
   TH1* mH1F_InvMassAllButEpdCut = 0;         ///< Invariant Mass of highest energy point pairs after all cuts except the EPD nmip cut
   TH1* mH1F_InvMassAllCutsEpdCh = 0;         ///< Invariant Mass of highest point pairs after all cuts but using the "charged" particle criteria
-  TH1* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied and the "neutral" particle criteria for EPD nmip
-  TH1* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
-
+  
+  TObjArray* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied and the "neutral" particle criteria for EPD nmip, one for every EM trigger
+  TObjArray* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
   //(TH1* mH1F_AllPi0_xF = 0;             ///< Feynman-x (xF) of all pi0s
   //TH1* mH1F_NFoundPhiBin = 0;           ///< Number of valid phi bins found. This is a cross check to make sure that I am not double counting pi0s and finding more than one valid bin when I loop over the phi bins
-  TH1* mH1F_AllCuts_xF = 0;               ///< Feynman-x (xF) of the pi0s that pass all the cuts
-  TH1* mH1F_AllCuts_xFZoom = 0;           ///< Feynman-x (xF) of the pi0s that pass all the cuts on a smaller scale and more bining
-  TH1* mH1F_AllCuts_Zgg = 0;              ///< Zgg after all cuts
-  TH1* mH1F_AllCuts_Dgg = 0;              ///< Dgg after all cuts
-  TH1* mH1F_AllCuts_Pi0En = 0;            ///< Pi0 energy distribution with all cuts
-  TH1* mH2F_AllCuts_Pi0_massVen = 0;      ///< Pi0 Invariant mass vs. energy with all cuts
-  TH1* mH2F_AllCuts_Pi0_xfVen = 0;        ///< Pi0 xF vs. Energy
-  TH1* mH2F_AllCuts_Pi0_ptVeta = 0;       ///< Pi0 p_T vs. psuedorapidity (eta)
+  TObjArray* mH1F_AllCuts_xF = 0;               ///< Feynman-x (xF) of the pi0s that pass all the cuts
+  TObjArray* mH1F_AllCuts_xFZoom = 0;           ///< Feynman-x (xF) of the pi0s that pass all the cuts on a smaller scale and more bining
+  TObjArray* mH1F_AllCuts_Zgg = 0;              ///< Zgg after all cuts
+  TObjArray* mH1F_AllCuts_Dgg = 0;              ///< Dgg after all cuts
+  TObjArray* mH1F_AllCuts_Pi0En = 0;            ///< Pi0 energy distribution with all cuts
+  TObjArray* mH2F_AllCuts_Pi0_massVen = 0;      ///< Pi0 Invariant mass vs. energy with all cuts
+  TObjArray* mH2F_AllCuts_Pi0_xfVen = 0;        ///< Pi0 xF vs. Energy
+  TObjArray* mH2F_AllCuts_Pi0_ptVeta = 0;       ///< Pi0 p_T vs. psuedorapidity (eta)
   //TH1* mH1F_AllCuts_Pi0Phi = 0;         ///< Pi0 phi distribution with all cuts
-  TH1* mH2F_AllCuts_Pi0_etaVphi = 0;      ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
+  TObjArray* mH2F_AllCuts_Pi0_etaVphi = 0;      ///< Pi0 eta vs. phi distributions, phi binning matches #NPHIBIN after all cuts
   //TH1* mH2F_AllCuts_Poi_yVx = 0;        ///< Point y vs. x distributions after all cuts this gets complicated because you have two point
-  TH1* mH2F_AllCuts_Pi0_yVx = 0;          ///< Pi0 FCS projected y vs. x distributions after all cuts
+  TObjArray* mH2F_AllCuts_Pi0_yVx = 0;          ///< Pi0 FCS projected y vs. x distributions after all cuts
   //TH1* mH1F_InvMassAllCutsByEnByPhi[NENERGYBIN][NPHIBIN]; ///< Invariant mass of reconstructed pions using all cuts by energy and phi bin
   //TH1* mH1F_NPi0ByEnByPhi[NENERGYBIN][NPHIBIN];  ///< Number of pions in a given energy and phi bin. The hisotram represents the split by spin state (0-10, 20-40, 40-60, 80-100, 100+)
   TH1* mH3F_AllCutsInvMass_xfVphi = 0;      ///< Pi0 invariant mass after all cuts vs. xf vs. phi used for the fits to estimate background
@@ -330,10 +362,21 @@ protected:
   TGraphErrors* mGE_AllCuts_Pi0En = 0;
   //TGraph* mG_TSSA = 0;
 
+  bool mValidTrigFound = false;
+  bool mEmTrigFound = false;
+  // Variables to keep track if a given trigger was found in an event and can be used to fill the trigger sepcific histograms. The logic is that less than 0 means trigger was not fired. greater than or equal to 0 means trigger was fired. If trigger is fired then the value gets set to the value that corresponds to the index of a histogram array to be used later for filling. The 0 index is for all triggers
+  short mTrigEm0 = -1;        ///< Gets set to 1 if EM0 or EM0_tpc trigger was fired
+  short mTrigEm1 = -1;        ///< Gets set to 2 if EM1 or EM1_tpc trigger was fired
+  short mTrigEm2 = -1;        ///< Gets set to 3 if EM2 or EM2_tpc trigger was fired
+  short mTrigEm3 = -1;        ///< Gets set to 4 if EM3 or EM3_tpc trigger was fired
+
+  Double_t mVertexCutLow = -150.0;     ///< Variables for z vertex cuts at low end in cm
+  Double_t mVertexCutHigh = 150.0;     ///< Variables for z vertex cuts at high end in cm
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
   Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
   UShort_t mTreeOnBitMap = 0x7;         ///< Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
+  
 
   /*Simple data struct to hold polarization information from file only important values are kept*/
   struct PolData
@@ -357,7 +400,7 @@ private:
   bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
   TRandom3 mSpinRndm;                 ///< Spin state randomizer
 
-  ClassDef(StMuFcsPi0TreeMaker, 2)
+  ClassDef(StMuFcsPi0TreeMaker, 3)
 };
 
 #endif
