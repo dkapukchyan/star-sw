@@ -54,6 +54,8 @@
 
   @[August 11, 2025] > Changed some histograms to be split by the 4 different EM triggers. Added code and histograms to look at pi0s where one of the points satisfy the photon or charged criteria from the EPD
 
+  @[August 12, 2025] > Added histograms and code to check for cases when single photon candidate passes the EPD nmip cut. Needs fixing since I check mFromPh==0 but only store the best pi0 so need to fix.
+
 */
 
 
@@ -161,6 +163,10 @@ public:
   void PaintBestPi0(TCanvas* canv,  const char* savename = "testbestpi0.png")  const;
   void PaintEpdPhPi0(TCanvas* canv, const char* savename = "testepdphpi0.png") const;
   void PaintEpdChPi0(TCanvas* canv, const char* savename = "testepdchpi0.png") const;
+  void PaintEpdSinglePh(TCanvas* canv, const char* savename = "testepdsingleph.png") const;
+  void PaintEpdSingleCh(TCanvas* canv, const char* savename = "testepdsinglech.png") const;
+  void PaintEpdQa(TCanvas* canv, const char* savename = "testepdsingleqa.png") const;
+  void PaintInvMassEpdQa(TCanvas* canv, const char* savename = "testinvmasscutqa.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
   void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
@@ -307,19 +313,21 @@ protected:
   TH1* mH1F_EpdChPt = 0;                ///< Pt for EpdCh
   TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles
 
-  TH1* mH1F_EpdSinglePhPointMult = 0;         ///< Point multiplicty for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhPi0Mult = 0;         ///< Pi0 multiplicty for all point pairs that pass a single photon requirement on Epd
   TH1* mH1F_EpdSinglePhZgg = 0;               ///< Zgg for all point pairs that pass a single photon requirment on Epd
   TH1* mH2F_EpdSinglePh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single photon requirement on Epd
   TH1* mH1F_EpdSinglePhEn = 0;                ///< Energy for all point pairs that pass a single photon requirement on Epd
   TH1* mH1F_EpdSinglePhPt = 0;                ///< Pt for all point pairs that pass a single photon requirement on Epd
   TH1* mH1F_EpdSinglePhAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single photon that passed the photon level cut
 
-  TH1* mH1F_EpdSingleChPointMult = 0;         ///< Point multiplicty for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChPi0Mult = 0;         ///< Pi0 multiplicty for all point pairs that pass a single electron requirement on Epd
   TH1* mH1F_EpdSingleChZgg = 0;               ///< Zgg for all point pairs that pass a single electron requirment on Epd
   TH1* mH2F_EpdSingleCh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single electron requirement on Epd
   TH1* mH1F_EpdSingleChEn = 0;                ///< Energy for all point pairs that pass a single electron requirement on Epd
   TH1* mH1F_EpdSingleChPt = 0;                ///< Pt for all point pairs that pass a single electron requirement on Epd
   TH1* mH1F_EpdSingleChAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single electron that passed the electron level cut
+
+  TH1* SanityCheck = 0;                       ///< This is a sanity check that my algorithm is working as expected because this histogram and mH1F_InvMassAllCuts->At(0) should be exactly the same
 
   //Also separate low point multiplicity events
   //TH1* mH1F_2ndBestPi0Mass = 0;

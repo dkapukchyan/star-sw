@@ -194,20 +194,21 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
   loaded += mHists->AddH1F(file,mH1F_EpdChPt,"H1F_EpdChPt","Pt of Pi0s using highest energy pairs and Epd Cut Charged;Pt (GeV)", 100,0,10);
   loaded += mHists->AddH1F(file,mH1F_EpdChAllPoints,"H1F_EpdChAllPoints","Invariant mass of all point pair combinations with Epd Cut Charged;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
-  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhPointMult,"H1F_EpdSinglePhPointMult","Point Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdSinglePhPi0Mult,"H1F_EpdSinglePhPi0Mult","Pi0 Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdSinglePhZgg,"H1F_EpdSinglePhZgg","Z_{gg} of Pi0s with all cuts and EPD cut on only one photon;Z_{gg};", 100,0,1);
   loaded += mHists->AddH2F(file,mH2F_EpdSinglePh_etaVphi,"H1F_EpdSinglePh_etaVphi","#eta vs. #phi of Pi0s with all cuts and EPD cut on only one photon;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
   loaded += mHists->AddH1F(file,mH1F_EpdSinglePhEn,"H1F_EpdSinglePhEn","Energy of Pi0s with all cuts and EPD cut on only one photon;Energy (GeV)", 1000,0,200);
   loaded += mHists->AddH1F(file,mH1F_EpdSinglePhPt,"H1F_EpdSinglePhPt","p_{T} of Pi0s with all cuts and EPD cut on only one photon;#p_{T} (GeV)", 100,0,10);
   loaded += mHists->AddH1F(file,mH1F_EpdSinglePhAllInvMass,"H1F_EpdSinglePhAllInvMass","Invariant mass of all point pair combinations after all cuts and Epd cut on single photon;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
-  loaded += mHists->AddH1F(file,mH1F_EpdSingleChPointMult,"H1F_EpdSingleChPointMult","Point Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
+  loaded += mHists->AddH1F(file,mH1F_EpdSingleChPi0Mult,"H1F_EpdSingleChPi0Mult","Pi0 Multiplicity with all cuts and EPD cut on only one photon;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_EpdSingleChZgg,"H1F_EpdSingleChZgg","Z_{gg} of Pi0s with all cuts and EPD cut on only one electron;Z_{gg};", 100,0,1);
   loaded += mHists->AddH2F(file,mH2F_EpdSingleCh_etaVphi,"H1F_EpdSingleCh_etaVphi","#eta vs. #phi of Pi0s with all cuts and EPD cut on only one electron;#phi;#eta", NPHIBIN,-TMath::Pi()/2.0,3.0*TMath::Pi()/2.0, 70,0,7);
   loaded += mHists->AddH1F(file,mH1F_EpdSingleChEn,"H1F_EpdSingleChEn","Energy of Pi0s with all cuts and EPD cut on only one electron;Energy (GeV)", 1000,0,200);
   loaded += mHists->AddH1F(file,mH1F_EpdSingleChPt,"H1F_EpdSingleChPt","p_{T} of Pi0s with all cuts and EPD cut on only one electron;#p_{T} (GeV)", 100,0,10);
   loaded += mHists->AddH1F(file,mH1F_EpdSingleChAllInvMass,"H1F_EpdSingleChAllInvMass","Invariant mass of all point pair combinations after all cuts and Epd cut on single electron;Invariant Mass (GeV);", 500,0,1); //This makes it such that this bin size is twice that of the 0,1 range with 500 bins
 
+  loaded += mHists->AddH1F(file,SanityCheck,"SanityCheck","SanityCheck",500,0,1);
 
   if( mH1F_InvMassEpdCuts[0]==0 ){ mH1F_InvMassEpdCuts[0] = new TObjArray(); }
   loaded += mHists->AddH1FArr(file,mH1F_InvMassEpdCuts[0],NEPDCUTS,"H1F_InvMassEpdCuts_AllTrig","Different EPD NMIP cuts all triggers",500,0,1);
@@ -1132,6 +1133,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     Double_t mpi = -TMath::Pi();
     if( mpi<=phi && phi<mpi/2.0 ){ phi += TMath::TwoPi(); } //Since my binning goes from -pi/2 to 3pi/2 need to add 2pi to angles in the region from [-pi,-pi/2)
     Double_t pi0xf = static_cast<Double_t>(pi0->mPz) / static_cast<Double_t>(poldat->mBeamEn);
+    if( pi0xf<0.01){ std::cout << "  + 4MOM|("<<pi0en<<","<<pi0->mPx<<","<<pi0->mPy<<","<<pi0->mPz << ")"<<"|phi:"<<phi<<"eta:"<<pi0->eta()<<"|beamen:"<<poldat->mBeamEn << "|xf:"<<pi0xf << "|vert:"<<usevertex << std::endl; }
     Double_t pi0mass = (Double_t)pi0->mass();
     
     //epd photon cut, mFromPh can only be -1,0,1 for less than epd cut (neutral), no epd cut, greater than epd cut (charged); respectively
@@ -1139,23 +1141,28 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     if( pi0->mFromPh==0 ){
       FcsPhotonCandidate* ph1 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton1Idx);
       FcsPhotonCandidate* ph2 = (FcsPhotonCandidate*)mPhArr->UncheckedAt(pi0->mPhoton2Idx);
-      if( ph1->mEpdHitNmip<mEpdNmipCut || ph2->mEpdHitNmip<mEpdNmipCut ){ //This is negation of mFromPh==1
-	//Fill hisotrams with only one photon satisfying epd cut criteria for nuetral particles (photons)
-	mH1F_EpdSinglePhZgg->Fill(pi0->mZgg);
-	mH2F_EpdSinglePh_etaVphi->Fill(phi,pi0_lv.Eta());
-	mH1F_EpdSinglePhEn->Fill(pi0en);
-	mH1F_EpdSinglePhPt->Fill(pi0_lv.Pt());
-	mH1F_EpdSinglePhAllInvMass->Fill(pi0mass);
-	++ngoodsingleph;
-      }
-      if( ph1->mEpdHitNmip>=mEpdNmipCut || ph2->mEpdHitNmip>=mEpdNmipCut ){ //This is negation of mFromPh==-1
-	//Fill hisotrams with only one photon satisfying epd cut criteria for charged particle
-	mH1F_EpdSingleChZgg->Fill(pi0->mZgg);
-	mH2F_EpdSingleCh_etaVphi->Fill(phi,pi0_lv.Eta());
-	mH1F_EpdSingleChEn->Fill(pi0en);
-	mH1F_EpdSingleChPt->Fill(pi0_lv.Pt());
-	mH1F_EpdSingleChAllInvMass->Fill(pi0mass);
-	++ngoodsinglech;
+      if( ph1->mEpdHitNmip>-0.1 && ph2->mEpdHitNmip>-0.1 ){ //Only include candidates who have their nmip value set
+	if( ph1->mEpdHitNmip<mEpdNmipCut || ph2->mEpdHitNmip<mEpdNmipCut ){ //This is negation of mFromPh==1
+	  //Fill hisotrams with only one photon satisfying epd cut criteria for nuetral particles (photons)
+	  mH1F_EpdSinglePhZgg->Fill(pi0->mZgg);
+	  mH2F_EpdSinglePh_etaVphi->Fill(phi,pi0_lv.Eta());
+	  mH1F_EpdSinglePhEn->Fill(pi0en);
+	  mH1F_EpdSinglePhPt->Fill(pi0_lv.Pt());
+	  mH1F_EpdSinglePhAllInvMass->Fill(pi0mass);
+	  ++ngoodsingleph;
+	}
+	if( ph1->mEpdHitNmip>=mEpdNmipCut || ph2->mEpdHitNmip>=mEpdNmipCut ){ //This is negation of mFromPh==-1
+	  //Fill hisotrams with only one photon satisfying epd cut criteria for charged particle
+	  mH1F_EpdSingleChZgg->Fill(pi0->mZgg);
+	  mH2F_EpdSingleCh_etaVphi->Fill(phi,pi0_lv.Eta());
+	  mH1F_EpdSingleChEn->Fill(pi0en);
+	  mH1F_EpdSingleChPt->Fill(pi0_lv.Pt());
+	  mH1F_EpdSingleChAllInvMass->Fill(pi0mass);
+	  ++ngoodsinglech;
+	}
+	if( ph1->mEpdHitNmip<mEpdNmipCut && ph2->mEpdHitNmip<mEpdNmipCut ){
+	  SanityCheck->Fill(pi0mass);
+	}
       }
     }
     if( pi0->mFromPh>=0   ){ /*std::cout << "StMuFcsPi0TreeMaker::Make() - Failed photon cut - "<<pi0->mFromPh<< std::endl;*/ continue; } //Ensure pi0 is coming from dual photon cut
@@ -1220,8 +1227,8 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       if( mEvtInfo->YellowSpin()==-1 ){ mH2F_NPi0Bg2_xfVphi[1][1]->Fill(phi,pi0xf); }
     }
   }
-  mH1F_EpdSinglePhPointMult->Fill(ngoodsingleph);
-  mH1F_EpdSingleChPointMult->Fill(ngoodsinglech);
+  mH1F_EpdSinglePhPi0Mult->Fill(ngoodsingleph);
+  mH1F_EpdSingleChPi0Mult->Fill(ngoodsinglech);
   for( short i=0; i<5; ++i ){
     //std::cout << " - |emtrig["<<i<<"]:"<<emtrig[i] <<"|n:"<<ngoodpi0s << std::endl;
     if( emtrig[i]>=0 ){
@@ -1414,7 +1421,7 @@ void StMuFcsPi0TreeMaker::PaintEpdChPi0(TCanvas* canv, const char* savename) con
 {
   canv->Clear();
   
-  canv->Divide(3,3);
+  canv->Divide(3,2);
   canv->cd(1);
   mH1F_EpdChPointMult->Draw("hist e");
   canv->cd(2);
@@ -1431,6 +1438,48 @@ void StMuFcsPi0TreeMaker::PaintEpdChPi0(TCanvas* canv, const char* savename) con
   mH1F_EpdChInvMass->Draw("hist e");
   canv->cd(8);
   mH1F_EpdChAllPoints->Draw("hist e");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintEpdSinglePh(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,2);
+  canv->cd(1)->SetLogy();
+  mH1F_EpdSinglePhPi0Mult->Draw("hist e");
+  canv->cd(2);
+  mH1F_EpdSinglePhZgg->Draw("hist e");
+  canv->cd(3);
+  mH2F_EpdSinglePh_etaVphi->Draw("colz");
+  canv->cd(4)->SetLogy();
+  mH1F_EpdSinglePhEn->Draw("hist e");
+  canv->cd(5)->SetLogy();
+  mH1F_EpdSinglePhPt->Draw("hist e");
+  canv->cd(6);
+  mH1F_EpdSinglePhAllInvMass->Draw("hist e");
+
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintEpdSingleCh(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,2);
+  canv->cd(1)->SetLogy();
+  mH1F_EpdSingleChPi0Mult->Draw("hist e");
+  canv->cd(2);
+  mH1F_EpdSingleChZgg->Draw("hist e");
+  canv->cd(3);
+  mH2F_EpdSingleCh_etaVphi->Draw("colz");
+  canv->cd(4)->SetLogy();
+  mH1F_EpdSingleChEn->Draw("hist e");
+  canv->cd(5)->SetLogy();
+  mH1F_EpdSingleChPt->Draw("hist e");
+  canv->cd(6);
+  mH1F_EpdSingleChAllInvMass->Draw("hist e");
 
   canv->Print(savename);
 }
@@ -1578,6 +1627,153 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   canv->Print(savename);
 }
 
+void StMuFcsPi0TreeMaker::PaintEpdQa(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  
+  canv->Divide(3,3);
+
+  //canv->cd(1);
+  canv->cd(1)->SetLogy();
+  ((TH1*)mH1F_Pi0MultAllCuts->UncheckedAt(0))->SetLineColor(kBlack);
+  mH1F_EpdSinglePhPi0Mult->SetLineColor(kBlue);
+  mH1F_EpdSingleChPi0Mult->SetLineColor(kGreen+2);
+  mH1F_Pi0MultAllCuts->UncheckedAt(0)->Draw("hist e");
+  mH1F_EpdSinglePhPi0Mult->Draw("hist e same");
+  mH1F_EpdSingleChPi0Mult->Draw("hist e same");
+  
+  canv->cd(2);//->SetLogy();
+  ((TH1*)mH1F_AllCuts_Zgg->UncheckedAt(0))->SetLineColor(kBlack);
+  mH1F_EpdSinglePhZgg->SetLineColor(kBlue);
+  mH1F_EpdSingleChZgg->SetLineColor(kGreen+2);
+  mH1F_AllCuts_Zgg->UncheckedAt(0)->Draw("hist e");
+  mH1F_EpdSinglePhZgg->Draw("hist e same");
+  mH1F_EpdSingleChZgg->Draw("hist e same");
+
+  
+  //canv->cd(3);
+  canv->cd(3)->SetLogy();
+  ((TH1*)mH1F_AllCuts_Pi0En->UncheckedAt(0))->SetLineColor(kBlack);
+  mH1F_EpdSinglePhEn->SetLineColor(kBlue);
+  mH1F_EpdSingleChEn->SetLineColor(kGreen+2);
+  mH1F_AllCuts_Pi0En->UncheckedAt(0)->Draw("hist e");
+  mH1F_EpdSinglePhEn->Draw("hist e same");
+  mH1F_EpdSingleChEn->Draw("hist e same");
+
+  canv->cd(4);
+  TH1* h1_pi0cut_phi = ((TH2*)mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(0))->ProjectionX("h1_picut_phi");
+  TH1* h1_singleph_phi = ((TH2*)mH2F_EpdSinglePh_etaVphi)->ProjectionX("h1_singleph_phi");
+  TH1* h1_singlech_phi = ((TH2*)mH2F_EpdSinglePh_etaVphi)->ProjectionX("h1_singlech_phi");
+  h1_pi0cut_phi->SetLineColor(kBlack);
+  h1_singleph_phi->SetLineColor(kBlue);
+  h1_singlech_phi->SetLineColor(kGreen+2);
+  h1_pi0cut_phi->Draw("hist e");
+  h1_singleph_phi->Draw("hist e same");
+  h1_singlech_phi->Draw("hist e same");
+  
+
+  canv->cd(5);
+  TH1* h1_pi0cut_eta = ((TH2*)mH2F_AllCuts_Pi0_etaVphi->UncheckedAt(0))->ProjectionY("h1_picut_eta");
+  TH1* h1_singleph_eta = ((TH2*)mH2F_EpdSinglePh_etaVphi)->ProjectionY("h1_singleph_eta");
+  TH1* h1_singlech_eta = ((TH2*)mH2F_EpdSinglePh_etaVphi)->ProjectionY("h1_singlech_eta");
+  h1_pi0cut_eta->SetLineColor(kBlack);
+  h1_singleph_eta->SetLineColor(kBlue);
+  h1_singlech_eta->SetLineColor(kGreen+2);
+  h1_pi0cut_eta->Draw("hist e");
+  h1_singleph_eta->Draw("hist e same");
+  h1_singlech_eta->Draw("hist e same");
+  
+  //canv->cd(6);
+  canv->cd(6)->SetLogy();
+  TH1* h1_pi0cut_pt = ((TH2*)mH2F_AllCuts_Pi0_ptVeta->UncheckedAt(0))->ProjectionY("h1_pi0cut_pt");
+  h1_pi0cut_pt->SetLineColor(kBlack);
+  mH1F_EpdSinglePhPt->SetLineColor(kBlue);
+  mH1F_EpdSingleChPt->SetLineColor(kGreen+2);
+  h1_pi0cut_pt->Draw("hist e");
+  mH1F_EpdSinglePhPt->Draw("hist e same");
+  mH1F_EpdSingleChPt->Draw("hist e same");
+
+  canv->cd(7);
+  ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->SetLineColor(kBlack);
+  mH1F_EpdSinglePhAllInvMass->SetLineColor(kBlue);
+  mH1F_EpdSingleChAllInvMass->SetLineColor(kGreen+2);  
+  mH1F_InvMassAllCuts->UncheckedAt(0)->Draw("hist e");
+  mH1F_EpdSinglePhAllInvMass->Draw("hist e same");
+  mH1F_EpdSingleChAllInvMass->Draw("hist e same");
+  
+  canv->Print(savename);
+}
+
+void StMuFcsPi0TreeMaker::PaintInvMassEpdQa(TCanvas* canv, const char* savename ) const
+{
+  canv->Clear();
+
+  canv->Divide(2,1);
+  canv->cd(1)->SetLogy();
+  TLegend* legpad1 = new TLegend(0.5,0.5,0.93,0.93,"","nbNDC");
+  TH1* h1allmass = mH1F_AllPointPairMass->DrawCopy("hist e");
+  h1allmass->SetLineColor(kBlack);
+  h1allmass->SetTitle("Invariant Mass distributions with different cuts");
+  h1allmass->SetStats(0);
+  //h1allmass->GetYaxis()->SetRangeUser(0,0.022);
+  TH1* h1allcutmass = ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->DrawCopy("hist e same"); //Draw this first as it has the largest y-value
+  h1allcutmass->SetStats(0);
+  h1allcutmass->SetLineColor(kBlue);
+  TH1* h1allcutbutepd = mH1F_InvMassAllButEpdCut->DrawCopy("hist e same");
+  h1allcutbutepd->SetStats(0);
+  h1allcutbutepd->SetLineColor(kViolet);
+  TH1* h1allcutepdch = mH1F_InvMassAllCutsEpdCh->DrawCopy("hist e same");
+  h1allcutepdch->SetStats(0);
+  h1allcutepdch->SetLineColor(kGreen+2);
+  TH1* h1_singleph = mH1F_EpdSinglePhAllInvMass->DrawCopy("hist e same");
+  h1_singleph->SetStats(0);
+  h1_singleph->SetLineColor(kRed);
+  TH1* h1_singlech = mH1F_EpdSingleChAllInvMass->DrawCopy("hist e same");
+  h1_singlech->SetLineColor(kOrange);
+  h1_singlech->SetStats(0);
+
+  legpad1->AddEntry(h1allmass,"All point pair","fle");
+  legpad1->AddEntry(h1allcutmass,"EPD nmip<0.7","fle");
+  legpad1->AddEntry(h1allcutbutepd,"No EPD nmip cut","fle");
+  legpad1->AddEntry(h1allcutepdch,"EPD nmip>=0.7","fle");
+  legpad1->AddEntry(h1_singleph,"EPD nmip<0.7 one point","fle");
+  legpad1->AddEntry(h1_singlech,"EPD nmip>=0.7 one point","fle");
+  legpad1->Draw();
+  
+  canv->cd(2);
+  TLegend* legpad2 = new TLegend(0.5,0.5,0.93,0.93,"","nbNDC");
+  TH1* h1allmass_norm = mH1F_AllPointPairMass->DrawNormalized("hist e");
+  h1allmass_norm->SetLineColor(kBlack);
+  h1allmass_norm->SetTitle("Normalized Invariant Mass distributions with different cuts");
+  h1allmass_norm->SetStats(0);
+  h1allmass_norm->GetYaxis()->SetRangeUser(0,0.022);
+  TH1* h1allcutmass_norm = ((TH1*)mH1F_InvMassAllCuts->UncheckedAt(0))->DrawNormalized("hist e same"); //Draw this first as it has the largest y-value
+  h1allcutmass_norm->SetStats(0);
+  h1allcutmass_norm->SetLineColor(kBlue);
+  TH1* h1allcutbutepd_norm = mH1F_InvMassAllButEpdCut->DrawNormalized("hist e same");
+  h1allcutbutepd_norm->SetStats(0);
+  h1allcutbutepd_norm->SetLineColor(kViolet);
+  TH1* h1allcutepdch_norm = mH1F_InvMassAllCutsEpdCh->DrawNormalized("hist e same");
+  h1allcutepdch_norm->SetStats(0);
+  h1allcutepdch_norm->SetLineColor(kGreen+2);
+  TH1* h1_singleph_norm = mH1F_EpdSinglePhAllInvMass->DrawNormalized("hist e same");
+  h1_singleph_norm->SetStats(0);
+  h1_singleph_norm->SetLineColor(kRed);
+  TH1* h1_singlech_norm = mH1F_EpdSingleChAllInvMass->DrawNormalized("hist e same");
+  h1_singlech_norm->SetLineColor(kOrange);
+  h1_singlech_norm->SetStats(0);
+
+  legpad2->AddEntry(h1allmass_norm,"All point pair","fle");
+  legpad2->AddEntry(h1allcutmass_norm,"EPD nmip<0.7","fle");
+  legpad2->AddEntry(h1allcutbutepd_norm,"No EPD nmip cut","fle");
+  legpad2->AddEntry(h1allcutepdch_norm,"EPD nmip>=0.7","fle");
+  legpad2->AddEntry(h1_singleph_norm,"EPD nmip<0.7 one point","fle");
+  legpad2->AddEntry(h1_singlech_norm,"EPD nmip>=0.7 one point","fle");
+  legpad2->Draw();
+
+  canv->Print(savename);
+}
+
 void StMuFcsPi0TreeMaker::AddHistStatsOneline( TLegend* HistLeg, const TH1* h1, const std::string &title )
 {
   //This function is good for when many histograms are plotted
@@ -1672,7 +1868,7 @@ void StMuFcsPi0TreeMaker::PaintInvMassCuts(TCanvas* canv, const char* savename )
     for( short phibin=0; phibin<NPHIBIN; ++phibin ){
       canv->cd(phibin+1);
       std::stringstream histname;
-      histname << "H1F_InvMass_en"<<ixbin << "_phi"<<phibin;
+      histname << "H1F_InvMass_xf"<<ixbin << "_phi"<<phibin;
       TH1D* hist_proj = ((TH3*)mH3F_AllCutsInvMass_xfVphi)->ProjectionZ( histname.str().c_str(), phibin+1,phibin+1, ixbin+1,ixbin+1 );
       hist_proj->SetTitle( histname.str().c_str() );
       hist_proj->Draw("hist e");
@@ -1895,7 +2091,7 @@ void StMuFcsPi0TreeMaker::DoPi0Fits(TH3* mH3F_invmass, TH1* hist_proj[] )
   for( short ebin=0; ebin<NXFBIN; ++ebin ){
     if( hist_proj[ebin]==0 ){
       std::stringstream histname;
-      histname << "H1F_InvMass_en"<<ebin;
+      histname << "H1F_InvMass_xf"<<ebin;
       hist_proj[ebin] = (TH1*)((TH3F*)mH3F_invmass)->ProjectionZ( histname.str().c_str(), 1,NPHIBIN, ebin+1,ebin+1 );
       hist_proj[ebin]->SetTitle( histname.str().c_str() );
     }
@@ -1957,21 +2153,21 @@ void StMuFcsPi0TreeMaker::DoPi0Fits(TH3* mH3F_invmass, TH1* hist_proj[] )
   }
 }
 
-void StMuFcsPi0TreeMaker::DoBgCorrectedAn(TH1* h1_invmass_en[], TH1* h1_an_inc, TH1* h1_an_bg, TH1* h1_anresult )
+void StMuFcsPi0TreeMaker::DoBgCorrectedAn(TH1* h1_invmass_xf[], TH1* h1_an_inc, TH1* h1_an_bg, TH1* h1_anresult )
 {
   if( h1_anresult==0 ){ return; }
-  if( h1_invmass_en==0 ){ return; }
+  if( h1_invmass_xf==0 ){ return; }
   if( h1_an_inc==0 ){ return; }
   if( h1_an_bg==0 ){ return; }
   for( Int_t ixbin=0; ixbin<NXFBIN; ++ixbin ){
     TF1* bgfunc = 0;
-    if( ixbin<=(NXFBIN-1) ){ bgfunc = h1_invmass_en[ixbin]->GetFunction("BgGlobalFit"); }
+    if( ixbin<=(NXFBIN-1) ){ bgfunc = h1_invmass_xf[ixbin]->GetFunction("BgGlobalFit"); }
     //if( ixbin<4 ){ bgfunc = h1_invmass_en[ixbin]->GetFunction("BgGlobalFit"); }
-    else{ bgfunc = h1_invmass_en[ixbin]->GetFunction("Bg2Fit"); }  //For all but the last energy bin this function had the most reasonable background shape(*/
+    else{ bgfunc = h1_invmass_xf[ixbin]->GetFunction("Bg2Fit"); }  //For all but the last energy bin this function had the most reasonable background shape(*/
     if( bgfunc==0 ){ continue; }
-    Double_t xlowbin = h1_invmass_en[ixbin]->FindBin(0.1);
-    Double_t xhighbin = h1_invmass_en[ixbin]->FindBin(0.2);
-    Double_t npi0_inc = h1_invmass_en[ixbin]->Integral(xlowbin,xhighbin,"width");
+    Double_t xlowbin = h1_invmass_xf[ixbin]->FindBin(0.1);
+    Double_t xhighbin = h1_invmass_xf[ixbin]->FindBin(0.2);
+    Double_t npi0_inc = h1_invmass_xf[ixbin]->Integral(xlowbin,xhighbin,"width");
     Double_t npi0_bg = bgfunc->Integral(0.1,0.2);
     Double_t ratio = npi0_bg/npi0_inc;
     Double_t ansignal = (h1_an_inc->GetBinContent(ixbin+1) - ratio*h1_an_bg->GetBinContent(ixbin+1)) / (1.0-ratio);
