@@ -52,9 +52,11 @@
 
   @[August 4, 2025] > Added histograms to help understand the data
 
-  @[August 11, 2025] > Changed some histograms to be split by the 4 different EM triggers. Added code and histograms to look at pi0s where one of the points satisfy the photon or charged criteria from the EPD
+  @[August 11, 2025] > Changed some histograms to be split by the 4 different EM triggers. Added code and histograms to look at pi0s where one of the points satisfy the photon or charged criteria from the EPD. Fixed bug where code wasn't properly reading in the last line of the polarization data file.
 
   @[August 12, 2025] > Added histograms and code to check for cases when single photon candidate passes the EPD nmip cut. Needs fixing since I check mFromPh==0 but only store the best pi0 so need to fix.
+
+  @[August 23, 2025 > Fixed the cases for single photon candidate passing the cut by getting rid of the loops where I fill in a vector of "good" photons and electrons and now keep all pi0s in the array and loop over all those pi0s and only select the two photon cut when filling for the A_N analysis. This means that I got rid of the histograms related to the "Best" pi0 and the photon multiplicity with the EPD nMIP cut. Also, cleaned up extraneous code that is no longer needed with these changes. Added more paint functions and modified existing ones to paint the more relevant histograms. Added histograms to check how well the projected point from the FCS gives the correct matching EPD tile to check by computing various differences between the projected point and all other EPD hit tiles. Found that nMIP 0.4 has best valley so changed code to use nMIP=0.4 for the cut because it may be working better. Added #EpdTilePoly() as a precursor to drawing EPD tiles.
 
 */
 
@@ -73,6 +75,7 @@
 #include "TH1F.h"
 #include "TLegend.h"
 #include "TF1.h"
+#include "TGeoPolygon.h"
 
 //STAR Headers
 #include "StEnumerations.h"
@@ -153,6 +156,8 @@ public:
   UInt_t LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
   virtual UInt_t LoadHists(TFile* file);
 
+  //void AnalyzePi0s();
+
   virtual void Print(Option_t* opt="") const; //"e" for event, "t" for trigger, "g" for photon, "p" for pi0, "a" for all
 
   static std::vector<Double_t> ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex);
@@ -160,14 +165,17 @@ public:
   void PaintEventQa(TCanvas* canv,  const char* savename = "testevent.png")    const;
   void PaintPolarization(TCanvas* canv, const char* savename = "testpolarization.png") const;
   void PaintPhotonQa(TCanvas* canv, const char* savename = "testphoton.png")   const;
-  void PaintBestPi0(TCanvas* canv,  const char* savename = "testbestpi0.png")  const;
+  void PaintAllPi0(TCanvas* canv,  const char* savename = "testallpi0.png")  const;
+  void PaintNoEpdCut(TCanvas* canv,  const char* savename="testnoepdcutpi0.png")  const;
   void PaintEpdPhPi0(TCanvas* canv, const char* savename = "testepdphpi0.png") const;
   void PaintEpdChPi0(TCanvas* canv, const char* savename = "testepdchpi0.png") const;
   void PaintEpdSinglePh(TCanvas* canv, const char* savename = "testepdsingleph.png") const;
   void PaintEpdSingleCh(TCanvas* canv, const char* savename = "testepdsinglech.png") const;
-  void PaintEpdQa(TCanvas* canv, const char* savename = "testepdsingleqa.png") const;
-  void PaintInvMassEpdQa(TCanvas* canv, const char* savename = "testinvmasscutqa.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
+  void PaintInvMassEpdQa(TCanvas* canv, const char* savename = "testinvmasscutqa.png") const;
+  void PaintEpdAllDistQa(TCanvas* canv, const char* savename = "testepdalldistqa.png") const;
+  void PaintEpdTileDistQa(TCanvas* canv, const char* savename = "testepdtiledistqa.png") const;
+  void PaintEpdQa(TCanvas* canv, const char* savename = "testepdsingleqa.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
   void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
   void PaintPi0Cuts(TCanvas* canv, const char* savename = "testpi0cuts.png") const;
@@ -258,6 +266,7 @@ protected:
   Int_t mTriggers[mMaxTrigs];           ///< Array of Triggers in the event 
   //void ResetTrigs();                    ///< Reset #mTriggers to default values
   TClonesArray* mPhArr = 0;             ///< #TClonesArray of all #FcsPhotonCandidate
+  TClonesArray* mMixedPhArr = 0;        ///< #TClonesArray of #FcsPhotonCandidate from last event used for event mixing
   //TClonesArray* mBestPharr = 0;         ///< #TClonesArray of #FcsPhotonCandidates which are highest energy pairs
   TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the best pi0 candidates for analysis
   
@@ -282,52 +291,69 @@ protected:
   TH1* mH2F_Energy_ph1Vph2 = 0;         ///< Histogram of two photons energy used in reconstruction
   TH1* mH1F_NBadEpdProj = 0;            ///< Number of points that did not have a valid projection to an EPD tile in a given event
   TH1* mH1F_NBadEpdProjVcut = 0;        ///< Number of points that did not have a valid projection to an EPD tile in a given event with cut |vertex|<150
-  
-  TH1* mH1F_BestPi0Mass = 0;            ///< Invariant mass with just highest energy points
-  //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
-  TH1* mH1F_PointMult = 0;              ///< Raw point multiplicity in event
-  TH1* mH1F_BestPi0Zgg = 0;             ///< Zgg of for BestPi0
-  TH1* mH1F_BestPi0Phi = 0;             ///< Azimuthal angle for BestPi0
-  TH1* mH1F_BestPi0Eta = 0;             ///< Psuedorapidity for BestPi0
-  TH1* mH1F_BestPi0En = 0;              ///< Energy for BestPi0
-  TH1* mH1F_BestPi0Pt = 0;              ///< Pt for BestPi0
-  TH1* mH1F_AllPointPairMass = 0;       ///< Invariant mass of all pairs of points
 
-  TH1* mH1F_EpdPhInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate uncharged particles (EpdPh stands for Epd Photon, as in uncharged particle)
+  TH1* mH1F_PointMult = 0;              ///< Raw point multiplicity in event
+
+  TH1* mH2F_PointProj_nmipValldx=0;        ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of all hits
+  TH1* mH2F_PointProj_nmipValldy=0;        ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of all hits
+  TH1* mH2F_PointProj_nmipValldr=0;        ///< nMIP vs. FCS projected point to EPD, r difference to all other hits
+  TH1* mH2F_PointProj_nmipValldphi=0;      ///< nMIP vs. FCS projected point to EPD, angle difference between all other hits
+  TH1* mH2F_MixedPointProj_nmipValldr=0;        ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to all other hits
+  TH1* mH2F_MixedPointProj_nmipValldphi=0;      ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference between all other hits
+  TH1* mH2F_PointProj_nmipVtiledx=0;       ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of center tile
+  TH1* mH2F_PointProj_nmipVtiledy=0;       ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of center tile
+  TH1* mH2F_PointProj_nmipVtiledr=0;       ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
+  TH1* mH2F_PointProj_nmipVtiledphi=0;     ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  TH1* mH2F_MixedPointProj_nmipVtiledr=0;       ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
+  TH1* mH2F_MixedPointProj_nmipVtiledphi=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  
+  //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
+  TH1* mH1F_AllPi0Mult = 0;             ///< pi0 multiplicity for all pairs of points
+  TH1* mH1F_AllPi0Zgg = 0;              ///< Zgg of pi0 for all pairs of points
+  TH1* mH2F_AllPi0_etaVphi = 0;         ///< eta vs. phi for all pairs of points
+  TH1* mH1F_AllPi0En = 0;               ///< Energy for all pairs of points
+  TH1* mH1F_AllPi0Pt = 0;               ///< Pt for all pairs of points
+  TH1* mH1F_AllPi0Mass = 0;             ///< Invariant mass for all pairs of points
+
+  TH1* mH1F_NoEpdCutPi0Mult = 0;        ///< Pi0 multiplicity after all cuts except Epd nMIP one
+  TH1* mH1F_NoEpdCutZgg = 0;         ///< Pi0 Zgg after all cuts except Epd nMIP one
+  TH1* mH2F_NoEpdCut_etaVphi = 0;       ///< Pi0 eta vs. phi after all cuts except Epd nMIP one
+  TH1* mH1F_NoEpdCutEn = 0;             ///< Pi0 energy after all cuts except Epd nMIP one
+  TH1* mH1F_NoEpdCutPt = 0;             ///< Pi0 pt after all cuts except Epd nMIP one
+  TH1* mH1F_NoEpdCutAllMass = 0;        ///< Invariant Mass of all point pairs after all cuts except the EPD nmip cuts
+
+  //TH1* mH1F_EpdPhInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate uncharged particles (EpdPh stands for Epd Photon, as in uncharged particle)
   //TH1* mH2F_EpdPhHeatMap = 0;           ///< x,y locations for EpdPh
-  TH1* mH1F_EpdPhPointMult = 0;         ///< Point Multiplicity for EpdPh
+  TH1* mH1F_EpdPhPi0Mult = 0;           ///< Pi0 Multiplicity for EpdPh
   TH1* mH1F_EpdPhZgg = 0;               ///< Zgg of for EpdPh
-  TH1* mH1F_EpdPhPhi = 0;               ///< Azimuthal angle for EpdPh
-  TH1* mH1F_EpdPhEta = 0;               ///< Psuedorapidity for EpdPh
+  TH1* mH2F_EpdPh_etaVphi = 0;          ///< Azimuthal angle for EpdPh
+  //TH1* mH1F_EpdPhEta = 0;             ///< Psuedorapidity for EpdPh
   TH1* mH1F_EpdPhEn = 0;                ///< Energy for EpdPh
   TH1* mH1F_EpdPhPt = 0;                ///< Pt for EpdPh
-  TH1* mH1F_EpdPhAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate uncharged particles
+  TH1* mH1F_EpdPhAllMass = 0;           ///< Invariant mass of all point pairs with EPD nmip cut to isolate uncharged particles
 
-  TH1* mH1F_EpdChInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate charged particles (EpdCh stands for Epd Charged, as in charged particle)
+  //TH1* mH1F_EpdChInvMass = 0;           ///< Invariant mass with EPD nmip cut to isolate charged particles (EpdCh stands for Epd Charged, as in charged particle)
   //TH1* mH2F_EpdChHeatMap = 0;           ///< x,y locations for EpdCh
-  TH1* mH1F_EpdChPointMult = 0;         ///< Point multiplicty for EpdCh
+  TH1* mH1F_EpdChPi0Mult = 0;           ///< Pi0 multiplicty for EpdCh
   TH1* mH1F_EpdChZgg = 0;               ///< Zgg for EpdCh
-  TH1* mH1F_EpdChPhi = 0;               ///< Azimuthal angle for EpdCh
-  TH1* mH1F_EpdChEta = 0;               ///< Psuedorapidity for EpdCh
+  TH1* mH2F_EpdCh_etaVphi = 0;          ///< Psuedorapidity (eta) vs. Azimuthal (phi) angle for EpdCh
   TH1* mH1F_EpdChEn = 0;                ///< Energy for EpdCh
   TH1* mH1F_EpdChPt = 0;                ///< Pt for EpdCh
-  TH1* mH1F_EpdChAllPoints = 0;         ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles
+  TH1* mH1F_EpdChAllMass = 0;           ///< Invariant mass of all point pairs with EPD nmip cut to isolate charged particles
 
-  TH1* mH1F_EpdSinglePhPi0Mult = 0;         ///< Pi0 multiplicty for all point pairs that pass a single photon requirement on Epd
-  TH1* mH1F_EpdSinglePhZgg = 0;               ///< Zgg for all point pairs that pass a single photon requirment on Epd
-  TH1* mH2F_EpdSinglePh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single photon requirement on Epd
-  TH1* mH1F_EpdSinglePhEn = 0;                ///< Energy for all point pairs that pass a single photon requirement on Epd
-  TH1* mH1F_EpdSinglePhPt = 0;                ///< Pt for all point pairs that pass a single photon requirement on Epd
-  TH1* mH1F_EpdSinglePhAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single photon that passed the photon level cut
+  TH1* mH1F_EpdSinglePhPi0Mult = 0;     ///< Pi0 multiplicty for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhZgg = 0;         ///< Zgg for all point pairs that pass a single photon requirment on Epd
+  TH1* mH2F_EpdSinglePh_etaVphi = 0;    ///< eta V phi for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhEn = 0;          ///< Energy for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhPt = 0;          ///< Pt for all point pairs that pass a single photon requirement on Epd
+  TH1* mH1F_EpdSinglePhAllMass = 0;     ///< Invariant mass of all point pairs with EPD nmip cut on a single photon that passed the photon level cut
 
-  TH1* mH1F_EpdSingleChPi0Mult = 0;         ///< Pi0 multiplicty for all point pairs that pass a single electron requirement on Epd
-  TH1* mH1F_EpdSingleChZgg = 0;               ///< Zgg for all point pairs that pass a single electron requirment on Epd
-  TH1* mH2F_EpdSingleCh_etaVphi = 0;          ///< eta V phi for all point pairs that pass a single electron requirement on Epd
-  TH1* mH1F_EpdSingleChEn = 0;                ///< Energy for all point pairs that pass a single electron requirement on Epd
-  TH1* mH1F_EpdSingleChPt = 0;                ///< Pt for all point pairs that pass a single electron requirement on Epd
-  TH1* mH1F_EpdSingleChAllInvMass = 0;       ///< Invariant mass of all point pairs with EPD nmip cut on a single electron that passed the electron level cut
-
-  TH1* SanityCheck = 0;                       ///< This is a sanity check that my algorithm is working as expected because this histogram and mH1F_InvMassAllCuts->At(0) should be exactly the same
+  TH1* mH1F_EpdSingleChPi0Mult = 0;     ///< Pi0 multiplicty for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChZgg = 0;         ///< Zgg for all point pairs that pass a single electron requirment on Epd
+  TH1* mH2F_EpdSingleCh_etaVphi = 0;    ///< eta V phi for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChEn = 0;          ///< Energy for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChPt = 0;          ///< Pt for all point pairs that pass a single electron requirement on Epd
+  TH1* mH1F_EpdSingleChAllMass = 0;     ///< Invariant mass of all point pairs with EPD nmip cut on a single electron that passed the electron level cut
 
   //Also separate low point multiplicity events
   //TH1* mH1F_2ndBestPi0Mass = 0;
@@ -339,8 +365,6 @@ protected:
   TObjArray* mH1F_InvMassEpdCuts[2];         ///< Invariant Mass using different epd nmip cuts and all triggers or only EM triggers
   //TH1* mH1F_InvMassZggCuts[2][8];          ///< Invariant Mass using different zgg cuts and all triggers or only EM triggers
   //TH1* mH1F_InvMassEnBins[2][4][3];        ///< Invariant Mass in different energy bins after each cut, fidicual volume cut, Zgg cut, Epd photon cut, and all triggers or only EM triggers
-  TH1* mH1F_InvMassAllButEpdCut = 0;         ///< Invariant Mass of highest energy point pairs after all cuts except the EPD nmip cut
-  TH1* mH1F_InvMassAllCutsEpdCh = 0;         ///< Invariant Mass of highest point pairs after all cuts but using the "charged" particle criteria
   
   TObjArray* mH1F_InvMassAllCuts = 0;              ///< Invariant Mass of all potential pi0s after all cuts applied and the "neutral" particle criteria for EPD nmip, one for every EM trigger
   TObjArray* mH1F_Pi0MultAllCuts = 0;              ///< Number of "good pi0s" i.e. number of potential pi0s after all cuts applied
@@ -378,11 +402,13 @@ protected:
   short mTrigEm2 = -1;        ///< Gets set to 3 if EM2 or EM2_tpc trigger was fired
   short mTrigEm3 = -1;        ///< Gets set to 4 if EM3 or EM3_tpc trigger was fired
 
+  short mFoundVertex = 0;              ///< Bit vector for knowing which vertex was used 0 means no vertex, 1=Vpd,2=Epd,4=Bbc
+  Double_t mUseVertex = -999.0;        ///< Vertex to use in analysis
   Double_t mVertexCutLow = -150.0;     ///< Variables for z vertex cuts at low end in cm
   Double_t mVertexCutHigh = 150.0;     ///< Variables for z vertex cuts at high end in cm
   
   Double_t mEnCut = 1;                  ///< Energy Cut for #FcsPhotonCandidates
-  Double_t mEpdNmipCut = 0.7;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
+  Double_t mEpdNmipCut = 0.4;           ///< Cut on EPD nmip to classify cluster or point as charged or uncharged
   UShort_t mTreeOnBitMap = 0x7;         ///< Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
   
 
@@ -400,15 +426,20 @@ protected:
     Double_t mYellowErrP0 = 0;       //! Yellow beam intial polarization error in %
     Double_t mYellowdPdT = 0;        //! Yellow beam polarization decay in %/hour
     Double_t mYellowErrdPdT = 0;     //! Yellow beam polarization decay error in %/hour
+
+    void Print() const;
   };
   std::map<Int_t,PolData*> mPolarizationData;   ///< Map of polarization data from file with fill number as key to quickly look up from data structure
+
+  //void GetAdjacentEpdTile(int pp, int tt, int& pp_adj, int& tt_adj) const;
+  TGeoPolygon* EpdTilePoly(short pp, short tt) const;
   
 private:
   HistManager* mHists = 0;            ///< Manage loading and saving histograms
   bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
   TRandom3 mSpinRndm;                 ///< Spin state randomizer
 
-  ClassDef(StMuFcsPi0TreeMaker, 3)
+  ClassDef(StMuFcsPi0TreeMaker, 4)
 };
 
 #endif
