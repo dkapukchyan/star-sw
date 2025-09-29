@@ -58,6 +58,8 @@
 
   @[August 23, 2025 > Fixed the cases for single photon candidate passing the cut by getting rid of the loops where I fill in a vector of "good" photons and electrons and now keep all pi0s in the array and loop over all those pi0s and only select the two photon cut when filling for the A_N analysis. This means that I got rid of the histograms related to the "Best" pi0 and the photon multiplicity with the EPD nMIP cut. Also, cleaned up extraneous code that is no longer needed with these changes. Added more paint functions and modified existing ones to paint the more relevant histograms. Added histograms to check how well the projected point from the FCS gives the correct matching EPD tile to check by computing various differences between the projected point and all other EPD hit tiles. Found that nMIP 0.4 has best valley so changed code to use nMIP=0.4 for the cut because it may be working better. Added #EpdTilePoly() as a precursor to drawing EPD tiles.
 
+  @[September 26, 2025] > Implemented mixed events to compare how the EPD projections are working in real vs. mixed events. Implemented #Clear() function to use to clean up variables rather than at the end of #Make(). Implemented plotting functions for the mixed event histograms. Wrote #DrawEpdProjection() to work as an event display of projected FCS points and clusters on top of EPD hits. Looked at low point multiplicity events based on the event display. Implemented several functions to create polylines corresponding to different EPD adjacencies and also to draw the adjacencies.
+
 */
 
 
@@ -69,6 +71,8 @@
 
 //ROOT Headers
 #include "TString.h"
+#include "TPolyLine.h"
+#include "TEllipse.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TLeaf.h"
@@ -110,6 +114,7 @@ public:
   ~StMuFcsPi0TreeMaker();
   virtual Int_t Init();
   virtual Int_t InitRun(int runnumber);
+  virtual void Clear(Option_t* option="");           ///< Gets called before #Make() in StChain::EventLoop()
   virtual Int_t Make();
   virtual Int_t Finish();
   void setOutFileName(const char* name) { mFilename = name; }
@@ -174,7 +179,9 @@ public:
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintInvMassEpdQa(TCanvas* canv, const char* savename = "testinvmasscutqa.png") const;
   void PaintEpdAllDistQa(TCanvas* canv, const char* savename = "testepdalldistqa.png") const;
+  void PaintEpdAllDistQaLowMult(TCanvas* canv, const char* savename = "testepdalldistqalowmult.png" ) const;
   void PaintEpdTileDistQa(TCanvas* canv, const char* savename = "testepdtiledistqa.png") const;
+  void PaintEpdDistAnaQa(TCanvas* canv, const char* savename = "testepddistanaqa.png") const;
   void PaintEpdQa(TCanvas* canv, const char* savename = "testepdsingleqa.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
   void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
@@ -209,6 +216,11 @@ public:
   void FillGraphs(Int_t irun);
 
   void DrawQaGraphs(TCanvas* canv, const char* savename="testGraphPi0.png");
+
+  Int_t DrawEpdProjection(TCanvas* canvas, const char* savename);  //!< If pass all cuts and drawn then returns 1, failure returns 0
+
+  void DrawSelectEpdAdjTiles(TCanvas* canv) const;
+  void DrawAllEpdAdjTiles(TCanvas* canv, Int_t tt) const;
 
   //static const short NENERGYBIN = 8;     ///< Number of energy bins
   static const short NXFBIN = 8;         ///< Number of x_F bins (should match energy binning)
@@ -306,6 +318,11 @@ protected:
   TH1* mH2F_PointProj_nmipVtiledphi=0;     ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
   TH1* mH2F_MixedPointProj_nmipVtiledr=0;       ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
   TH1* mH2F_MixedPointProj_nmipVtiledphi=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
+
+  TH1* mH2F_PointProj_LowMult_nmipValldr=0;          ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
+  TH1* mH2F_PointProj_LowMult_nmipValldphi=0;        ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  TH1* mH2F_MixedPointProj_LowMult_nmipValldr=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
+  TH1* mH2F_MixedPointProj_LowMult_nmipValldphi=0;   ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
   
   //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
   TH1* mH1F_AllPi0Mult = 0;             ///< pi0 multiplicity for all pairs of points
@@ -432,12 +449,22 @@ protected:
   std::map<Int_t,PolData*> mPolarizationData;   ///< Map of polarization data from file with fill number as key to quickly look up from data structure
 
   //void GetAdjacentEpdTile(int pp, int tt, int& pp_adj, int& tt_adj) const;
-  TGeoPolygon* EpdTilePoly(short pp, short tt) const;
+  TPolyLine* EpdTilePoly(short pp, short tt) const;       ///< Returns a new polyline using corners from StEpdGeom
+  TPolyLine* EpdCCWOuterCorner(short pp, short tt) const;  ///< Return a new polyline  using adjacency of outer CCW (see #StMuEpdRun22QaMaker)
+  TPolyLine* EpdCWOuterCorner(short pp, short tt) const;
+  TPolyLine* EpdCWInnerCorner(short pp, short tt) const;
+  TPolyLine* EpdCCWInnerCorner(short pp, short tt) const;
+  std::map<Int_t,TPolyLine*> mEpdTileMap;    ///< EPD "tile key" to polyline for drawing
   
 private:
   HistManager* mHists = 0;            ///< Manage loading and saving histograms
   bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
   TRandom3 mSpinRndm;                 ///< Spin state randomizer
+
+  Double_t mOldVertex = -999.0;                ///< Vertex from last event needed for event mixing
+  Int_t mNOldPoints = 0;                       ///< Number of points in previous event
+
+  static Int_t GetColor(Double_t Value, Double_t MinVal, Double_t MaxVal);
 
   ClassDef(StMuFcsPi0TreeMaker, 4)
 };

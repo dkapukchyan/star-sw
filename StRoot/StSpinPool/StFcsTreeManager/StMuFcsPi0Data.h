@@ -25,7 +25,7 @@
   @[November 22, 2024] > In #FcsPi0Candidate made all the functions related to kinematic variables const and added the Pt value to the printout so that I can check it against the Pt trigger threshold more easily.
   @[January 29, 2025] > In #FcsPi0Candidate added #lv() which returns a #TLorentzVector of the Pi0 candidate based on its px,py,pz,energy
   @[February 5, 2025] > Clarified a comment
-
+  @[September 4, 2025] > Implemented a copy function for #FcsPhotonCandidate
 */
 
 
@@ -118,6 +118,7 @@ public:
   virtual Bool_t IsEqual(const TObject* obj) const;   ///< if comparing clusters to points return false. otherwise if comparing clusters to clusters (or points to points) check if energy matches
   virtual Int_t Compare(const TObject* obj) const;    ///< Returns 1 if comparing clusters to points (i.e. clusters are less than points). If comparing clusters to clusters (or points to points) if this->en<other->en return 1 so it does descending energy sort; -1 if this->en>other->en
 
+  virtual void Copy(TObject& object) const;            ///< Copy this candidate to object
   virtual void Clear(Option_t* opt="");               ///< Resets all variables to defaults
   virtual void Print(Option_t* opt="") const;         ///< Print all variables no options
 

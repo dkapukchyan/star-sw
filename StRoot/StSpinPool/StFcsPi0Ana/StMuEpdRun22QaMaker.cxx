@@ -15,6 +15,188 @@
 
 ClassImp(StMuEpdRun22QaMaker)
 
+std::vector<Int_t> StMuEpdRun22QaMaker::GetAdjacentEpdIds(Int_t pp,Int_t tt)
+{
+  std::vector<Int_t> adjtiles;
+  //Start from top tile and go counterclockwise
+  Int_t adjpp = 0;
+  Int_t adjtt = 0;
+  GetEpdTileOuter(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileOuterCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInnerCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInner(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInnerCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileOuterCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+
+  return adjtiles;
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileOuter(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    newpp = pp;
+    newtt = tt+2;      //Outer tile is tt+2 for all but extreme cases
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1  ){ newpp=pp; newtt=2; }  ////tile going out is 2 (old:Nothing going "out" but OuterCCW and OuterCW will return 2 and 3)
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileOuterCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt+3;              //above CCW for even is tt+3 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt = tt+1;              //above CCW for odd is tt+1
+    }
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1  ){ newpp=pp+1;if(newpp==13){newpp=1;} newtt=3; } //Outer and going CCW is tile 3 and one over (old:2)
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt+1;              //CCW  tile for even is tt+1 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt = tt-1;  //CCW tile for odd is tt-1
+    }
+  }
+  else{
+    if( tt==1 ){ newpp=pp+1; if(newpp==13){ newpp=1; } newtt=1; }
+  }
+}
+  
+void StMuEpdRun22QaMaker::GetEpdTileInnerCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt-1;              //Inner CCW tile for even is tt-1 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt=tt-3;                  //Inner CCW for odd is tt-3
+    }
+  }
+  else{
+    if( tt==3 ){ newpp=0;  newtt=0; }                               //There is no inner CCW (old:Inner CCW for tile 3 is tile in this supersector because it is the "most" CCW)
+    if( tt==2 ){ newpp = pp+1; if(newpp==13){ newpp=1; }  newtt=1; } //Inner CCW for tile 2 is next supersector over  tile 1 since it forms a nice corner there
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileInner(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    newpp = pp;
+    newtt = tt-2;
+  }
+  else{
+    if( tt==3 ){ newpp=0;  newtt=0; }  //Nothing more inner but will be handled by InnerCCW and InnerCW
+    if( tt==2 ){ newpp=pp;  newtt=1; }  //to match Outer (old:Nothing more inner but will be handled by InnerCCW and InnerCW)
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileInnerCW(Int_t pp, Int_t tt, Int_t &newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt-1;        //Inner CW for even is tt-1
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; }  //loop back to 12 for pp 1
+      newtt = tt-3;                //Inner CW for odd is tt-3 and pp-1
+    }
+  }
+  else{
+    if( tt==3 ){ newpp = pp-1; if( newpp==0 ){ newpp=12; } newtt=1; }  //InnerCW is tile 1 of next supersector over since it forms a nice corner
+    if( tt==2 ){ newpp = 0; newtt = 0; }                              //No inner CW (old:InnerCW is tile 1 of this supersector since it is "most" clockwise)
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt+1;     //CW for even is tt+1
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; } //loop back to 12 for pp 1
+      newtt = tt-1;        //CW tile for odd is tt-1 and pp-1
+    }
+  }
+  else{
+    if( tt==1 ){ newpp = pp-1; if( newpp==0 ){ newpp=12; } newtt = 1; }
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdTileOuterCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt+3;     //Outer CW for even is tt+3
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; } //loop back to 12 for pp 1
+      newtt = tt+1;        //Outer CW tile for odd is tt+1 and pp-1
+    }
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1 ){  newpp=pp; newtt=3; }  //Outmost tile going CW is 3
+  }
+}
+
+void StMuEpdRun22QaMaker::GetEpdPPandTTFromId(Int_t id, Int_t& pp, Int_t& tt)
+{
+  pp = id/100;  //Automatically should floor to lowest positive integer in implicity conversion
+  tt = id%100;  
+}
+
 StMuEpdRun22QaMaker::StMuEpdRun22QaMaker(const char* name):StMaker(name)
 {
   memset(mH2F_HitEpd_nmipVchkey,0,sizeof(mH2F_HitEpd_nmipVchkey));

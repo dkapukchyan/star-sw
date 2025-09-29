@@ -165,14 +165,24 @@ UInt_t StMuFcsPi0TreeMaker::LoadHists( TFile* file )
 
   loaded += mHists->AddH1F(file,mH1F_PointMult,"H1F_PointMult","Point Multiplicity with only an energy cut;Point Multiplicity", 30,0,30);
 
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldx,"H1F_PointProj_nmipValldx","nMIP vs. FCS projected point to EPD x minus EPD x of all hits;dX (cm);nmip", 200,-100,100, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldy,"H1F_PointProj_nmipValldy","nMIP vs. FCS projected point to EPD y minus EPD y of all hits;dY (cm);nmip", 200,-100,100, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldr,"H1F_PointProj_nmipValldr","nMIP vs. FCS projected point to EPD, polar distance to all other hits;dR (cm);nmip", 200,-100,100, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldphi,"H1F_PointProj_nmipValldphi","nMIP vs. FCS projected point to EPD, angle difference to all other htis;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledx,"H1F_PointProj_nmipVtiledx","nMIP vs. FCS projected point to EPD x minus EPD x of proj tile;dX (cm);nmip", 80,-20,20, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledy,"H1F_PointProj_nmipVtiledy","nMIP vs. FCS projected point to EPD y minus EPD y of proj tile;dY (cm);nmip", 80,-20,20, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledr,"H1F_PointProj_nmipVtiledr","nMIP vs. FCS projected point to EPD, polar distance to projected hit;dR (cm);nmip", 80,-20,20, 70,0,7);
-  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledphi,"H1F_PointProj_nmipVtiledphi","nMIP vs. FCS projected point to EPD, angle difference to proj tile;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldx,"H2F_PointProj_nmipValldx","nMIP vs. FCS projected point to EPD x minus EPD x of all hits;dX (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldy,"H2F_PointProj_nmipValldy","nMIP vs. FCS projected point to EPD y minus EPD y of all hits;dY (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldr,"H2F_PointProj_nmipValldr","nMIP vs. FCS projected point to EPD, polar distance to all other hits;dR (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldphi,"H2F_PointProj_nmipValldphi","nMIP vs. FCS projected point to EPD, angle difference to all other hits;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_nmipValldr,"H2F_MixedPointProj_nmipValldr","Mixed event nMIP vs. FCS projected point to EPD, polar distance to all other hits;dR (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_nmipValldphi,"H2F_MixedPointProj_nmipValldphi","Mixed event nMIP vs. FCS projected point to EPD, angle difference to all other hits;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledx,"H2F_PointProj_nmipVtiledx","nMIP vs. FCS projected point to EPD x minus EPD x of proj tile;dX (cm);nmip", 80,-20,20, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledy,"H2F_PointProj_nmipVtiledy","nMIP vs. FCS projected point to EPD y minus EPD y of proj tile;dY (cm);nmip", 80,-20,20, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledr,"H2F_PointProj_nmipVtiledr","nMIP vs. FCS projected point to EPD, polar distance to projected hit;dR (cm);nmip", 80,-20,20, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_nmipVtiledphi,"H2F_PointProj_nmipVtiledphi","nMIP vs. FCS projected point to EPD, angle difference to proj tile;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_nmipVtiledr,"H2F_MixedPointProj_nmipVtiledr","Mixed event nMIP vs. FCS projected point to EPD, polar distance to projected hit;dR (cm);nmip", 80,-20,20, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_nmipVtiledphi,"H2F_MixedPointProj_nmipVtiledphi","Mixed event nMIP vs. FCS projected point to EPD, angle difference to proj tile;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+
+  loaded += mHists->AddH2F(file,mH2F_PointProj_LowMult_nmipValldr,"H2F_PointProj_LowMult_nmipValldr","Low Mult nMIP vs. FCS projected point to EPD, polar distance to all other hits;dR (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_PointProj_LowMult_nmipValldphi,"H2F_PointProj_LowMult_nmipValldphi","Low Mult nMIP vs. FCS projected point to EPD, angle difference to all other hits;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_LowMult_nmipValldr,"H2F_MixedPointProj_LowMult_nmipValldr","Low Mult Mixed event nMIP vs. FCS projected point to EPD, polar distance to projected hit;dR (cm);nmip", 200,-100,100, 70,0,7);
+  loaded += mHists->AddH2F(file,mH2F_MixedPointProj_LowMult_nmipValldphi,"H2F_MixedPointProj_LowMult_nmipValldphi","Low Mult Mixed event nMIP vs. FCS projected point to EPD, angle difference to proj all;d#phi;nmip", 100,-TMath::Pi(),TMath::Pi(), 70,0,7);
 
   loaded += mHists->AddH1F(file,mH1F_AllPi0Mult,"H1F_AllPi0Mult","Pi0 Multiplicity with only an energy cut;Point Multiplicity", 30,0,30);
   loaded += mHists->AddH1F(file,mH1F_AllPi0Zgg,"H1F_AllPi0Zgg","Zgg of all Pi0s with only an energy;Zgg;", 100,0,1);
@@ -326,6 +336,7 @@ Int_t StMuFcsPi0TreeMaker::Init()
   mEvtInfo     = new FcsEventInfo();
   mPhArr       = new TClonesArray("FcsPhotonCandidate");
   mPi0Arr      = new TClonesArray("FcsPi0Candidate");
+  mMixedPhArr  = new TClonesArray("FcsPhotonCandidate");
 
   if( mTreeOnBitMap!=0 ){
     if( isEventOn() ){
@@ -729,25 +740,47 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     }//fcs dets
   }
 
+  //std::cout << "|ncandidates:"<<ncandidates <<"|clustersize:"<<clustersize <<"|Size:"<<mPhArr->GetEntriesFast() << std::endl;
+  Int_t npoints = ncandidates - clustersize; //Don't need to add 1 since including clustersize but not ncandidates
+  mH1F_PointMult->Fill(npoints);
+  mPhArr->Sort(); //Since this is properly sorted with clusters showing up first clustersize is unchanged. Also sorts by energy
+
   //Check photon candidates if they have any hits in the EPD. Use a separate loop so that this information could be used in the pi0 checking loop if needed. In future may also want to check against FCS preshower (EPD) hits
-  //Int_t noldhits = mMixedPhArr->GetEntriesFast();
-  //Int_t nnewhits = mPhArr->GetEntriesFast();
-  //Int_t ntotal = noldhits+nnewhits;
-  for( Int_t iph = 0; iph<mPhArr->GetEntriesFast(); ++iph ){
-    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(iph);
-    std::vector<Double_t> epdproj(ProjectToEpd(ph->mX,ph->mY,ph->mZ,mUseVertex));
-    if( !(ph->mFromCluster) ){
+  Int_t noldhits = mMixedPhArr->GetEntriesFast();
+  Int_t nnewhits = mPhArr->GetEntriesFast();
+  Int_t ntotal = noldhits+nnewhits;
+  //std::cout << "|nold:"<<noldhits << "|nnew:"<<nnewhits << "|ntotal:"<<ntotal << "|oldvert:"<<mOldVertex << "|newvert:"<<mUseVertex<< std::endl;
+  for( Int_t iph = 0; iph<ntotal; ++iph ){
+    //std::cout << "|iph:"<<iph << "|iphnew:"<<iph-noldhits << std::endl;
+    FcsPhotonCandidate* ph = 0;
+    if( iph>=noldhits ){
+      ph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(iph-noldhits);
+    }
+    else{
+      ph = (FcsPhotonCandidate*) mMixedPhArr->UncheckedAt(iph);
+    }
+    if( ph==0 ){ std::cout << "==========I=CANNOT=BE=ZERO==========" << std::endl; return kStErr; }
+    std::vector<Double_t> epdproj;
+    if( iph>=noldhits ){
+      epdproj = ProjectToEpd(ph->mX,ph->mY,ph->mZ,mUseVertex);
+    }
+    else{
+      //iph<noldhits
+      epdproj = ProjectToEpd(ph->mX,ph->mY,ph->mZ,mOldVertex);
+    }
+    if( iph>=noldhits ){
+      //Only fill for the points from current event
       mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
       if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
-    }
-    //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<mUseVertex << std::endl;
-    //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
-
-    //loop over all west epd tiles so that even if no hit recorded can use as a veto
-    for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
-      for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
-	if( mEpdGeo->IsInTile(i_pp,i_tt, 1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
-	  ph->mEpdHitNmip = 0;
+      //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<mUseVertex << std::endl;
+      //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
+      
+      //loop over all west epd tiles so that even if no hit recorded can use as a veto
+      for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+	for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+	  if( mEpdGeo->IsInTile(i_pp,i_tt, 1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
+	    ph->mEpdHitNmip = 0;
+	  }
 	}
       }
     }
@@ -779,37 +812,58 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       double rhit = sqrt(epdhitxyz[0]*epdhitxyz[0] + epdhitxyz[1]*epdhitxyz[1]);
       Double_t phipoint = TMath::ATan2(epdproj.at(1),epdproj.at(0));
       Double_t phihit = TMath::ATan2(epdhitxyz[1],epdhitxyz[0]);
+      Double_t diffphi = phipoint-phihit;
+      if( diffphi>TMath::Pi() ){ diffphi = diffphi - TMath::Pi(); }
+      if( diffphi<(-1.0*TMath::Pi()) ){ diffphi = diffphi + TMath::Pi(); }
       //std::cout << "|epdz:"<<epdhitxyz[2] << std::endl;
-      if( !(ph->mFromCluster) ){
+      if( ! ph->mFromCluster ){
 	if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){
-	  mH2F_PointProj_nmipValldx->Fill(dx,nmip);
-	  mH2F_PointProj_nmipValldy->Fill(dy,nmip);
-	  mH2F_PointProj_nmipValldr->Fill(rpoint-rhit,nmip);
-	  mH2F_PointProj_nmipValldphi->Fill(phipoint-phihit,nmip);
+	  if( mTrigEm2==3 && mTrigEm0<0 && mTrigEm1<0 ){
+	    if( iph>=noldhits ){
+	      mH2F_PointProj_nmipValldx->Fill(dx,nmip);
+	      mH2F_PointProj_nmipValldy->Fill(dy,nmip);
+	      mH2F_PointProj_nmipValldr->Fill(rpoint-rhit,nmip);
+	      mH2F_PointProj_nmipValldphi->Fill(diffphi,nmip);
+	      if( npoints<=5 ){
+		mH2F_PointProj_LowMult_nmipValldr->Fill(rpoint-rhit,nmip);
+		mH2F_PointProj_LowMult_nmipValldphi->Fill(diffphi,nmip);
+	      }
+	    }
+	    else{
+	      //iph<noldhits
+	      mH2F_MixedPointProj_nmipValldr->Fill(rpoint-rhit,nmip);
+	      mH2F_MixedPointProj_nmipValldphi->Fill(diffphi,nmip);
+	      if( mNOldPoints<=5 ){
+		mH2F_MixedPointProj_LowMult_nmipValldr->Fill(rpoint-rhit,nmip);
+		mH2F_MixedPointProj_LowMult_nmipValldphi->Fill(diffphi,nmip);
+	      }
+	    }
+	  }
 	}
       }
       if( mEpdGeo->IsInTile(epdpp,epdtt,ew, epdproj.at(0),epdproj.at(1)) ){
-	if( !(ph->mFromCluster) ){
+	if( ! ph->mFromCluster ){
 	  if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){
-	    mH2F_PointProj_nmipVtiledx->Fill(dx,nmip);
-	    mH2F_PointProj_nmipVtiledy->Fill(dy,nmip);
-	    mH2F_PointProj_nmipVtiledr->Fill(rpoint-rhit,nmip);
-	    mH2F_PointProj_nmipVtiledphi->Fill(phipoint-phihit,nmip);
+	    if( iph>=noldhits ){
+	      mH2F_PointProj_nmipVtiledx->Fill(dx,nmip);
+	      mH2F_PointProj_nmipVtiledy->Fill(dy,nmip);
+	      mH2F_PointProj_nmipVtiledr->Fill(rpoint-rhit,nmip);
+	      mH2F_PointProj_nmipVtiledphi->Fill(diffphi,nmip);
+	    }
+	    else{
+	      //iph<noldhits
+	      mH2F_MixedPointProj_nmipVtiledr->Fill(rpoint-rhit,nmip);
+	      mH2F_MixedPointProj_nmipVtiledphi->Fill(diffphi,nmip);
+	    }
 	  }
 	}
 	//int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
-	ph->mEpdHitNmip = nmip;
+	if( iph>=noldhits ){ ph->mEpdHitNmip = nmip; }
 	//std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
       }
     }
-    mH2F_EpdNmip->Fill(ph->mFromCluster,ph->mEpdHitNmip);
+    if( iph>=noldhits ){ mH2F_EpdNmip->Fill(ph->mFromCluster,ph->mEpdHitNmip); }
   }
-
-
-  //std::cout << "|ncandidates:"<<ncandidates <<"|clustersize:"<<clustersize <<"|Size:"<<mPhArr->GetEntriesFast() << std::endl;
-  Int_t npoints = ncandidates - clustersize; //Don't need to add 1 since including clustersize but not ncandidates
-  mH1F_PointMult->Fill(npoints);
-  mPhArr->Sort(); //Since this is properly sorted with clusters showing up first clustersize is unchanged. Also sorts by energy
 
   //std::cout << "|clustersize:"<<clustersize << "|ncandidates:"<<ncandidates << "|npoints:"<<npoints << std::endl;
   
@@ -1105,6 +1159,24 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 
   if( mPi0Tree!=0 ){ mPi0Tree->Fill(); }
 
+  //Do this here since clear gets called before Make so that MixedPhArr doesn't get filled with junk before first pass
+  mNOldPoints = npoints;
+  mOldVertex = mUseVertex;  //Set old vertex for mixed event analysis on next event
+  mMixedPhArr->Clear();
+  //mMixedPhArr->AbsorbObjects(mPhArr); //@[September 4, 2025] > This may giving a memory leak adding my own for loop to copy
+  for( int i=0; i<mPhArr->GetEntriesFast(); ++i ){
+    FcsPhotonCandidate* mixedph = (FcsPhotonCandidate*)mMixedPhArr->ConstructedAt(i);
+    FcsPhotonCandidate* ph = (FcsPhotonCandidate*)mPhArr->ConstructedAt(i);
+    ph->Copy(*mixedph); //Copy function copies ph into mixedph
+    //ph->Print();
+    //mixedph->Print();
+  }
+
+  return kStOk;
+}
+
+void StMuFcsPi0TreeMaker::Clear(Option_t* option)
+{
   //Reset Variables
   mFoundVertex = 0;
   mUseVertex = -999.0;
@@ -1121,7 +1193,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   mPhArr->Clear();
   mPi0Arr->Clear();
   
-  return kStOk;
+  return;
 }
 
 /*void StMuFcsPi0TreeMaker::AnalyzePi0s()
@@ -1392,16 +1464,22 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   //AddHistStatsOneline(legpad1,h1pi0mult,"NoEpdCut");
   TH1* h1phmult = mH1F_EpdPhPi0Mult->DrawCopy("hist e same");
   h1phmult->SetLineColor(kBlue);
-  //AddHistStatsOneline(legpad1,h1phmult,"EpdNmip<0.7");
-  legpad1->AddEntry(h1phmult,"EpdNmip<0.4","fle");
+  std::stringstream ss_legname;
+  ss_legname << "EpdNmip<"<<mEpdNmipCut;
+  //AddHistStatsOneline(legpad1,h1phmult,ss_legname.str().c_str());
+  legpad1->AddEntry(h1phmult,ss_legname.str().c_str(),"fle");
   TH1* h1singlephmult = mH1F_EpdSinglePhPi0Mult->DrawCopy("hist e same");
   h1singlephmult->SetLineColor(kRed);
-  //AddHistStatsOneline(legpad1,h1singlephmult,"EpdNmip<0.7 single point");
-  legpad1->AddEntry(h1singlephmult,"EpdNmip<0.4 single point","fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip<"<<mEpdNmipCut << " single point";
+  //AddHistStatsOneline(legpad1,h1singlephmult,ss_legname.str().c_str());
+  legpad1->AddEntry(h1singlephmult,ss_legname.str().c_str(),"fle");
   TH1* h1singlechmult = mH1F_EpdSingleChPi0Mult->DrawCopy("hist e same");
   h1singlechmult->SetLineColor(kGreen+2);
-  //AddHistStatsOneline(legpad1,h1singlechmult,"EpdNmip>=0.7 single point");
-  legpad1->AddEntry(h1singlechmult,"EpdNmip>=0.4 single point","fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip>="<<mEpdNmipCut << " single point";
+  //AddHistStatsOneline(legpad1,h1singlechmult,ss_legname.str().c_str());
+  legpad1->AddEntry(h1singlechmult,ss_legname.str().c_str(),"fle");
   legpad1->Draw();
   
   //canv->cd(2);
@@ -1536,15 +1614,21 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
   mH1F_EpdPhAllMass->Draw("hist e same");
   mH1F_EpdPhAllMass->SetStats(0);
   mH1F_EpdPhAllMass->SetLineColor(kBlue);
-  legendpad7->AddEntry(mH1F_EpdPhAllMass,"Epd nmip<0.4","fle");
+  ss_legname.str("");
+  ss_legname << "Epd nmip<"<<mEpdNmipCut;
+  legendpad7->AddEntry(mH1F_EpdPhAllMass,ss_legname.str().c_str(),"fle");
   mH1F_EpdSinglePhAllMass->Draw("hist e same");
   mH1F_EpdSinglePhAllMass->SetStats(0);
   mH1F_EpdSinglePhAllMass->SetLineColor(kRed);
-  legendpad7->AddEntry(mH1F_EpdSinglePhAllMass,"Epd nmip<0.4 single point","fle");
+  ss_legname.str("");
+  ss_legname << "Epd nmip<"<<mEpdNmipCut << " single point";
+  legendpad7->AddEntry(mH1F_EpdSinglePhAllMass,ss_legname.str().c_str(),"fle");
   mH1F_EpdSingleChAllMass->Draw("hist e same");
   mH1F_EpdSingleChAllMass->SetStats(0);
   mH1F_EpdSingleChAllMass->SetLineColor(kGreen+2);
-  legendpad7->AddEntry(mH1F_EpdSingleChAllMass,"Epd nmip>=0.4 single point","fle");  
+  ss_legname.str("");
+  ss_legname << "Epd nmip>="<<mEpdNmipCut << "  single point";
+  legendpad7->AddEntry(mH1F_EpdSingleChAllMass,ss_legname.str().c_str(),"fle");  
   legendpad7->Draw();
 
   // canv->cd(12);
@@ -1570,41 +1654,135 @@ void StMuFcsPi0TreeMaker::PaintPi0Overlap(TCanvas* canv, const char* savename) c
 void StMuFcsPi0TreeMaker::PaintEpdAllDistQa(TCanvas* canv, const char* savename) const
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1)->SetLogz();
   mH2F_PointProj_nmipValldx->Draw("colz");
-  mH2F_PointProj_nmipValldx->GetYaxis()->SetRangeUser(0,4);
-  canv->cd(2)->SetLogz();
-  mH2F_PointProj_nmipValldy->Draw("colz");
-  mH2F_PointProj_nmipValldy->GetYaxis()->SetRangeUser(0,4);
-  canv->cd(3)->SetLogz();
-  mH2F_PointProj_nmipValldr->Draw("colz");
-  mH2F_PointProj_nmipValldr->GetYaxis()->SetRangeUser(0,4);
+  mH2F_PointProj_nmipValldx->GetYaxis()->SetRangeUser(0,3);
   canv->cd(4)->SetLogz();
+  mH2F_PointProj_nmipValldy->Draw("colz");
+  mH2F_PointProj_nmipValldy->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(2)->SetLogz();
+  mH2F_PointProj_nmipValldr->Draw("colz");
+  mH2F_PointProj_nmipValldr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(3)->SetLogz();
   mH2F_PointProj_nmipValldphi->Draw("colz");
-  mH2F_PointProj_nmipValldphi->GetYaxis()->SetRangeUser(0,4);
+  mH2F_PointProj_nmipValldphi->GetYaxis()->SetRangeUser(0,3);
+
+  canv->cd(5)->SetLogz();
+  mH2F_MixedPointProj_nmipValldr->Draw("colz");
+  mH2F_MixedPointProj_nmipValldr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(6)->SetLogz();
+  mH2F_MixedPointProj_nmipValldphi->Draw("colz");
+  mH2F_MixedPointProj_nmipValldphi->GetYaxis()->SetRangeUser(0,3);
+
   canv->Print(savename);
 }
+
+void StMuFcsPi0TreeMaker::PaintEpdDistAnaQa(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  canv->Divide(3,2);
+
+  TH1* pointprojdr = ((TH2*)mH2F_PointProj_nmipValldr)->ProjectionX("pointprojdr");
+  TH1* pointprojdphi = ((TH2*)mH2F_PointProj_nmipValldphi)->ProjectionX("pointprojdphi");
+  TH1* mixedpointprojdr = ((TH2*)mH2F_MixedPointProj_nmipValldr)->ProjectionX("mixedpointprojdr");
+  TH1* mixedpointprojdphi = ((TH2*)mH2F_MixedPointProj_nmipValldphi)->ProjectionX("mixedpointprojdphi");
+  canv->cd(1);
+  pointprojdr->DrawCopy("hist e");
+  canv->cd(4);
+  mixedpointprojdr->Draw("hist e");
+  canv->cd(2);
+  pointprojdphi->DrawCopy("hist e");
+  canv->cd(5);
+  mixedpointprojdphi->Draw("hist e");
+  
+  pointprojdr->Add(mixedpointprojdr,-1);
+  pointprojdphi->Add(mixedpointprojdphi,-1);
+  
+  canv->cd(3);
+  pointprojdr->Draw("hist e");
+  canv->cd(6);
+  pointprojdphi->Draw("hist e");
+
+  canv->Print(savename);
+  
+}
+
+void StMuFcsPi0TreeMaker::PaintEpdAllDistQaLowMult(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  canv->Divide(3,2);
+
+  canv->cd(1)->SetLogz();
+  mH2F_PointProj_LowMult_nmipValldr->Draw("colz");
+  mH2F_PointProj_LowMult_nmipValldr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(2)->SetLogz();
+  mH2F_PointProj_LowMult_nmipValldphi->Draw("colz");
+  mH2F_PointProj_LowMult_nmipValldphi->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(4)->SetLogz();
+  mH2F_MixedPointProj_LowMult_nmipValldr->Draw("colz");
+  mH2F_MixedPointProj_LowMult_nmipValldr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(5)->SetLogz();
+  mH2F_MixedPointProj_LowMult_nmipValldphi->Draw("colz");
+  mH2F_MixedPointProj_LowMult_nmipValldphi->GetYaxis()->SetRangeUser(0,3);
+
+  TH1* pointprojlowmultdr = ((TH2*)mH2F_PointProj_LowMult_nmipValldr)->ProjectionX("pointprojlowmultdr");
+  TH1* pointprojlowmultdphi = ((TH2*)mH2F_PointProj_LowMult_nmipValldphi)->ProjectionX("pointprojlowmultdphi");
+  TH1* mixedpointprojlowmultdr = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldr)->ProjectionX("mixedpointprojlowmultdr");
+  TH1* mixedpointprojlowmultdphi = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldphi)->ProjectionX("mixedpointprojlowmultdphi");
+  /*
+  canv->cd(5);
+  pointprojdr->DrawCopy("hist e");
+  canv->cd(6);
+  mixedpointprojdr->Draw("hist e");
+  canv->cd(7);
+  pointprojdphi->DrawCopy("hist e");
+  canv->cd(8);
+  mixedpointprojdphi->Draw("hist e");
+  */
+
+  pointprojlowmultdr->Add(mixedpointprojlowmultdr,-1);
+  pointprojlowmultdphi->Add(mixedpointprojlowmultdphi,-1);
+  
+  canv->cd(3);
+  pointprojlowmultdr->Draw("hist e");
+  canv->cd(6);
+  pointprojlowmultdphi->Draw("hist e");
+
+
+  canv->Print(savename);
+
+}
+
 void StMuFcsPi0TreeMaker::PaintEpdTileDistQa(TCanvas* canv, const char* savename) const
 {
   canv->Clear();
-  canv->Divide(2,2);
+  canv->Divide(3,2);
   canv->cd(1)->SetLogz();
   mH2F_PointProj_nmipVtiledx->Draw("colz");
   mH2F_PointProj_nmipVtiledx->GetXaxis()->SetRangeUser(-20,20);
-  mH2F_PointProj_nmipVtiledx->GetYaxis()->SetRangeUser(0,4);
-  canv->cd(2)->SetLogz();
+  mH2F_PointProj_nmipVtiledx->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(4)->SetLogz();
   mH2F_PointProj_nmipVtiledy->Draw("colz");
   mH2F_PointProj_nmipVtiledy->GetXaxis()->SetRangeUser(-20,20);
-  mH2F_PointProj_nmipVtiledy->GetYaxis()->SetRangeUser(0,4);
-  canv->cd(3)->SetLogz();
+  mH2F_PointProj_nmipVtiledy->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(2)->SetLogz();
   mH2F_PointProj_nmipVtiledr->Draw("colz");
   mH2F_PointProj_nmipVtiledr->GetXaxis()->SetRangeUser(-20,20);
-  mH2F_PointProj_nmipVtiledr->GetYaxis()->SetRangeUser(0,4);
-  canv->cd(4)->SetLogz();
+  mH2F_PointProj_nmipVtiledr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(3)->SetLogz();
   mH2F_PointProj_nmipVtiledphi->Draw("colz");
   mH2F_PointProj_nmipVtiledphi->GetXaxis()->SetRangeUser(-0.3,0.3);
-  mH2F_PointProj_nmipVtiledphi->GetYaxis()->SetRangeUser(0,4);
+  mH2F_PointProj_nmipVtiledphi->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(5)->SetLogz();
+  mH2F_MixedPointProj_nmipVtiledr->Draw("colz");
+  mH2F_MixedPointProj_nmipVtiledr->GetXaxis()->SetRangeUser(-20,20);
+  mH2F_MixedPointProj_nmipVtiledr->GetYaxis()->SetRangeUser(0,3);
+  canv->cd(6)->SetLogz();
+  mH2F_MixedPointProj_nmipVtiledphi->Draw("colz");
+  mH2F_MixedPointProj_nmipVtiledphi->GetXaxis()->SetRangeUser(-0.3,0.3);
+  mH2F_MixedPointProj_nmipVtiledphi->GetYaxis()->SetRangeUser(0,3);
+
   canv->Print(savename);
 }
 
@@ -1741,10 +1919,18 @@ void StMuFcsPi0TreeMaker::PaintInvMassEpdQa(TCanvas* canv, const char* savename 
   h1_singlech->Draw("hist e same");
   //legpad1->AddEntry(h1_allmass,"All point pair","fle");
   //legpad1->AddEntry(h1_allbutepdcut,"All but EPD mip cut","fle");
-  legpad1->AddEntry(h1_allcutepdph,"EPD nmip<0.4/CutMass","fle");
-  legpad1->AddEntry(h1_allcutepdch,"EPD nmip>=0.4/CutMass","fle");
-  legpad1->AddEntry(h1_singleph,"EPD nmip<0.4 one point/CutMass","fle");
-  legpad1->AddEntry(h1_singlech,"EPD nmip>=0.4 one point/CutMass","fle");
+  std::stringstream ss_legname;
+  ss_legname << "EpdNmip<"<<mEpdNmipCut << "/CutMass";
+  legpad1->AddEntry(h1_allcutepdph,ss_legname.str().c_str(),"fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip>="<<mEpdNmipCut << "/CutMass";
+  legpad1->AddEntry(h1_allcutepdch,ss_legname.str().c_str(),"fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip<"<<mEpdNmipCut << " one point/CutMass";
+  legpad1->AddEntry(h1_singleph,ss_legname.str().c_str(),"fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip>="<<mEpdNmipCut << " one point/CutMass";
+  legpad1->AddEntry(h1_singlech,ss_legname.str().c_str(),"fle");
   legpad1->Draw();
   /*
   canv->cd(2);
@@ -2321,9 +2507,13 @@ void StMuFcsPi0TreeMaker::PaintPi0QaForDefense(TCanvas* canv, const char* savena
   TH1* h1allcutepdch = (TH1*)mH1F_EpdChAllMass->DrawNormalized("hist e same");
   h1allcutepdch->SetStats(0);
   h1allcutepdch->SetLineColor(kGreen+2);
-  legpad12->AddEntry(h1allcutmass,"EPD nmip<0.4","fle");
+  std::stringstream ss_legname;
+  ss_legname << "EpdNmip<"<<mEpdNmipCut;
+  legpad12->AddEntry(h1allcutmass,ss_legname.str().c_str(),"fle");
   legpad12->AddEntry(h1allcutbutepd,"No EPD nmip cut","fle");
-  legpad12->AddEntry(h1allcutepdch,"EPD nmip>=0.4","fle");
+  ss_legname.str("");
+  ss_legname << "EpdNmip>="<<mEpdNmipCut;
+  legpad12->AddEntry(h1allcutepdch,ss_legname.str().c_str(),"fle");
   legpad12->Draw();
   
   canv->Print(savename);
@@ -2382,18 +2572,920 @@ void StMuFcsPi0TreeMaker::PaintOneHistAllTrigger(TCanvas* canv, TObjArray* hista
   canv->Print(savename);
 }
 
-TGeoPolygon* StMuFcsPi0TreeMaker::EpdTilePoly(short pp, short tt) const
+Int_t StMuFcsPi0TreeMaker::DrawEpdProjection(TCanvas* canvas, const char* savename)
 {
+  if( mEpdGeo==0 ){ return 0; }
+  if( canvas==0 ) { return 0; }
+  canvas->Clear();
+  canvas->cd();
+  canvas->DrawFrame(-100,-100,100,100);
+  if( mEpdTileMap.size()>0 ){
+    for( std::map<Int_t,TPolyLine*>::iterator polyitr=mEpdTileMap.begin(); polyitr!=mEpdTileMap.end(); ++polyitr ){
+      polyitr->second->SetLineWidth(1);
+      polyitr->second->SetLineColor(kBlack);
+      polyitr->second->SetFillColorAlpha(kWhite,0);
+    }
+  }
+  else{
+    //loop over all west epd tiles and make the polygon need to do this every time otherwise root does not draw the fill correctly
+    for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+      for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+	TPolyLine* polyline = EpdTilePoly(i_pp,i_tt);
+	if( polyline!=0 ){
+	  polyline->SetLineColor(kBlack);
+	  polyline->SetFillColorAlpha(kWhite,0);
+	  std::pair<std::map<Int_t,TPolyLine*>::iterator,bool> itr = mEpdTileMap.emplace(100*i_pp+i_tt,polyline);
+	  //std::cout << "|i_pp:"<<i_pp<<"|i_tt:"<<i_tt<<"|key:"<<100*i_pp+i_tt << std::endl;
+	  if( ! (itr.second) ){ std::cout << "Could not create polyline map element" << std::endl; }
+	}
+      }
+    }
+  }
+
+  //loop over all epd hits
+  unsigned int nepdhits = 0;
+  StSPtrVecEpdHit* epdhits = 0;
+  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+  else if( mEpdColl!=0 ){
+    epdhits = &(mEpdColl->epdHits());
+    nepdhits = epdhits->size();
+  }
+  else{ LOG_ERROR << "StMuEpdRun22QaMaker::FillEpdinfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return 0; }
+  StMuEpdHit* muepdhit = 0;
+  StEpdHit* epdhit = 0;
+  //std::cout << "|nepdhits:"<<nepdhits << std::endl;
+  for(unsigned int i=0; i<nepdhits; ++i ){
+    if( mMuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)mMuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
+    else if( epdhits!=0 ){ epdhit = (StEpdHit*)((*epdhits)[i]); }
+    else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return 0; } 
+    //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
+    int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
+    if( ew==-1 ){ continue; }
+    int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
+    int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
+    float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();         //The ADC value of the hit divided by the MIP peak position; e.g. if nmip==1 then adc value sits at the MIP peak
+    std::map<Int_t,TPolyLine*>::iterator epdhitit = mEpdTileMap.find(100*epdpp+epdtt);
+    if( epdhitit!=mEpdTileMap.end() ){
+      if( 0<nmip && nmip<mEpdNmipCut ){
+	epdhitit->second->SetFillColorAlpha(kBlue,0.2);
+	//std::cout << "  <nmip|ihit:"<<i << "|epdpp:"<<epdpp << "|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
+      }
+      else if( nmip>mEpdNmipCut ){
+	//Int_t color = kOrange+nmip;
+	//if( nmip>10 ){ color = kOrange+10; }
+	//epdhitit->second->SetFillColorAlpha(kRed,0.2);
+	Int_t color = kOrange;
+	epdhitit->second->SetFillColor(color);
+	//std::cout << "  >nmip|ihit:"<<i << "|epdpp:"<<epdpp << "|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
+      }
+      else{
+	epdhitit->second->SetFillColor(kGray);
+      }
+    }
+    else{
+      std::cout << "Not in map!" << std::endl;
+    }
+  }
+
+  //loop over all photon candidates
+  std::vector<TMarker*> FcsMarkers;
+  std::vector<TEllipse*> FcsPointEllipse;
+  for( Int_t iph = 0; iph<mPhArr->GetEntriesFast(); ++iph ){
+    if( !(mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh) ){ continue; }
+    //std::cout << "|iph:"<<iph << "|iphnew:"<<iph-noldhits << std::endl;
+    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) mPhArr->UncheckedAt(iph);
+    if( ph==0 ){ std::cout << "==========I=CANNOT=BE=ZERO==========" << std::endl; return 0; }
+    std::vector<Double_t> epdproj = ProjectToEpd(ph->mX,ph->mY,ph->mZ,mUseVertex);
+    //std::cout << "|i:"<<iph <<"|x:"<<epdproj.at(0) << "|y:"<<epdproj.at(1) << std::endl;
+    TMarker* fcsmarker = 0;
+    TEllipse* ellipse = 0;
+    if( ph->mFromCluster ){
+      fcsmarker = new TMarker(epdproj.at(0),epdproj.at(1),33);
+      fcsmarker->SetMarkerSize(1.5);
+    }
+    else{
+      fcsmarker = new TMarker(epdproj.at(0),epdproj.at(1),30);
+      fcsmarker->SetMarkerSize(2);
+      ellipse = new TEllipse(epdproj.at(0),epdproj.at(1),10,10);
+      int linesize=1;
+      //A bit hacky but should work since size and energy is linearly increasing
+      if( ph->mEn>10 ){ linesize=2; }
+      if( ph->mEn>20 ){ linesize=3; }
+      if( ph->mEn>30 ){ linesize=4; }
+      if( ph->mEn>40 ){ linesize=5; }
+      if( ph->mEn>50 ){ linesize=6; }
+      if( ph->mEn>60 ){ linesize=7; }
+      if( ph->mEn>70 ){ linesize=8; }
+      if( ph->mEn>80 ){ linesize=9; }
+      if( ph->mEn>90 ){ linesize=10; }
+      ellipse->SetLineWidth(linesize);
+      FcsPointEllipse.push_back(ellipse);
+    }
+    fcsmarker->SetMarkerColor(kBlack);
+    
+    //loop over all west epd tiles so that even if no hit recorded can use as a veto
+    //Supersector runs [1,12]
+    //Tile number [1,31]
+    for(int i_pp=1; i_pp<=12; ++i_pp){
+      for( int i_tt=1; i_tt<=31; ++i_tt ){
+	if( mEpdGeo->IsInTile(i_pp,i_tt, 1, epdproj.at(0),epdproj.at(1)) ){ //Only care about west EPD tiles; hence the '1'
+	  std::map<Int_t,TPolyLine*>::iterator epdhitit = mEpdTileMap.find(100*i_pp+i_tt);
+	  if( epdhitit!=mEpdTileMap.end() ){
+	    if( ph->mEpdHitNmip==0 ){
+	      epdhitit->second->SetLineColor(kGreen+2);
+	      epdhitit->second->SetFillColorAlpha(kGreen,0.5);
+	      epdhitit->second->SetLineWidth(2);
+	      fcsmarker->SetMarkerColor(kGreen+2);
+	      if( ellipse!=0 ){ ellipse->SetLineColor(kGreen+2); }
+	    }
+	    else if( 0<ph->mEpdHitNmip && ph->mEpdHitNmip<mEpdNmipCut ){
+	      epdhitit->second->SetLineColor(kBlue);
+	      epdhitit->second->SetFillColorAlpha(kBlue,0.5);
+	      epdhitit->second->SetLineWidth(2);
+	      fcsmarker->SetMarkerColor(kBlue);
+	      if( ellipse!=0 ){ ellipse->SetLineColor(kBlue); }
+	      //std::cout << "<nmip|iph:"<<iph << "|i_pp:"<<i_pp << "|i_tt:"<<i_tt << "|nmip"<<ph->mEpdHitNmip << std::endl;
+	    }
+	    else if( ph->mEpdHitNmip>=mEpdNmipCut ){
+	      //epdhitit->second->SetLineColor(kRed);
+	      //epdhitit->second->SetFillColorAlpha(kRed,0.5);
+	      epdhitit->second->SetLineWidth(2);
+	      fcsmarker->SetMarkerColor(kRed);
+	      if( ellipse!=0 ){ ellipse->SetLineColor(kRed); }
+	    }
+	    else{
+	      epdhitit->second->SetLineColor(kGray);
+	      fcsmarker->SetMarkerColor(kGray);
+	      if( ellipse!=0 ){ ellipse->SetLineColor(kGray); }
+	    }
+	  }
+	  else{
+	    std::cout << "Not in map!" << std::endl;
+	  }
+	}
+      }
+    }
+    FcsMarkers.push_back(fcsmarker);
+  }
+
+  //Draw Epd tiles first so they appear in the background
+  for( std::map<Int_t,TPolyLine*>::iterator polyitr=mEpdTileMap.begin(); polyitr!=mEpdTileMap.end(); ++polyitr ){
+    //std::cout << "|id:"<<polyitr->first << "|polyline:"<<polyitr->second << std::endl;
+    polyitr->second->Draw("f");
+    polyitr->second->Draw();
+  }
+  //Draw photon candidates next on top of the epd tiles
+  for( unsigned int i=0; i<FcsMarkers.size(); ++i ){
+    FcsMarkers.at(i)->Draw();
+  }
+  for( unsigned int i=0; i<FcsPointEllipse.size(); ++i ){
+    FcsPointEllipse.at(i)->SetFillColorAlpha(kWhite,0);
+    FcsPointEllipse.at(i)->Draw();
+  }
+
+  canvas->Print(savename);
+  //Clean memory
+  for( unsigned int i=0; i<FcsMarkers.size(); ++i ){
+    delete FcsMarkers.at(i);
+  }
+  for( unsigned int i=0; i<FcsPointEllipse.size(); ++i ){
+    delete FcsPointEllipse.at(i);
+  }
+  return 1;
+}
+
+TPolyLine* StMuFcsPi0TreeMaker::EpdTilePoly(short pp, short tt) const
+{
+  if( mEpdGeo==0 ){ return 0; }
   double x[5] = {0};
   double y[5] = {0};
   int ncorners = 0;
   short eastwest = 1;   //1 means EPD west
   mEpdGeo->GetCorners(pp,tt,eastwest,&ncorners,x,y);
   if( ncorners==0 ){ return 0; }
-  TGeoPolygon* geo = new TGeoPolygon(ncorners);
-  geo->SetXY(x,y);
-  return geo;
+  std::vector<double> xvals;
+  std::vector<double> yvals;
+  for( int i=0; i<ncorners; ++i ){
+    xvals.emplace_back(x[i]);
+    yvals.emplace_back(y[i]);
+    if( i==ncorners-1 ){
+      xvals.emplace_back(x[0]);
+      yvals.emplace_back(y[0]);
+    }
+  }
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|n:"<<ncorners << "|";
+  for( unsigned int j=0; j<xvals.size(); ++j ){
+    //std::cout << "("<<xvals.at(j) << ","<<yvals.at(j) << ")|";
+  }
+  //std::cout << std::endl;
+  TPolyLine* polyline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+  return polyline;
 }
 
 
+//Makes the 2x2 
+TPolyLine* StMuFcsPi0TreeMaker::EpdCCWOuterCorner(short pp, short tt) const
+{
+  //std::vector<Int_t> adjaenttiles = StMuEpdRun22QaMaker::GetAdjacentEpdIds(pp,tt);
+  //std::vector<TPolyLine*> alllines;
+  //alllines.push_back(EpdTilePoly(pp,tt)); //Start with center tile
+  TPolyLine* main = EpdTilePoly(pp,tt);
+  Int_t nmain = main->GetN();
+  Double_t* xmain = main->GetX();
+  Double_t* ymain = main->GetY();
+  std::list<double> xvals;
+  std::list<double> yvals;
+  for( int i=0; i<nmain-1; ++i ){
+    xvals.push_back(xmain[i]);
+    yvals.push_back(ymain[i]);
+  }
+  std::list<double>::iterator xitr = xvals.begin();
+  std::list<double>::iterator yitr = yvals.begin();
+  /*
+  for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+    std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+    }*/
+  bool CCWIstt1 = false;
+  xitr = xvals.begin();
+  yitr = yvals.begin();
+  Int_t adjpp = 0;
+  Int_t adjtt = 0;
+  StMuEpdRun22QaMaker::GetEpdTileCCW(pp,tt,adjpp,adjtt);
+  //std::cout << "CCW|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Know there is something in the counter clockwise direction
+    TPolyLine* adjline = EpdTilePoly(adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    int lastcorner = 3;  //For rectangular tiles this is the index to use
+    //std::cout << "|nadj:"<<nadj << std::endl;
+    if( nadj==6 ){
+      //For tile pp1
+      CCWIstt1 = true;
+      lastcorner = 4;  //For tt1 which is pentagonal this is the index to use
+    }
+    //if( nadj==5 ){  //5 is actually 4 corners since last element is the same as the start
+      //std::cout << "HERECCW:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      //Since "insert" will insert before the iterator advance to second corner which is the outer CCW corner
+      std::advance(xitr,1);
+      std::advance(yitr,1);
+      //Want to add CW inner edge first and then inner CCW edge
+      xvals.insert(xitr,adjxvals[lastcorner]);
+      yvals.insert(yitr,adjyvals[lastcorner]);
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      if( CCWIstt1 ){
+	//Add extra corner for tt1
+	xvals.insert(xitr,adjxvals[3]);
+	yvals.insert(yitr,adjyvals[3]);
+      }
+      //}
+    delete adjline;
+    
+    /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+  }
+  StMuEpdRun22QaMaker::GetEpdTileOuter(pp,tt,adjpp,adjtt);
+  //std::cout << "Outer|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Erase point on this corner
+    //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+    xitr = xvals.erase(xitr); //Gets set to next element (corner)
+    yitr = yvals.erase(yitr);
+    //std::cout << "AFTERERASE" << std::endl;
+    /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+    --xitr;   //Go back to previous corner
+    --yitr;
+    //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+    //Know there is something above so add the points accordingly
+    TPolyLine* adjline = EpdTilePoly(adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    if( nadj==5 ){
+      //std::cout << "HEREOUTER:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      //Since "insert" will insert before the iterator advance to third corner of original tile
+      std::advance(xitr,1);
+      std::advance(yitr,1);
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      xvals.insert(xitr,adjxvals[3]);
+      yvals.insert(yitr,adjyvals[3]);
+    }
+    else{ std::cout << "MAJOR ERROR:TILE1 CANNOT BE AN OUTER TILE" << std::endl; }
+    delete adjline;
+    /*
+    for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+  }
+  StMuEpdRun22QaMaker::GetEpdTileOuterCCW(pp,tt,adjpp,adjtt);
+  //std::cout << "OuterCCW|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Know there is something in the outer CCW position
+    TPolyLine* adjline = EpdTilePoly(adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    if( nadj==5 ){
+      //std::cout << "HEREOUTERCCW:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+       //Get to the points related to the inner corner and remove them
+      std::advance(xitr,4);
+      std::advance(yitr,4);
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      xitr = xvals.erase(xitr); //Gets set to next element (corner)
+      yitr = yvals.erase(yitr);
+      //std::cout << "AFTERERASE1" << std::endl;
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      xitr = xvals.erase(xitr);
+      yitr = yvals.erase(yitr);
+      if( CCWIstt1 ){
+	//Delete extra corner when tt1 was added CCW
+	xitr = xvals.erase(xitr);
+	yitr = yvals.erase(yitr);
+      }
+      //std::cout << "AFTERERASE2" << std::endl;
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+	std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+	}*/
+      //Iterator has moved to next element which also needs to be deleted
+      //Since "insert" will insert before the iterator it is now pointing to correct "top left corner"
+      //Want to add clockwise edge first
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      //xvals.push_back(adjxvals[3]); //Don't insert last point which is now inside the shape
+      //yvals.push_back(adjyvals[3]);
+    }
+    delete adjline;
+  }
+
+  std::vector<double> newxvals;
+  std::vector<double> newyvals;
+  xitr=xvals.begin();
+  yitr=yvals.begin();
+  //std::cout << "=====final=====" << std::endl;
+  for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+    newxvals.push_back(*xitr);
+    newyvals.push_back(*yitr);
+    //std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+  }
+  //Add first element back in to close the polygon
+  xitr = xvals.begin();
+  yitr = yvals.begin();
+  newxvals.push_back(*xitr);
+  newyvals.push_back(*yitr);
+    
+  delete main;
+  TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+  return newline;
+}
+
+TPolyLine* StMuFcsPi0TreeMaker::EpdCWOuterCorner(short pp, short tt) const
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuEpdRun22QaMaker::GetEpdTileCW(pp,tt,newpp,newtt);
+  //std::cout << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newtt!=0 && newpp!=0 ){ return EpdCCWOuterCorner(newpp,newtt); }
+  else{ return 0; }
+}
+
+TPolyLine* StMuFcsPi0TreeMaker::EpdCCWInnerCorner(short pp, short tt) const
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuEpdRun22QaMaker::GetEpdTileInner(pp,tt,newpp,newtt);
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newpp!=0 && newtt!=0 ){ return EpdCCWOuterCorner(newpp,newtt); }
+  else{
+    if( tt==3 ){
+      //Special for tile 3 to group tile 1, 2 and 3 together
+      TPolyLine* tt1 = EpdTilePoly(pp,1);
+      TPolyLine* tt2 = EpdTilePoly(pp,2);
+      TPolyLine* tt3 = EpdTilePoly(pp,3);
+      Double_t* xtt1 = tt1->GetX();
+      Double_t* ytt1 = tt1->GetY();
+      Double_t* xtt2 = tt2->GetX();
+      Double_t* ytt2 = tt2->GetY();
+      Double_t* xtt3 = tt3->GetX();
+      Double_t* ytt3 = tt3->GetY();
+      std::vector<double> xvals;
+      std::vector<double> yvals;
+      //Manually adding corners
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      xvals.push_back(xtt1[1]);
+      yvals.push_back(ytt1[1]);
+      xvals.push_back(xtt2[0]);
+      yvals.push_back(ytt2[0]);
+      xvals.push_back(xtt2[1]);
+      yvals.push_back(ytt2[1]);
+      xvals.push_back(xtt2[2]);
+      yvals.push_back(ytt2[2]);
+      xvals.push_back(xtt3[1]);
+      yvals.push_back(ytt3[1]);
+      xvals.push_back(xtt3[2]);
+      yvals.push_back(ytt3[2]);
+      xvals.push_back(xtt3[3]);
+      yvals.push_back(ytt3[3]);
+      xvals.push_back(xtt1[3]);
+      yvals.push_back(ytt1[3]);
+      xvals.push_back(xtt1[4]);
+      yvals.push_back(ytt1[4]);
+      //Add last points back in to close the polygon
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      
+      delete tt1;
+      delete tt2;
+      delete tt3;
+      TPolyLine* newline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;      
+    }
+    if( tt==1 ){
+      //For tile 1 only add CCW tile
+      TPolyLine* main = EpdTilePoly(pp,tt);
+      Int_t nmain = main->GetN();
+      Double_t* xmain = main->GetX();
+      Double_t* ymain = main->GetY();
+      std::list<double> xvals;
+      std::list<double> yvals;
+      for( int i=0; i<nmain-1; ++i ){
+	xvals.push_back(xmain[i]);
+	yvals.push_back(ymain[i]);
+      }
+      std::list<double>::iterator xitr = xvals.begin();
+      std::list<double>::iterator yitr = yvals.begin();
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      bool CCWIstt1 = false;
+      Int_t adjpp = 0;
+      Int_t adjtt = 0;
+      StMuEpdRun22QaMaker::GetEpdTileCCW(pp,tt,adjpp,adjtt);
+      if( adjpp!=0 && adjtt!=0 ){
+	//Know there is something in the counter clockwise direction
+	TPolyLine* adjline = EpdTilePoly(adjpp,adjtt);
+	Int_t nadj = adjline->GetN();
+	Double_t* adjxvals = adjline->GetX();
+	Double_t* adjyvals = adjline->GetY();
+	int lastcorner = 3;  //For rectangular tiles this is the index to use
+	//std::cout << "|nadj:"<<nadj << std::endl;
+	if( nadj==6 ){
+	  //For tile pp1
+	  CCWIstt1 = true;
+	  lastcorner = 4;  //For tt1 which is pentagonal this is the index to use
+	}
+	std::advance(xitr,1);
+	std::advance(yitr,1);
+	//Want to add CW inner edge first and then inner CCW edge
+	xvals.insert(xitr,adjxvals[lastcorner]);
+	yvals.insert(yitr,adjyvals[lastcorner]);
+	xvals.insert(xitr,adjxvals[0]);
+	yvals.insert(yitr,adjyvals[0]);
+	xvals.insert(xitr,adjxvals[1]);
+	yvals.insert(yitr,adjyvals[1]);
+	xvals.insert(xitr,adjxvals[2]);
+	yvals.insert(yitr,adjyvals[2]);
+	if( CCWIstt1 ){
+	  //Add extra corner for tt1
+	  xvals.insert(xitr,adjxvals[3]);
+	  yvals.insert(yitr,adjyvals[3]);
+	}
+	delete adjline;
+      }
+      std::vector<double> newxvals;
+      std::vector<double> newyvals;
+      xitr=xvals.begin();
+      yitr=yvals.begin();
+      //std::cout << "=====final=====" << std::endl;
+      for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+	newxvals.push_back(*xitr);
+	newyvals.push_back(*yitr);
+	//std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+      }
+      //Add first element back in to close the polygon
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      newxvals.push_back(*xitr);
+      newyvals.push_back(*yitr);
+    
+      delete main;
+      TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;
+    }
+  }
+  return 0;
+}
+
+TPolyLine* StMuFcsPi0TreeMaker::EpdCWInnerCorner(short pp, short tt) const
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuEpdRun22QaMaker::GetEpdTileInnerCW(pp,tt,newpp,newtt);
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newpp!=0 && newtt!=0 ){ return EpdCCWOuterCorner(newpp,newtt); }
+  else{
+    if( tt==2 ){
+      //Special for tile 2 to group tile 1, 2 and 3 together
+      TPolyLine* tt1 = EpdTilePoly(pp,1);
+      TPolyLine* tt2 = EpdTilePoly(pp,2);
+      TPolyLine* tt3 = EpdTilePoly(pp,3);
+      Double_t* xtt1 = tt1->GetX();
+      Double_t* ytt1 = tt1->GetY();
+      Double_t* xtt2 = tt2->GetX();
+      Double_t* ytt2 = tt2->GetY();
+      Double_t* xtt3 = tt3->GetX();
+      Double_t* ytt3 = tt3->GetY();
+      std::vector<double> xvals;
+      std::vector<double> yvals;
+      //Manually adding corners
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      xvals.push_back(xtt1[1]);
+      yvals.push_back(ytt1[1]);
+      xvals.push_back(xtt2[0]);
+      yvals.push_back(ytt2[0]);
+      xvals.push_back(xtt2[1]);
+      yvals.push_back(ytt2[1]);
+      xvals.push_back(xtt2[2]);
+      yvals.push_back(ytt2[2]);
+      xvals.push_back(xtt3[1]);
+      yvals.push_back(ytt3[1]);
+      xvals.push_back(xtt3[2]);
+      yvals.push_back(ytt3[2]);
+      xvals.push_back(xtt3[3]);
+      yvals.push_back(ytt3[3]);
+      xvals.push_back(xtt1[3]);
+      yvals.push_back(ytt1[3]);
+      xvals.push_back(xtt1[4]);
+      yvals.push_back(ytt1[4]);
+      //Add last points back in to close the polygon
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      
+      delete tt1;
+      delete tt2;
+      delete tt3;
+      TPolyLine* newline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;      
+    }
+    if( tt==1 ){
+      //For tile 1 only add CC tile
+      TPolyLine* main = EpdTilePoly(pp,tt);
+      Int_t nmain = main->GetN();
+      Double_t* xmain = main->GetX();
+      Double_t* ymain = main->GetY();
+      std::list<double> xvals;
+      std::list<double> yvals;
+      for( int i=0; i<nmain-1; ++i ){
+	xvals.push_back(xmain[i]);
+	yvals.push_back(ymain[i]);
+      }
+      std::list<double>::iterator xitr = xvals.end();
+      std::list<double>::iterator yitr = yvals.end();
+      xitr = xvals.end();
+      yitr = yvals.end();
+      Int_t adjpp = 0;
+      Int_t adjtt = 0;
+      StMuEpdRun22QaMaker::GetEpdTileCW(pp,tt,adjpp,adjtt);
+      if( adjpp!=0 && adjtt!=0 ){
+	//Know there is something in the clockwise direction and it is tt 1 with 5 corners based on adjacent mapping
+	TPolyLine* adjline = EpdTilePoly(adjpp,adjtt);
+	//Int_t nadj = adjline->GetN();
+	Double_t* adjxvals = adjline->GetX();
+	Double_t* adjyvals = adjline->GetY();
+	//advance to last corner
+	--xitr;
+	--yitr;
+	//Want to add CCW outer edge first and then outer CW edge and so on
+	xvals.insert(xitr,adjxvals[1]);
+	yvals.insert(yitr,adjyvals[1]);
+	xvals.insert(xitr,adjxvals[2]);
+	yvals.insert(yitr,adjyvals[2]);
+	xvals.insert(xitr,adjxvals[3]);
+	yvals.insert(yitr,adjyvals[3]);
+	xvals.insert(xitr,adjxvals[4]);
+	yvals.insert(yitr,adjyvals[4]);
+	xvals.insert(xitr,adjxvals[0]);
+	yvals.insert(yitr,adjyvals[0]);
+	delete adjline;
+      }
+      std::vector<double> newxvals;
+      std::vector<double> newyvals;
+      xitr=xvals.begin();
+      yitr=yvals.begin();
+      //std::cout << "=====final=====" << std::endl;
+      for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+	newxvals.push_back(*xitr);
+	newyvals.push_back(*yitr);
+	//std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+      }
+      //Add first element back in to close the polygon
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      newxvals.push_back(*xitr);
+      newyvals.push_back(*yitr);
+    
+      delete main;
+      TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;
+    }
+  }
+  return 0;
+}
+
+Int_t StMuFcsPi0TreeMaker::GetColor(Double_t Value, Double_t MinVal, Double_t MaxVal)
+{
+  Double_t MinHue = 275.0;
+  Double_t MaxHue = 0.0;
+  Float_t Red,Green,Blue;
+  if( Value < MinVal ){ TColor::HSV2RGB(MinHue,1.0,1.0, Red,Green,Blue); }
+  else if( Value > MaxVal ){ TColor::HSV2RGB(MaxHue,1.0,1.0, Red,Green,Blue); }
+  else
+    {
+      Double_t percent = (Value-MinVal)/(MaxVal-MinVal);
+      Float_t Hue = ((MaxHue-MinHue)*percent)+MinHue;
+      TColor::HSV2RGB(Hue,1.0,1.0, Red,Green,Blue);
+    }
+    return TColor::GetColor( Red, Green, Blue );
+}
+
+void StMuFcsPi0TreeMaker::DrawSelectEpdAdjTiles(TCanvas* canv) const
+{
+  if( mEpdGeo==0 ){ return; }
+  if( canv==0 ) { return; }
+  std::vector<TPolyLine*> lines;
+  //std::vector<TPolyLine*> extralines;
+
+  canv->Clear();
+  canv->cd();
+  canv->DrawFrame(-30,0,30,50);
+  TPolyLine* line_pp1tt8     = EpdTilePoly(1,8);
+  TPolyLine* line_pp1tt7     = EpdTilePoly(1,7);
+  TPolyLine* outccw_pp1tt8   = EpdCCWOuterCorner(1,8);
+  TPolyLine* outcw_pp1tt8    = EpdCWOuterCorner(1,8);
+  TPolyLine* innerccw_pp1tt8 = EpdCCWInnerCorner(1,8);
+  TPolyLine* innercw_pp1tt8  = EpdCWInnerCorner(1,8);
+  line_pp1tt8->SetLineColor(kBlack);
+  line_pp1tt8->SetLineWidth(2);
+  line_pp1tt7->SetLineColor(kBlack);
+  outccw_pp1tt8->SetLineColor(kBlue);
+  outcw_pp1tt8->SetLineColor(kGreen+2);
+  innerccw_pp1tt8->SetLineColor(kRed);
+  innercw_pp1tt8->SetLineColor(kMagenta);
+  line_pp1tt8->Draw();
+  line_pp1tt7->Draw();
+  outccw_pp1tt8->Draw();
+  outcw_pp1tt8->Draw();
+  innerccw_pp1tt8->Draw();
+  innercw_pp1tt8->Draw();
+  canv->Print("EpdAdj_pp1tt8.png");
+
+  canv->Clear();
+  canv->cd();
+  canv->DrawFrame(-15,0,10,15);
+  TPolyLine* line_pp1tt1     = EpdTilePoly(1,1);
+  TPolyLine* line_pp1tt2     = EpdTilePoly(1,2);
+  TPolyLine* line_pp1tt3     = EpdTilePoly(1,3);
+  TPolyLine* outccw_pp1tt1   = EpdCCWOuterCorner(1,1);
+  TPolyLine* outcw_pp1tt1    = EpdCWOuterCorner (1,1);
+  TPolyLine* innerccw_pp1tt1 = EpdCCWInnerCorner(1,1);
+  TPolyLine* innercw_pp1tt1  = EpdCWInnerCorner (1,1);
+  TPolyLine* outccw_pp1tt2   = EpdCCWOuterCorner(1,2);
+  TPolyLine* outcw_pp1tt2    = EpdCWOuterCorner (1,2);
+  TPolyLine* innerccw_pp1tt2 = EpdCCWInnerCorner(1,2);
+  TPolyLine* innercw_pp1tt2  = EpdCWInnerCorner (1,2);
+  TPolyLine* outccw_pp1tt3   = EpdCCWOuterCorner(1,3);
+  TPolyLine* outcw_pp1tt3    = EpdCWOuterCorner (1,3);
+  TPolyLine* innerccw_pp1tt3 = EpdCCWInnerCorner(1,3);
+  TPolyLine* innercw_pp1tt3  = EpdCWInnerCorner (1,3);
+  line_pp1tt1->SetLineColor(kBlack);
+  line_pp1tt2->SetLineColor(kBlack);
+  line_pp1tt3->SetLineColor(kBlack);
+  outccw_pp1tt1->SetLineColor(kBlue);
+  outcw_pp1tt1->SetLineColor(kGreen+2);
+  innerccw_pp1tt1->SetLineColor(kRed);
+  innercw_pp1tt1->SetLineColor(kMagenta);
+  outccw_pp1tt2->SetLineColor(kBlue);
+  outcw_pp1tt2->SetLineColor(kGreen+2);
+  innerccw_pp1tt2->SetLineColor(kRed);
+  innercw_pp1tt2->SetLineColor(kMagenta);
+  outccw_pp1tt3->SetLineColor(kBlue);
+  outcw_pp1tt3->SetLineColor(kGreen+2);
+  innerccw_pp1tt3->SetLineColor(kRed);
+  innercw_pp1tt3->SetLineColor(kMagenta);
+
+  line_pp1tt1->SetLineWidth(2);
+  line_pp1tt1->Draw();
+  line_pp1tt2->SetLineWidth(1);
+  line_pp1tt2->Draw();
+  line_pp1tt3->SetLineWidth(1);
+  line_pp1tt3->Draw();
+  outccw_pp1tt1->Draw();
+  outcw_pp1tt1->Draw();
+  innerccw_pp1tt1->Draw();
+  innercw_pp1tt1->Draw();
+  canv->Print("EpdAdj_pp1tt1.png");
+
+  canv->Clear();
+  canv->cd();
+  canv->DrawFrame(-15,0,10,25);
+  line_pp1tt1->SetLineWidth(1);
+  line_pp1tt1->Draw();
+  line_pp1tt2->SetLineWidth(2);
+  line_pp1tt2->Draw();
+  line_pp1tt3->SetLineWidth(1);
+  line_pp1tt3->Draw();
+  outccw_pp1tt2->Draw();
+  outcw_pp1tt2->Draw();
+  innerccw_pp1tt2->Draw();
+  innercw_pp1tt2->Draw();
+  canv->Print("EpdAdj_pp1tt2.png");
+
+  canv->Clear();
+  canv->cd();
+  canv->DrawFrame(-15,0,10,25);
+  line_pp1tt1->SetLineWidth(1);
+  line_pp1tt1->Draw();
+  line_pp1tt2->SetLineWidth(1);
+  line_pp1tt2->Draw();
+  line_pp1tt3->SetLineWidth(2);
+  line_pp1tt3->Draw();
+  outccw_pp1tt3->Draw();
+  outcw_pp1tt3->Draw();
+  innerccw_pp1tt3->Draw();
+  innercw_pp1tt3->Draw();
+  canv->Print("EpdAdj_pp1tt3.png");
+
+  //std::cout << "|outccw_pp1tt3:"<<outccw_pp1tt1 << "|outcw_pp1tt3:"<<outcw_pp1tt1 << "|innerccw_pp1tt3:"<<innerccw_pp1tt1 << "|innercw_pp1tt3:"<<innercw_pp1tt1 << std::endl;
+  canv->Clear();
+  canv->cd();
+  canv->DrawFrame(-100,-100,100,100);
+  Int_t itile=0;
+  for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+    for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+      TPolyLine* lineouterccw = EpdCCWOuterCorner(i_pp,i_tt);
+      if( lineouterccw!=0 ){
+	Int_t color = GetColor(itile++,0,12*31);
+	lineouterccw->SetLineColor(color);
+	lineouterccw->SetFillColorAlpha(kWhite,0);
+	lines.push_back(lineouterccw);
+      }
+    }
+  }
+  //std::cout << " ===== |itile:"<<itile << " ===== " << std::endl;
+  canv->SaveAs("EpdAllAdjMap.png");
+  delete line_pp1tt8;
+  delete line_pp1tt7;
+  delete outccw_pp1tt8;
+  delete outcw_pp1tt8;
+  delete innerccw_pp1tt8;
+  delete innercw_pp1tt8;
+  delete line_pp1tt1;
+  delete line_pp1tt2;
+  delete line_pp1tt3;
+  delete outccw_pp1tt1;
+  delete outcw_pp1tt1;
+  delete innerccw_pp1tt1;
+  delete innercw_pp1tt1;
+  delete outccw_pp1tt2;
+  delete outcw_pp1tt2;
+  delete innerccw_pp1tt2;
+  delete innercw_pp1tt2;
+  delete outccw_pp1tt3;
+  delete outcw_pp1tt3;
+  delete innerccw_pp1tt3;
+  delete innercw_pp1tt3;
+  for( unsigned int i=0; i<lines.size(); ++i ){
+    delete lines.at(i);
+  }
+}
+
+void StMuFcsPi0TreeMaker::DrawAllEpdAdjTiles(TCanvas* canv, Int_t tt) const
+{
+  if( tt<1 || tt>31 ){ return; }
+  canv->Clear();
+  canv->cd();
+  canv->Divide(4,3);
+  std::vector<TPolyLine*> lines;
+  for( int i_pp=1; i_pp<=12; ++i_pp ){
+    TPolyLine* tile_main  = EpdTilePoly(i_pp,tt);
+    TPolyLine* outerccw   = EpdCCWOuterCorner(i_pp,tt);
+    TPolyLine* outercw    = EpdCWOuterCorner(i_pp,tt);
+    TPolyLine* innerccw   = EpdCCWInnerCorner(i_pp,tt);
+    TPolyLine* innercw    = EpdCWInnerCorner(i_pp,tt);
+
+    //To get right canvas dimesnosns
+    double xlow=999;
+    double ylow=999;
+    double xhigh=-999;
+    double yhigh=-999;
+    if( tile_main!=0 ){
+      Int_t n=tile_main->GetN();
+      double* x=tile_main->GetX();
+      double* y=tile_main->GetY();
+      for( int i=0; i<n; ++i ){
+	if( xlow>x[i] ) { xlow =x[i]; }
+	if( ylow>y[i] ) { ylow =y[i]; }
+	if( xhigh<x[i] ){ xhigh=x[i]; }
+	if( yhigh<y[i] ){ yhigh=y[i]; }
+      }
+    }
+    if( outerccw!=0 ){
+      Int_t n=outerccw->GetN();
+      double* x=outerccw->GetX();
+      double* y=outerccw->GetY();
+      for( int i=0; i<n; ++i ){
+	if( xlow>x[i] ) { xlow =x[i]; }
+	if( ylow>y[i] ) { ylow =y[i]; }
+	if( xhigh<x[i] ){ xhigh=x[i]; }
+	if( yhigh<y[i] ){ yhigh=y[i]; }
+      }
+    }
+    if( outercw!=0 ){
+      Int_t n=outercw->GetN();
+      double* x=outercw->GetX();
+      double* y=outercw->GetY();
+      for( int i=0; i<n; ++i ){
+	if( xlow>x[i] ) { xlow =x[i]; }
+	if( ylow>y[i] ) { ylow =y[i]; }
+	if( xhigh<x[i] ){ xhigh=x[i]; }
+	if( yhigh<y[i] ){ yhigh=y[i]; }
+      }
+    }
+    if( innerccw!=0 ){
+      Int_t n=innerccw->GetN();
+      double* x=innerccw->GetX();
+      double* y=innerccw->GetY();
+      for( int i=0; i<n; ++i ){
+	if( xlow>x[i] ) { xlow =x[i]; }
+	if( ylow>y[i] ) { ylow =y[i]; }
+	if( xhigh<x[i] ){ xhigh=x[i]; }
+	if( yhigh<y[i] ){ yhigh=y[i]; }
+      }
+    }
+    if( innercw!=0 ){
+      Int_t n=innercw->GetN();
+      double* x=innercw->GetX();
+      double* y=innercw->GetY();
+      for( int i=0; i<n; ++i ){
+	if( xlow>x[i] ) { xlow =x[i]; }
+	if( ylow>y[i] ) { ylow =y[i]; }
+	if( xhigh<x[i] ){ xhigh=x[i]; }
+	if( yhigh<y[i] ){ yhigh=y[i]; }
+      }
+    }
+    
+    canv->cd(i_pp)->DrawFrame(xlow-4,ylow-4,xhigh+4,yhigh+4);
+    tile_main->SetLineColor(kBlack);
+    tile_main->SetLineWidth(2);
+    tile_main->Draw();
+    if( outerccw!=0 ){
+      outerccw->SetLineColor(kBlue);
+      outerccw->Draw();
+    }
+    if( outercw!=0 ){
+      outercw->SetLineColor(kGreen+2);
+      outercw->Draw();
+    }
+    if( innerccw!=0 ){
+      innerccw->SetLineColor(kRed);
+      innerccw->Draw();
+    }
+    if( innercw!=0 ){
+      innercw->SetLineColor(kMagenta);
+      innercw->Draw();
+    }
+    lines.push_back(tile_main);
+    lines.push_back(outerccw);
+    lines.push_back(outercw);
+    lines.push_back(innerccw);
+    lines.push_back(innercw);
+  }
+  std::stringstream ss_savename;
+  ss_savename << "EpdAdjAllPpTt"<< tt <<".png";
+  canv->Print(ss_savename.str().c_str());
+  for( unsigned int i=0; i<lines.size(); ++i ){
+    delete lines.at(i);
+  }  
+}
 

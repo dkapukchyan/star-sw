@@ -121,6 +121,27 @@ Int_t FcsPhotonCandidate::Compare(const TObject* obj) const
   }
 }
 
+void FcsPhotonCandidate::Copy(TObject& object) const
+{
+  ((FcsPhotonCandidate&)object).mFromCluster = mFromCluster;
+  ((FcsPhotonCandidate&)object).mDetId = mDetId;
+  ((FcsPhotonCandidate&)object).mX = mX;
+  ((FcsPhotonCandidate&)object).mY = mY;
+  ((FcsPhotonCandidate&)object).mZ = mZ;
+  
+  ((FcsPhotonCandidate&)object).mEn = mEn;
+  ((FcsPhotonCandidate&)object).mPxRaw = mPxRaw;
+  ((FcsPhotonCandidate&)object).mPyRaw = mPyRaw;
+  ((FcsPhotonCandidate&)object).mPzRaw = mPzRaw;
+  
+  ((FcsPhotonCandidate&)object).mPxVert = mPxVert;
+  ((FcsPhotonCandidate&)object).mPyVert = mPyVert;
+  ((FcsPhotonCandidate&)object).mPzVert = mPzVert;
+  
+  ((FcsPhotonCandidate&)object).mEpdHitNmip = mEpdHitNmip;
+}
+
+
 void FcsPhotonCandidate::Clear(Option_t* opt)
 {
   mFromCluster = false;

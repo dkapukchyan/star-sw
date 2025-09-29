@@ -17,6 +17,7 @@
   @[January 8, 2025] > Fixed comments to be ROOT friendly. Fixed how histograms are loaded so it can work with multiple files. Added a graph for EPD vertex QA over many runs and methods for processing, filling, and plotting the EPD vertex over time.
   @[February 1, 2025] > Small fix for including StEnumerations.h
   @[March 21, 2025] > Added a new plotting function #DrawVertexNoZdc() since ZDC was not used in this analysis.
+  @[September 10, 2025] > Implemented an adjacency map for EPD tiles
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -100,6 +101,36 @@ class StMuEpdRun22QaMaker : public StMaker
 
   void DrawGraphVertex(TCanvas* canv, const char* savename="testGraphEpdVert.png");
 
+  static std::vector<Int_t> GetAdjacentEpdIds(Int_t pp,Int_t tt);
+  static void GetEpdPPandTTFromId(Int_t id, Int_t& pp, Int_t& tt);
+
+    /* Only checked for West EPD
+       Chosen so that #TPolyLine can be made to encompass a larger area
+    Adjacency functions as a sqaure (CW=ClockWise,CCW=CounterClockWise)
+    |----------------------------|
+    | outerCCW | outer | outerCW |
+    |----------|-------|---------|
+    |   CCW    |  main |   CW    |
+    |----------|-------|---------|
+    | innerCCW | inner | innerCW |
+    |----------------------------|
+
+    
+                   X (Beam line)
+   */
+  static void GetEpdTileOuter(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);       ///! Get the tile going away from beam line from the given tile
+  static void GetEpdTileOuterCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);    ///! Get the tile going away and counterclockwise (increasing pp)
+  static void GetEpdTileCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);         ///! Get the tile going counterclockwise (increasing pp)
+  static void GetEpdTileInnerCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);    ///! Get the tile going in and counterclockwise (increasing pp)
+  static void GetEpdTileInner(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);       ///! Get the tile going towards the beam line (in) from the given tile
+  static void GetEpdTileInnerCW(Int_t pp, Int_t tt, Int_t &newpp, Int_t& newtt);     ///! Get the tile in and clockwise (decreasing pp)
+  static void GetEpdTileCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);          ///! Get the tile going clockwise (decreasing pp)
+  static void GetEpdTileOuterCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt);     ///! Get the tile going away and clockwise (decreasing pp)
+
+  //Makes a 2x2 grouping of adjacent EPD tiles going CCW and inner
+  //TPolyLine* StMuFcsPi0TreeMaker::EpdCCWOuterCorner(short pp, short tt) const;
+
+  
 protected:
   StMuDstMaker* mMuDstMkr = 0;
   StMuDst* mMuDst = 0;
