@@ -60,6 +60,8 @@
 
   @[September 26, 2025] > Implemented mixed events to compare how the EPD projections are working in real vs. mixed events. Implemented #Clear() function to use to clean up variables rather than at the end of #Make(). Implemented plotting functions for the mixed event histograms. Wrote #DrawEpdProjection() to work as an event display of projected FCS points and clusters on top of EPD hits. Looked at low point multiplicity events based on the event display. Implemented several functions to create polylines corresponding to different EPD adjacencies and also to draw the adjacencies.
 
+  @[October 1, 2025] > Implemented a vertex cut on the old event for the mixed event portion of epd hits and points. Slightly modified epd hit loop conditions to get rid of redundant code.
+
 */
 
 

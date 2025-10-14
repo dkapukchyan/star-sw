@@ -118,7 +118,7 @@ void StMuFcsPi0TreeMaker::setHistManager( HistManager* hm )
 {
   if( mInternalHists ){ delete mHists; mHists = 0; }
   mInternalHists = false;
-  if( mHists!=0 ){ LOG_WARN << "StMuFcsRun22QaMaker::setHistManager() - HistManager exists and is external - no changes made" << endm; return; }
+  if( mHists!=0 ){ LOG_WARN << "StMuFcsPi0TreeMaker::setHistManager() - HistManager exists and is external - no changes made" << endm; return; }
   else{ mHists = hm; }
 }
 
@@ -411,8 +411,8 @@ UInt_t StMuFcsPi0TreeMaker::LoadDataFromFile(TFile* file) //, TTree&* tree, FcsE
   //else{ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
   
   mFcsTrigMap = (StFcsRun22TriggerMap*)GetMaker("fcsRun22TrigMap"); //Don't use GetMaker since it doesn't use the right name when searching
-  if( mFcsTrigMap==0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
-  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ std::cout << "StMuFcsRun22QaMaker::LoadDataFromFile() - Trigger Map is empty" << std::endl; } }
+  if( mFcsTrigMap==0 ){ std::cout << "StMuFcsPi0TreeMaker::LoadDataFromFile() - No Trigger Map found" << std::endl; }
+  else{ if( mFcsTrigMap->sizeOfTriggers()<=0 ){ std::cout << "StMuFcsPi0TreeMaker::LoadDataFromFile() - Trigger Map is empty" << std::endl; } }
   
   if( mHists==0 ){ mHists = new HistManager(); }
   UInt_t totalhists = this->LoadHists(file);
@@ -547,6 +547,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
     else{ mNTrig = ntrig; }
   }
   if( !mValidTrigFound ){ mNTrig=0; return kStSkip; } //Reset trigger array size before going to next event
+  /* Debugging why some events were skipped. The events that were skipped were fcsHad triggered events because I didn't turn them on in the runMuDst.C macro
+  if( !mValidTrigFound ){
+    mNTrig=0; std::cout << "No ValidTrigFound" << std::endl;
+    for( Int_t i=0; i<ntrig; ++i ){
+      unsigned int trig = trgIDs.triggerId(i);
+      std::cout << "|trig:"<<trig << std::endl;
+    }
+    return kStSkip;
+    }*/
 
   //mH1D_Entries->Fill(3); //This is just counting valid make calls (i.e. increment bin 4 by 1)
   //mH1D_Entries->Fill(4,polblue);      //bin5 (x=4) is sum of blue polarization no cuts
@@ -622,11 +631,13 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   mH2F_foundVvertex->Fill(mUseVertex,mFoundVertex);
 
   //TClonesArray* hits = mMuFcsColl->getHitArray();
-  //if( hits==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS hits" << endm; }
+  //if( hits==0 ){ LOG_INFO << "StMuFcsPi0TreeMaker::FillFcsInfo - No FCS hits" << endm; }
   TClonesArray* clusters = mMuFcsColl->getClusterArray();
-  if( clusters==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS clusters" << endm; }
+  //if( clusters==0 ){ LOG_INFO << "StMuFcsPi0TreeMaker::FillFcsInfo - No FCS clusters" << endm; }
+  if( clusters==0 ){ std::cout << "StMuFcsPi0TreeMaker::FillFcsInfo - No FCS clusters" << std::endl; }
   TClonesArray* points = mMuFcsColl->getPointArray();
-  if( points==0 ){ LOG_INFO << "StMuFcsRun22QaMaker::FillFcsInfo - No FCS points" << endm; }
+  //if( points==0 ){ LOG_INFO << "StMuFcsPi0TreeMaker::FillFcsInfo - No FCS points" << endm; }
+  if( points==0 ){ std::cout << "StMuFcsPi0TreeMaker::FillFcsInfo - No FCS points" << std::endl; }
   
   //std::cout << "|hits:"<<hits << "|clusters:"<<clusters << "|points:"<<points << std::endl;
   Int_t ncandidates = 0;
@@ -749,7 +760,15 @@ Int_t StMuFcsPi0TreeMaker::Make() {
   Int_t noldhits = mMixedPhArr->GetEntriesFast();
   Int_t nnewhits = mPhArr->GetEntriesFast();
   Int_t ntotal = noldhits+nnewhits;
-  //std::cout << "|nold:"<<noldhits << "|nnew:"<<nnewhits << "|ntotal:"<<ntotal << "|oldvert:"<<mOldVertex << "|newvert:"<<mUseVertex<< std::endl;
+  unsigned int nepdhits = 0;
+  StSPtrVecEpdHit* epdhits = 0;
+  if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
+  else if( mEpdColl!=0 ){
+    epdhits = &(mEpdColl->epdHits());
+    nepdhits = epdhits->size();
+  }
+  else{ LOG_ERROR << "StMuEpdRun22QaMaker::FillEpdinfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return kStErr; }
+  Int_t nepdwesthits = 0;
   for( Int_t iph = 0; iph<ntotal; ++iph ){
     //std::cout << "|iph:"<<iph << "|iphnew:"<<iph-noldhits << std::endl;
     FcsPhotonCandidate* ph = 0;
@@ -785,14 +804,6 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       }
     }
     //loop over all hits and if an nmip value exists set for the point
-    unsigned int nepdhits = 0;
-    StSPtrVecEpdHit* epdhits = 0;
-    if( mMuEpdHits!=0 ){ nepdhits = mMuEpdHits->GetEntriesFast(); }
-    else if( mEpdColl!=0 ){
-      epdhits = &(mEpdColl->epdHits());
-      nepdhits = epdhits->size();
-    }
-    else{ LOG_ERROR << "StMuEpdRun22QaMaker::FillEpdinfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return kStErr; }
     StMuEpdHit* muepdhit = 0;
     StEpdHit* epdhit = 0;
     for(unsigned int i=0; i<nepdhits; ++i ){
@@ -802,6 +813,7 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
       int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
       if( ew==-1 ){ continue; }
+      if( iph==noldhits){ ++nepdwesthits; }
       int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
       int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
       float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();         //The ADC value of the hit divided by the MIP peak position; e.g. if nmip==1 then adc value sits at the MIP peak
@@ -817,9 +829,9 @@ Int_t StMuFcsPi0TreeMaker::Make() {
       if( diffphi<(-1.0*TMath::Pi()) ){ diffphi = diffphi + TMath::Pi(); }
       //std::cout << "|epdz:"<<epdhitxyz[2] << std::endl;
       if( ! ph->mFromCluster ){
-	if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){
-	  if( mTrigEm2==3 && mTrigEm0<0 && mTrigEm1<0 ){
-	    if( iph>=noldhits ){
+	if( mTrigEm2==3 && mTrigEm0<0 && mTrigEm1<0 ){
+	  if( iph>=noldhits ){
+	    if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){
 	      mH2F_PointProj_nmipValldx->Fill(dx,nmip);
 	      mH2F_PointProj_nmipValldy->Fill(dy,nmip);
 	      mH2F_PointProj_nmipValldr->Fill(rpoint-rhit,nmip);
@@ -829,10 +841,21 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 		mH2F_PointProj_LowMult_nmipValldphi->Fill(diffphi,nmip);
 	      }
 	    }
-	    else{
-	      //iph<noldhits
+	  }
+	  else{
+	    //iph<noldhits
+	    if( mVertexCutLow<=mOldVertex && mOldVertex<=mVertexCutHigh ){
 	      mH2F_MixedPointProj_nmipValldr->Fill(rpoint-rhit,nmip);
 	      mH2F_MixedPointProj_nmipValldphi->Fill(diffphi,nmip);
+	      /*Int_t overflowbin = mH2F_MixedPointProj_nmipValldr->GetBin(201,71);
+		if( mH2F_MixedPointProj_nmipValldr->GetBinContent(overflowbin)!=0 ){
+		std::cout << "Filled overflow bin:(" << overflowbin << "," << mH2F_MixedPointProj_nmipValldr->GetBinContent(overflowbin)<<")";
+		std::cout << "|rpoint:"<<rpoint << "|rhit:"<<rhit << "|nmip:"<<nmip;
+		std::cout << "|rpoint-rhit:"<<rpoint-rhit;
+		std::cout << "|vert:"<<mOldVertex<< "|("<<epdproj.at(0) << ","<<epdproj.at(1) << ","<<epdproj.at(2)<<")";
+		std::cout << std::endl;
+		exit(0);
+		}*/
 	      if( mNOldPoints<=5 ){
 		mH2F_MixedPointProj_LowMult_nmipValldr->Fill(rpoint-rhit,nmip);
 		mH2F_MixedPointProj_LowMult_nmipValldphi->Fill(diffphi,nmip);
@@ -842,28 +865,33 @@ Int_t StMuFcsPi0TreeMaker::Make() {
 	}
       }
       if( mEpdGeo->IsInTile(epdpp,epdtt,ew, epdproj.at(0),epdproj.at(1)) ){
-	if( ! ph->mFromCluster ){
+	if( iph>=noldhits ){
 	  if( mVertexCutLow<=mUseVertex && mUseVertex<=mVertexCutHigh ){
-	    if( iph>=noldhits ){
+	    if( ! ph->mFromCluster ){
 	      mH2F_PointProj_nmipVtiledx->Fill(dx,nmip);
 	      mH2F_PointProj_nmipVtiledy->Fill(dy,nmip);
 	      mH2F_PointProj_nmipVtiledr->Fill(rpoint-rhit,nmip);
-	      mH2F_PointProj_nmipVtiledphi->Fill(diffphi,nmip);
+	      mH2F_PointProj_nmipVtiledphi->Fill(diffphi,nmip);	    
 	    }
-	    else{
-	      //iph<noldhits
+	  }
+	  //int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+	  ph->mEpdHitNmip = nmip;
+	  //std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
+	}
+	else{
+	  //iph<noldhits
+	  if( mVertexCutLow<=mOldVertex && mOldVertex<=mVertexCutHigh ){
+	    if( ! ph->mFromCluster ){
 	      mH2F_MixedPointProj_nmipVtiledr->Fill(rpoint-rhit,nmip);
 	      mH2F_MixedPointProj_nmipVtiledphi->Fill(diffphi,nmip);
 	    }
 	  }
 	}
-	//int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
-	if( iph>=noldhits ){ ph->mEpdHitNmip = nmip; }
-	//std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
       }
     }
     if( iph>=noldhits ){ mH2F_EpdNmip->Fill(ph->mFromCluster,ph->mEpdHitNmip); }
   }
+  //std::cout << "|nold:"<<noldhits << "|nnew:"<<nnewhits << "|ntotal:"<<ntotal << "|oldvert:"<<mOldVertex << "|newvert:"<<mUseVertex<< "|nepdhits:"<<nepdwesthits <<"|noldpoints:"<<mNOldPoints << "|npoints:"<<npoints << std::endl;
 
   //std::cout << "|clustersize:"<<clustersize << "|ncandidates:"<<ncandidates << "|npoints:"<<npoints << std::endl;
   
@@ -1683,10 +1711,10 @@ void StMuFcsPi0TreeMaker::PaintEpdDistAnaQa(TCanvas* canv, const char* savename)
   canv->Clear();
   canv->Divide(3,2);
 
-  TH1* pointprojdr = ((TH2*)mH2F_PointProj_nmipValldr)->ProjectionX("pointprojdr");
-  TH1* pointprojdphi = ((TH2*)mH2F_PointProj_nmipValldphi)->ProjectionX("pointprojdphi");
-  TH1* mixedpointprojdr = ((TH2*)mH2F_MixedPointProj_nmipValldr)->ProjectionX("mixedpointprojdr");
-  TH1* mixedpointprojdphi = ((TH2*)mH2F_MixedPointProj_nmipValldphi)->ProjectionX("mixedpointprojdphi");
+  TH1* pointprojdr = ((TH2*)mH2F_PointProj_nmipValldr)->ProjectionX("pointprojdr",1,mH2F_PointProj_nmipValldr->GetNbinsY(),"e");
+  TH1* pointprojdphi = ((TH2*)mH2F_PointProj_nmipValldphi)->ProjectionX("pointprojdphi",1,mH2F_PointProj_nmipValldphi->GetNbinsY(),"e");
+  TH1* mixedpointprojdr = ((TH2*)mH2F_MixedPointProj_nmipValldr)->ProjectionX("mixedpointprojdr",1,mH2F_MixedPointProj_nmipValldr->GetNbinsY(),"e");
+  TH1* mixedpointprojdphi = ((TH2*)mH2F_MixedPointProj_nmipValldphi)->ProjectionX("mixedpointprojdphi",1,mH2F_MixedPointProj_nmipValldphi->GetNbinsY(),"e");
   canv->cd(1);
   pointprojdr->DrawCopy("hist e");
   canv->cd(4);
@@ -1696,11 +1724,12 @@ void StMuFcsPi0TreeMaker::PaintEpdDistAnaQa(TCanvas* canv, const char* savename)
   canv->cd(5);
   mixedpointprojdphi->Draw("hist e");
   
-  pointprojdr->Add(mixedpointprojdr,-1);
-  pointprojdphi->Add(mixedpointprojdphi,-1);
+  pointprojdr->Divide(mixedpointprojdr);
+  pointprojdphi->Divide(mixedpointprojdphi);
   
   canv->cd(3);
   pointprojdr->Draw("hist e");
+  pointprojdr->GetYaxis()->SetRangeUser(0.95,1.15);
   canv->cd(6);
   pointprojdphi->Draw("hist e");
 
@@ -1726,10 +1755,10 @@ void StMuFcsPi0TreeMaker::PaintEpdAllDistQaLowMult(TCanvas* canv, const char* sa
   mH2F_MixedPointProj_LowMult_nmipValldphi->Draw("colz");
   mH2F_MixedPointProj_LowMult_nmipValldphi->GetYaxis()->SetRangeUser(0,3);
 
-  TH1* pointprojlowmultdr = ((TH2*)mH2F_PointProj_LowMult_nmipValldr)->ProjectionX("pointprojlowmultdr");
-  TH1* pointprojlowmultdphi = ((TH2*)mH2F_PointProj_LowMult_nmipValldphi)->ProjectionX("pointprojlowmultdphi");
-  TH1* mixedpointprojlowmultdr = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldr)->ProjectionX("mixedpointprojlowmultdr");
-  TH1* mixedpointprojlowmultdphi = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldphi)->ProjectionX("mixedpointprojlowmultdphi");
+  TH1* pointprojlowmultdr = ((TH2*)mH2F_PointProj_LowMult_nmipValldr)->ProjectionX("pointprojlowmultdr",1,mH2F_PointProj_LowMult_nmipValldr->GetNbinsY(),"e");
+  TH1* pointprojlowmultdphi = ((TH2*)mH2F_PointProj_LowMult_nmipValldphi)->ProjectionX("pointprojlowmultdphi",1,mH2F_PointProj_LowMult_nmipValldphi->GetNbinsY(),"e");
+  TH1* mixedpointprojlowmultdr = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldr)->ProjectionX("mixedpointprojlowmultdr",1,mH2F_MixedPointProj_LowMult_nmipValldr->GetNbinsY(),"e");
+  TH1* mixedpointprojlowmultdphi = ((TH2*)mH2F_MixedPointProj_LowMult_nmipValldphi)->ProjectionX("mixedpointprojlowmultdphi",1,mH2F_MixedPointProj_LowMult_nmipValldphi->GetNbinsY(),"e");
   /*
   canv->cd(5);
   pointprojdr->DrawCopy("hist e");
@@ -1741,11 +1770,12 @@ void StMuFcsPi0TreeMaker::PaintEpdAllDistQaLowMult(TCanvas* canv, const char* sa
   mixedpointprojdphi->Draw("hist e");
   */
 
-  pointprojlowmultdr->Add(mixedpointprojlowmultdr,-1);
-  pointprojlowmultdphi->Add(mixedpointprojlowmultdphi,-1);
+  pointprojlowmultdr->Divide(mixedpointprojlowmultdr);
+  pointprojlowmultdphi->Divide(mixedpointprojlowmultdphi);
   
   canv->cd(3);
   pointprojlowmultdr->Draw("hist e");
+  pointprojlowmultdr->GetYaxis()->SetRangeUser(0.85,0.95);
   canv->cd(6);
   pointprojlowmultdphi->Draw("hist e");
 
