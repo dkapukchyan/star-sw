@@ -69,10 +69,21 @@ void FcsEventInfo::Print(Option_t* option) const
 ClassImp(FcsPhotonCandidate)
 
 FcsPhotonCandidate::FcsPhotonCandidate()
-{}
+{
+  for( int i=0; i<5; ++i ){
+    mEpdHitNmip[i] = -1;
+    mEpdMatch[i] = 0;
+  }    
+}
 
 FcsPhotonCandidate::~FcsPhotonCandidate()
 {}
+
+void FcsPhotonCandidate::ConvertEpdKeyToPpTt(Short_t key, Short_t &pp, Short_t &tt)
+{
+  pp = key/100;
+  tt = key-100*pp;
+}
 
 TLorentzVector FcsPhotonCandidate::lvRaw()
 {
@@ -137,13 +148,17 @@ void FcsPhotonCandidate::Copy(TObject& object) const
   ((FcsPhotonCandidate&)object).mPxVert = mPxVert;
   ((FcsPhotonCandidate&)object).mPyVert = mPyVert;
   ((FcsPhotonCandidate&)object).mPzVert = mPzVert;
-  
-  ((FcsPhotonCandidate&)object).mEpdHitNmip = mEpdHitNmip;
+
+  for( int i=0; i<5; ++i ){
+    (((FcsPhotonCandidate&)object)).mEpdHitNmip[i] = mEpdHitNmip[i];
+    (((FcsPhotonCandidate&)object)).mEpdMatch[i] = mEpdMatch[i];
+  }
 }
 
 
 void FcsPhotonCandidate::Clear(Option_t* opt)
 {
+  //std::cout <<"=====|FcsPhotonCandidate::Clear()::DEEPDEBUG" << std::endl;
   mFromCluster = false;
   mDetId = -1;
   mX = 0;
@@ -158,8 +173,12 @@ void FcsPhotonCandidate::Clear(Option_t* opt)
   mPxVert = 0;
   mPyVert = 0;
   mPzVert = 0;
-  
-  mEpdHitNmip = -1;
+  for( int i=0; i<5; ++i ){
+    mEpdHitNmip[i] = -1;
+    mEpdMatch[i] = 0;
+
+    //std::cout << "=====|FcsPhotonCandidate::Clear()::DEEPDEBUG||hitnmip:"<<mEpdHitNmip[i] << "|hitmatch:"<<mEpdMatch[i] << std::endl;
+  }
 }
 
 void FcsPhotonCandidate::Print(Option_t* opt) const

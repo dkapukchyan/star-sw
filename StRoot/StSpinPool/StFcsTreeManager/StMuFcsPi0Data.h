@@ -26,6 +26,7 @@
   @[January 29, 2025] > In #FcsPi0Candidate added #lv() which returns a #TLorentzVector of the Pi0 candidate based on its px,py,pz,energy
   @[February 5, 2025] > Clarified a comment
   @[September 4, 2025] > Implemented a copy function for #FcsPhotonCandidate
+  @[November 25, 2025] > Inside #FcsPhotonCandidate; added an array to hold EPD matches for different classes of intersections of EPD tiles; also added accessor functions to the EPD array that holds these matches and fixed the #FcsPhotonCandidate::Clear() and FcsPhotonCandidate::Copy() to clear and copy from array. Iterated #FcsPhotonCandidate to new version because of this change.
 */
 
 
@@ -108,7 +109,8 @@ public:
   Float_t mPyVert = 0;       ///< Y momentum using best found vertex
   Float_t mPzVert = 0;       ///< Z momentum using best found vertex
 
-  Float_t mEpdHitNmip = -1;   ///< NMIP value from EPD hit (-1 means could not project to valid tile, 0 means projected to valid tile but no hit, >0 value from EPD hit
+  Float_t mEpdHitNmip[5];   ///< NMIP value from EPD hit (-1 means could not project to valid tile, 0 means projected to valid tile but no hit, >0 value from EPD hit. first entry is always the "best" match
+  Short_t mEpdMatch[5];       ///< Special key for knowing which Tile key (100*pp+tt) had an intersection, Note that "0" is not a valid key since pp goes from 1 to 12, and tt goes from 1 to 31. The index here matches #FcsPhotonCandidate::mEpdHitNmip
 
   TLorentzVector lvRaw();        ///< TLorentz vector for this condidate with 0,0,0 vertex momentum
   TLorentzVector lvVert();       ///< TLorentz vector for this candidate with vertex momentum
@@ -122,7 +124,25 @@ public:
   virtual void Clear(Option_t* opt="");               ///< Resets all variables to defaults
   virtual void Print(Option_t* opt="") const;         ///< Print all variables no options
 
-  ClassDef( FcsPhotonCandidate, 1 )
+  /*void SetEpdMatch(Short_t cornerid, Short_t key);
+  void GetEpdTileFromMatch(Short_t cornerid, Short_t &pp, Short_t &tt);
+  void GetEpdInside(Short_t &pp, Short_t &tt);
+  void GetEpdOuterCCW(Short_t &pp, Short_t &tt);
+  void GetEpdInnerCCW(Short_t &pp, Short_t &tt);
+  void GetEpdOuterCW(Short_t &pp, Short_t &tt);
+  void GetEpdInnerCW(Short_t &pp, Short_t &tt);*/
+
+  static void ConvertEpdKeyToPpTt(Short_t key, Short_t &pp, Short_t &tt);   ///< pp=key/100 (integer divide), then tt=key-100*pp
+
+  //protected:
+  //void GetEpdKeyFromMatch(Short_t corner, Short_t &key);
+
+  //static void ConvertToKey(Int_t pp, Int_t tt);   ///< Make a key based on what epd tile and which "corner" had a hit, supersectors (pp) go from 1 to 12 so these will be the 4 left most bits, in the middle will be 5 bits for the tile (tt) which goes from 1 to 31. Lastly is a value that denotes type of corner, 0 is OuterCCW, 1 is InnerCCW, 2 is InnerCW, 3 is OuterCW. It may be confusing to have such keys, perhaps better to have a separate variable for each
+  //static void ConvertFromKey(Short_t key, Int_t& pp, Int_t &tt);
+  //bool corner                ///< Store which corner to use?
+
+
+  ClassDef( FcsPhotonCandidate, 2 )
 };
 
 //Class to hold basic info for reconstructed pi0 candidates

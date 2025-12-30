@@ -61,6 +61,8 @@
   @[September 26, 2025] > Implemented mixed events to compare how the EPD projections are working in real vs. mixed events. Implemented #Clear() function to use to clean up variables rather than at the end of #Make(). Implemented plotting functions for the mixed event histograms. Wrote #DrawEpdProjection() to work as an event display of projected FCS points and clusters on top of EPD hits. Looked at low point multiplicity events based on the event display. Implemented several functions to create polylines corresponding to different EPD adjacencies and also to draw the adjacencies.
 
   @[October 1, 2025] > Implemented a vertex cut on the old event for the mixed event portion of epd hits and points. Slightly modified epd hit loop conditions to get rid of redundant code.
+  @[November 25, 2025] > Added #CheckInsideEpdTile() which is the algorithm that checks if an FCS point was inside an EPD tile or in one of the "empty" regions by checking the CounterClockWise (CCW) neighborhood of tiles and then picking the tile whose center is closest to the FCS point and setting the appropriate variables in #FcsPhotonCandidate. Modified code to use this new CheckInsideEpdTile() rather than #StEpdGeom::IsInsideTile() in setting the nMIP value to use for the photon candidate. Modified #DrawEpdProjection to also draw FCS Ecal towers.
+  @[December 23, 2025] > Moved mixed event analysis to a different class that inherits from this one. Changed this class to lose that functionality. Added functions to break up the "Make" calls into their different functionality. This way they can be called in inherited classes.
 
 */
 
@@ -118,6 +120,19 @@ public:
   virtual Int_t InitRun(int runnumber);
   virtual void Clear(Option_t* option="");           ///< Gets called before #Make() in StChain::EventLoop()
   virtual Int_t Make();
+
+  //Methods called in Make in order to fill in data for Pi0 TSSA analysis
+  Int_t Make_LoadEvent();          ///< Set the members related to event information
+  Int_t Make_Polarization();       ///< Get the polarization percentage for the event
+  Int_t Make_CheckAndSetTrig();    ///< Check if valid trigger and fill trigger array
+  Int_t Make_SpinInfo();           ///< Get and fill spin information
+  virtual Int_t Make_GetEpdColl();     ///< (Get EPD collection and/or hits) Function that will set the variables related to grabbing the EPD collection. This is needed if you are not sure if the EPD collection is coming from MuDst data or the trigger data
+  virtual Int_t Make_VertexInfo();         ///< Get and set members related to the collision vertex
+  virtual Int_t Make_FillFcsClusPoint();   ///< Get and set the clusters and points to #mPhArr
+  virtual Int_t Make_CheckAndSetEpdHit();  ///< Loop over #mPhArr and check which photon candidates pair with which EPD tiles
+  virtual Int_t Make_PointPairs(TClonesArray* pointpairs);     ///< Loop over all the photon (point) candidates and make photon pairs with and save them to the TClonesArray that will hold the particle candidates
+  virtual Int_t Make_TssaAna(TClonesArray* pointpairs);        ///< Loop over the point pairs and apply some cut criteria to then make histograms for the Transverse Single Spin Asymmetry (TSSA) analysis
+  
   virtual Int_t Finish();
   void setOutFileName(const char* name) { mFilename = name; }
   void setEnergyCut(Double_t val){ mEnCut = val; }
@@ -180,10 +195,10 @@ public:
   void PaintEpdSingleCh(TCanvas* canv, const char* savename = "testepdsinglech.png") const;
   void PaintPi0Overlap(TCanvas* canv, const char* savename = "testpi0overlap.png") const;
   void PaintInvMassEpdQa(TCanvas* canv, const char* savename = "testinvmasscutqa.png") const;
-  void PaintEpdAllDistQa(TCanvas* canv, const char* savename = "testepdalldistqa.png") const;
-  void PaintEpdAllDistQaLowMult(TCanvas* canv, const char* savename = "testepdalldistqalowmult.png" ) const;
-  void PaintEpdTileDistQa(TCanvas* canv, const char* savename = "testepdtiledistqa.png") const;
-  void PaintEpdDistAnaQa(TCanvas* canv, const char* savename = "testepddistanaqa.png") const;
+  //void PaintEpdAllDistQa(TCanvas* canv, const char* savename = "testepdalldistqa.png") const;
+  //void PaintEpdAllDistQaLowMult(TCanvas* canv, const char* savename = "testepdalldistqalowmult.png" ) const;
+  //void PaintEpdTileDistQa(TCanvas* canv, const char* savename = "testepdtiledistqa.png") const;
+  //void PaintEpdDistAnaQa(TCanvas* canv, const char* savename = "testepddistanaqa.png") const;
   void PaintEpdQa(TCanvas* canv, const char* savename = "testepdsingleqa.png") const;
   void PaintEnergyZoom(TCanvas* canv, const char* savename = "testenergyzoom.png") const;
   void PaintEpdNmipCuts(TCanvas* canv, const char* savename = "testepdnmipcut.png") const;
@@ -280,7 +295,7 @@ protected:
   Int_t mTriggers[mMaxTrigs];           ///< Array of Triggers in the event 
   //void ResetTrigs();                    ///< Reset #mTriggers to default values
   TClonesArray* mPhArr = 0;             ///< #TClonesArray of all #FcsPhotonCandidate
-  TClonesArray* mMixedPhArr = 0;        ///< #TClonesArray of #FcsPhotonCandidate from last event used for event mixing
+  //TClonesArray* mMixedPhArr = 0;        ///< #TClonesArray of #FcsPhotonCandidate from last event used for event mixing
   //TClonesArray* mBestPharr = 0;         ///< #TClonesArray of #FcsPhotonCandidates which are highest energy pairs
   TClonesArray* mPi0Arr = 0;            ///< Array of #FcsPi0Candidate to store the best pi0 candidates for analysis
   
@@ -308,23 +323,33 @@ protected:
 
   TH1* mH1F_PointMult = 0;              ///< Raw point multiplicity in event
 
-  TH1* mH2F_PointProj_nmipValldx=0;        ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of all hits
-  TH1* mH2F_PointProj_nmipValldy=0;        ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of all hits
-  TH1* mH2F_PointProj_nmipValldr=0;        ///< nMIP vs. FCS projected point to EPD, r difference to all other hits
-  TH1* mH2F_PointProj_nmipValldphi=0;      ///< nMIP vs. FCS projected point to EPD, angle difference between all other hits
-  TH1* mH2F_MixedPointProj_nmipValldr=0;        ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to all other hits
-  TH1* mH2F_MixedPointProj_nmipValldphi=0;      ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference between all other hits
-  TH1* mH2F_PointProj_nmipVtiledx=0;       ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of center tile
-  TH1* mH2F_PointProj_nmipVtiledy=0;       ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of center tile
-  TH1* mH2F_PointProj_nmipVtiledr=0;       ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
-  TH1* mH2F_PointProj_nmipVtiledphi=0;     ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
-  TH1* mH2F_MixedPointProj_nmipVtiledr=0;       ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
-  TH1* mH2F_MixedPointProj_nmipVtiledphi=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  //TH1* mH2F_PointProj_nmipValldx=0;        ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of all hits
+  //TH1* mH2F_PointProj_nmipValldy=0;        ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of all hits
+  //TH1* mH2F_PointProj_nmipValldr=0;        ///< nMIP vs. FCS projected point to EPD, r difference to all other hits
+  //TH1* mH2F_PointProj_nmipValldphi=0;      ///< nMIP vs. FCS projected point to EPD, angle difference between all other hits
+  //TH1* mH2F_MixedPointProj_nmipValldr=0;        ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to all other hits
+  //TH1* mH2F_MixedPointProj_nmipValldphi=0;      ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference between all other hits
+  //TH1* mH2F_PointProj_nmipVtiledx=0;       ///< nMIP vs. FCS projected point to EPD x-position minus EPD x-position of center tile
+  //TH1* mH2F_PointProj_nmipVtiledy=0;       ///< nMIP vs. FCS projected point to EPD y-position minus EPD y-position of center tile
+  //TH1* mH2F_PointProj_nmipVtiledr=0;       ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
+  //TH1* mH2F_PointProj_nmipVtiledphi=0;     ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  //TH1* mH2F_MixedPointProj_nmipVtiledr=0;       ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
+  //TH1* mH2F_MixedPointProj_nmipVtiledphi=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
 
-  TH1* mH2F_PointProj_LowMult_nmipValldr=0;          ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
-  TH1* mH2F_PointProj_LowMult_nmipValldphi=0;        ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
-  TH1* mH2F_MixedPointProj_LowMult_nmipValldr=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
-  TH1* mH2F_MixedPointProj_LowMult_nmipValldphi=0;   ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  //TH1* mH2F_PointProj_LowMult_nmipValldr=0;          ///< nMIP vs. FCS projected point to EPD, r difference to tile hit
+  //TH1* mH2F_PointProj_LowMult_nmipValldphi=0;        ///< nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  //TH1* mH2F_MixedPointProj_LowMult_nmipValldr=0;     ///< Mixed event nMIP vs. FCS projected point to EPD, r difference to tile hit
+  //TH1* mH2F_MixedPointProj_LowMult_nmipValldphi=0;   ///< Mixed event nMIP vs. FCS projected point to EPD, angle difference to tile hit
+  
+  TH1* mH1F_PointProjPh_dx=0;        ///< FCS projected point to EPD x-position minus EPD x-position of all hits
+  TH1* mH1F_PointProjPh_dy=0;        ///< projected point to EPD y-position minus EPD y-position of all hits
+  TH1* mH1F_PointProjPh_dr=0;        ///< nMIP vs. FCS projected point to EPD, r difference to all other hits
+  TH1* mH1F_PointProjPh_dphi=0;      ///< nMIP vs. FCS projected point to EPD, angle difference between all other hits
+
+  TH1* mH1F_PointProjCh_dx=0;        ///< FCS projected point to EPD x-position minus EPD x-position of all hits
+  TH1* mH1F_PointProjCh_dy=0;        ///< projected point to EPD y-position minus EPD y-position of all hits
+  TH1* mH1F_PointProjCh_dr=0;        ///< nMIP vs. FCS projected point to EPD, r difference to all other hits
+  TH1* mH1F_PointProjCh_dphi=0;      ///< nMIP vs. FCS projected point to EPD, angle difference between all other hits
   
   //TH1* mH2F_Pi0HeatMap = 0;             ///< x,y locations of BestPi0
   TH1* mH1F_AllPi0Mult = 0;             ///< pi0 multiplicity for all pairs of points
@@ -457,18 +482,18 @@ protected:
   TPolyLine* EpdCWInnerCorner(short pp, short tt) const;
   TPolyLine* EpdCCWInnerCorner(short pp, short tt) const;
   std::map<Int_t,TPolyLine*> mEpdTileMap;    ///< EPD "tile key" to polyline for drawing
-  
-private:
+
+  void CheckInsideEpdTile(FcsPhotonCandidate* photon, Double_t projx, Double_t projy) const;  ///< This algorithm will first check if a point lies inside any of the EPD tiles. If yes, then the first entry in the #FcsCandidate::mEpdHitNmip array gets set to the nMIP value of that tile. If the point does not fall into any of the EPD tiles then it checks all the CCW regions for which the point can be in. These will get saved to the second and beyond entries. It will then check all the second to beyond entries for the tile that is closest to the point and set that nMIP value to the first entry. This ensures that I only need to check the first entry of the nMIP array when distinguishing photon candidates.
+
   HistManager* mHists = 0;            ///< Manage loading and saving histograms
+  
+private:  
   bool mInternalHists = false;        ///< Boolean to keep track if mHists was added externally or an internal one was created
   TRandom3 mSpinRndm;                 ///< Spin state randomizer
 
-  Double_t mOldVertex = -999.0;                ///< Vertex from last event needed for event mixing
-  Int_t mNOldPoints = 0;                       ///< Number of points in previous event
-
   static Int_t GetColor(Double_t Value, Double_t MinVal, Double_t MaxVal);
 
-  ClassDef(StMuFcsPi0TreeMaker, 4)
+  ClassDef(StMuFcsPi0TreeMaker, 5)
 };
 
 #endif
