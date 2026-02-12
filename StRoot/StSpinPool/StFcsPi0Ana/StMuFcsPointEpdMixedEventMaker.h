@@ -10,6 +10,7 @@
 
   LOG
   @[December 23, 2025] > Copied from #StMuFcsPi0TreeMaker and modified to use new class name
+  @[January 19, 2026] > Obsolete class as part of the experimentation with using #StMuFcsTreeMaker for doing the EPD mixed event analysis. Still haven't implemented into the new framework and want to keep this for keeping track of the history of how the analysis worked and as a learning tool for how I was experimenting to find a new framework
 
 */
 
@@ -65,13 +66,15 @@ public:
   StMuFcsPointEpdMixedEventMaker(const Char_t* name = "MuFcsPointEpdMixedEvent");
   ~StMuFcsPointEpdMixedEventMaker();
   virtual Int_t Init();
-  virtual Int_t InitRun(int runnumber);
-  virtual void Clear(Option_t* option="");           ///< Gets called before #Make() in StChain::EventLoop()
   virtual Int_t Make();
 
-  virtual Int_t Make_CheckAndSetEpdHit();           ///< Does mixed event analysis
+  //virtual Int_t Make_VertexInfo();         ///< Get and set members related to the collision vertex
+  //virtual Int_t Make_FillFcsClusPoint();   ///< Get and set the clusters and points to #mPhArr
+  virtual Int_t Make_CheckAndSetEpdHit();  ///< Loop over #mPhArr and check which photon candidates pair with which EPD tiles
+  //virtual Int_t Make_PointPairs(TClonesArray* pointpairs);     ///< Loop over all the photon (point) candidates and make photon pairs with and save them to the TClonesArray that will hold the particle candidates
+  //virtual Int_t Make_TssaAna(TClonesArray* pointpairs);        ///< Loop over the point pairs and apply some cut criteria to then make histograms for the Transverse Single Spin Asymmetry (TSSA) analysis
   
-  virtual Int_t Finish();
+  //virtual Int_t Finish();
 
   //UInt_t LoadDataFromFile(TFile* file);//, TTree&* tree, FcsEventInfo&* evt,Int_t& ntrig, Int_t&* triggers,  TClonesArray&* pharr, TClonesArray&* pi0arr, TH1&* hist=0):
   virtual UInt_t LoadHists(TFile* file);

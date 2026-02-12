@@ -17,17 +17,17 @@ Double_t FcsEventInfo::EpdTacDiffEarly()const
 Double_t FcsEventInfo::EpdTacDiffAvg()const{ return mEpdAvgW-mEpdAvgE; }  
 */
 
-Short_t FcsEventInfo::BlueSpin()
+Short_t FcsEventInfo::BlueSpin(Int_t spinbit)
 {
-  if( mSpin==10 || mSpin==9 ){ return 1; }
-  else if( mSpin==6 || mSpin==5 ){ return -1; }
+  if( spinbit==10 || spinbit==9 ){ return 1; }
+  else if( spinbit==6 || spinbit==5 ){ return -1; }
   else{ return 0; }
 }
 
-Short_t FcsEventInfo::YellowSpin()
+Short_t FcsEventInfo::YellowSpin(Int_t spinbit)
 {
-  if( mSpin==10 || mSpin==6 ){ return 1; }
-  else if( mSpin==9 || mSpin==5 ){ return -1; }
+  if( spinbit==10 || spinbit==6 ){ return 1; }
+  else if( spinbit==9 || spinbit==5 ){ return -1; }
   else{ return 0; }
 }
 
@@ -42,7 +42,11 @@ void FcsEventInfo::Clear(Option_t* option)
   mSpin = 0;
 
   mTofMultiplicity = -1;
-  
+
+  mPrimVertRanking = -1;
+  mPrimVx = -999;
+  mPrimVy = -999;
+  mPrimVz = -999;
   mVpdVz = -999;
   mBbcVz = -999;
   mBbcTacDiff = 0;

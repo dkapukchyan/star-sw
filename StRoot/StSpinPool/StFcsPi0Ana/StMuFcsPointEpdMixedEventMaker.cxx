@@ -41,7 +41,7 @@ StMuFcsPointEpdMixedEventMaker::~StMuFcsPointEpdMixedEventMaker()
 UInt_t StMuFcsPointEpdMixedEventMaker::LoadHists( TFile* file )
 {
   UInt_t loaded = StMuFcsPi0TreeMaker::LoadHists(file);
-
+  //UInt_t loaded = 0;
   //std::cout << "StMuFcsPointEpdMixedEventMaker::LoadHists()" << std::endl;
 
   loaded += mHists->AddH2F(file,mH2F_PointProj_nmipValldx,"H2F_PointProj_nmipValldx","nMIP vs. FCS projected point to EPD x minus EPD x of all hits;dX (cm);nmip", 200,-100,100, 70,0,7);
@@ -68,48 +68,19 @@ UInt_t StMuFcsPointEpdMixedEventMaker::LoadHists( TFile* file )
 
 Int_t StMuFcsPointEpdMixedEventMaker::Init()
 {
+  std::cout << "  |Init|" << std::endl;
   //This is still needed in Make so even if you are not writing the tree still need these objects
   mMixedPhArr  = new TClonesArray("FcsPhotonCandidate");
 
   return StMuFcsPi0TreeMaker::Init();
 }
 
-Int_t StMuFcsPointEpdMixedEventMaker::InitRun(int runnumber)
-{
-  return StMuFcsPi0TreeMaker::InitRun(runnumber);
-}
-
-//-----------------------
-Int_t StMuFcsPointEpdMixedEventMaker::Finish()
-{
-  return StMuFcsPi0TreeMaker::Finish();
-}
-
 //----------------------
 Int_t StMuFcsPointEpdMixedEventMaker::Make()
 {
-  Int_t result = Make_LoadEvent();
-  if( result==kStErr ){ return kStErr; }
-  result = Make_Polarization();
-  if( result == kStErr ){ return kStErr; }
-  result = Make_CheckAndSetTrig();
-  if( !mValidTrigFound ){ mNTrig=0; return kStSkip; } //Reset trigger array size before going to next event
-  if( result!=kStOk ){ return result; }
-  result = Make_SpinInfo();
-  if( result!=kStOk ){ return result; }
+  //std::cout << this->ClassName() << "|Start Make" << std::endl;
+  Int_t result = StMuFcsTreeMaker::Make();
 
-  result = this->Make_GetEpdColl();
-  if( result==kStWarn ){ return kStWarn; }
-
-  result = this->Make_VertexInfo();
-  if( result!=kStOk ){ return kStErr; }
-
-  result = this->Make_FillFcsClusPoint();
-  result = this->Make_CheckAndSetEpdHit();
-  //result = this->Make_PointPairs(mPi0Arr);
-  //result = this->Make_TssaAna(mPi0Arr);
-
-  if( mPi0Tree!=0 ){ mPi0Tree->Fill(); }
   //Do this here since clear gets called before Make so that MixedPhArr doesn't get filled with junk before first pass
   mNOldPoints = mPhArr->GetEntriesFast();
   mOldVertex = mUseVertex;  //Set old vertex for mixed event analysis on next event
@@ -123,11 +94,12 @@ Int_t StMuFcsPointEpdMixedEventMaker::Make()
     //mixedph->Print();
   }
 
-  return kStOk;
+  return result;
 }
 
 Int_t StMuFcsPointEpdMixedEventMaker::Make_CheckAndSetEpdHit()
 {
+  //std::cout << this->ClassName() << "|Start:Make_CheckAndSetEpdHit" << std::endl;
   //Check photon candidates if they have any hits in the EPD. Use a separate loop so that this information could be used in the pi0 checking loop if needed. In future may also want to check against FCS preshower (EPD) hits
   Int_t noldhits = mMixedPhArr->GetEntriesFast();
   Int_t nnewhits = mPhArr->GetEntriesFast();
@@ -266,12 +238,6 @@ Int_t StMuFcsPointEpdMixedEventMaker::Make_CheckAndSetEpdHit()
   //std::cout << "|clustersize:"<<clustersize << "|ncandidates:"<<ncandidates << "|npoints:"<<npoints << std::endl;
   return kStOk;
 }
-
-void StMuFcsPointEpdMixedEventMaker::Clear(Option_t* option)
-{
-  StMuFcsPi0TreeMaker::Clear();
-}
-
 
 
 void StMuFcsPointEpdMixedEventMaker::PaintEpdAllDistQa(TCanvas* canv, const char* savename) const
