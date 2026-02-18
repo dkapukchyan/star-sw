@@ -1,0 +1,875 @@
+#include "StEnumerations.h"
+#include "StEvent/StEvent.h"
+#include "StEvent/StFcsCluster.h"
+#include "StEvent/StFcsCollection.h"
+#include "StEvent/StFcsHit.h"
+#include "StEvent/StEventTypes.h"
+#include "StFcsDbMaker/StFcsDbMaker.h"
+#include "StMessMgr.h"
+#include "StMuDSTMaker/COMMON/StMuTypes.hh"
+#include "StSpinPool/StFcsQaMaker/StFcsQaMaker.h"
+#include "StSpinPool/StFcsRawDaqReader/StFcsRawDaqReader.h"
+#include "StRoot/StEpdUtil/StEpdGeom.h"
+#include "StThreeVectorF.hh"
+#include "Stypes.h"
+
+#include "StMuFcsAnaEpdMatch.h"
+
+ClassImp(StMuFcsAnaEpdMatch)
+
+std::map<Int_t,TPolyLine*> StMuFcsAnaEpdMatch::mEpdCcwLines;
+
+StMuFcsAnaEpdMatch::StMuFcsAnaEpdMatch()
+{
+}
+
+StMuFcsAnaEpdMatch::~StMuFcsAnaEpdMatch()
+{
+  for( auto itr=mEpdCcwLines.begin(); itr!=mEpdCcwLines.end(); ++itr ){
+    delete itr->second;
+  }
+  mEpdCcwLines.clear();
+}
+
+UInt_t StMuFcsAnaEpdMatch::LoadHists(TFile* file, HistManager* histman, StMuFcsAnaData* data)
+{
+  UInt_t loaded = 0;
+  if( histman==0 ){ return loaded; }
+
+  loaded += histman->AddH2F(file,mH2F_EpdProjHitMap,"H2F_EpdProjHitMap","Distribution of x,y projections of photon candidates onto STAR EPD plane;x (cm);y (cm)", 300,-150,150, 200,-100,100);
+  loaded += histman->AddH2F(file,mH2F_EpdProjHitMap_Vcut,"H2F_EpdProjHitMap_Vcut","Distribution of x,y projections of photon candidates onto STAR EPD plane with |vertex|<150cm;x (cm);y (cm)", 300,-150,150, 200,-100,100);
+  loaded += histman->AddH2F(file,mH2F_EpdNmip,"H2F_EpdNmip","Distribution of nmip values from matching projected clusters and points;;Nmip",2,0,2, 70,0,7);
+  mH2F_EpdNmip->GetXaxis()->SetBinLabel(1,"Clusters");
+  mH2F_EpdNmip->GetXaxis()->SetBinLabel(2,"Points");
+
+  return loaded;
+}
+
+Int_t StMuFcsAnaEpdMatch::DoMake(StMuFcsAnaData* anadata)
+{
+  TClonesArray* PhArr = anadata->getPhArr();
+  StEpdGeom* EpdGeom = anadata->epdGeom();
+  Double_t usevertex = anadata->mUseVertex;
+  Double_t vertexcutlow = anadata->mVertexCutLow;
+  Double_t vertexcuthigh = anadata->mVertexCutHigh;
+  TClonesArray* MuEpdHits = 0;
+  StEpdCollection* EpdColl = 0;
+  anadata->epdColl(MuEpdHits,EpdColl);  
+
+  //Check photon candidates if they have any hits in the EPD. Use a separate loop so that this information could be used in the pi0 checking loop if needed. In future may also want to check against FCS preshower (EPD) hits
+  //Int_t npoints = ntotal - anadata->mEvtInfo->mClusterSize;
+  unsigned int nepdhits = 0;
+  StSPtrVecEpdHit* epdhits = 0;
+  if( MuEpdHits!=0 ){ nepdhits = MuEpdHits->GetEntriesFast(); }
+  else if( EpdColl!=0 ){
+    epdhits = &(EpdColl->epdHits());
+    nepdhits = epdhits->size();
+  }
+  else{ LOG_ERROR << "StMuFcsAnaEpdMatch::FillEpdinfo() - If you see this error then there is a bug that is setting EPD hits improperly" << endm; return kStErr; }
+
+  Int_t ntotal = PhArr->GetEntriesFast();
+  Int_t nepdwesthits = 0;
+  for( Int_t iph = 0; iph<ntotal; ++iph ){
+    //std::cout << "|iph:"<<iph << "|iphnew:"<<iph-noldhits << std::endl;
+    FcsPhotonCandidate* ph = (FcsPhotonCandidate*) PhArr->UncheckedAt(iph);
+    if( ph==0 ){ std::cout << "==========I=CANNOT=BE=ZERO==========" << std::endl; return kStErr; }
+    std::vector<Double_t> epdproj = StMuFcsAnaData::ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex);
+    
+    mH2F_EpdProjHitMap->Fill( epdproj.at(0),epdproj.at(1) );
+    if( vertexcutlow<=usevertex && usevertex<=vertexcuthigh ){ mH2F_EpdProjHitMap_Vcut->Fill(epdproj.at(0),epdproj.at(1)); }
+    //std::cout << " + |phx:"<<ph->mX << "|phy:"<<ph->mY << "|phz:"<<ph->mZ << "|v:"<<usevertex << std::endl;
+    //std::cout << " + |epdx:"<<epdproj.at(0) << "|epdy:"<<epdproj.at(1) << "|epdz:"<<epdproj.at(2) << std::endl;
+    //std::cout << " ** |iph:"<< iph-noldhits << std::endl;
+    StMuFcsAnaEpdMatch::CheckInsideEpdTile(EpdGeom, ph,epdproj.at(0),epdproj.at(1));  //Function that will check which EPD tiles photon candidate overlaps with and sets the appropriate variables for it
+    
+    //loop over all hits and if an nmip value exists set for the point
+    StMuEpdHit* muepdhit = 0;
+    StEpdHit* epdhit = 0;
+    for(unsigned int i=0; i<nepdhits; ++i ){
+      if( MuEpdHits!=0 ){ muepdhit = (StMuEpdHit*)MuEpdHits->UncheckedAt(i); } //To match similar in StMuDstMaker->epdHit(int i)
+      else if( epdhits!=0 ){ epdhit = (StEpdHit*)((*epdhits)[i]); }
+      else{ LOG_ERROR << "IF YOU SEE THIS ERROR THEN THERE IS A VERY SERIOUS BUG IN THE CODE" << endm; return kStErr; } 
+      //std::cout << "|i:"<<i << "|muepdhit:"<<muepdhit << "|epdhit:"<<epdhit << std::endl;
+      int ew    = muepdhit!=0 ? muepdhit->side()    : epdhit->side();      //east=-1, west=1
+      if( ew==-1 ){ continue; }
+      if( iph==0){ ++nepdwesthits; }
+      int epdpp = muepdhit!=0 ? muepdhit->position(): epdhit->position();  //Supersector runs [1,12]
+      int epdtt = muepdhit!=0 ? muepdhit->tile()    : epdhit->tile();      //Tile number [1,31]
+      //int adc = muepdhit!=0 ? muepdhit->adc() : epdhit->adc();
+      float nmip = muepdhit!=0 ? muepdhit->nMIP(): epdhit->nMIP();         //The ADC value of the hit divided by the MIP peak position; e.g. if nmip==1 then adc value sits at the MIP peak
+      //std::cout << "|epdpp:"<<epdpp <<"|epdtt:"<<epdtt <<"|nmip:"<<nmip << std::endl;
+      //std::cout << "|epdz:"<<epdhitxyz[2] << std::endl;
+      //if( ! ph->mFromCluster ){
+      //if( mTrigEm2==3 && mTrigEm0<0 && mTrigEm1<0 ){
+      if( vertexcutlow<=usevertex && usevertex<=vertexcuthigh ){
+	if( ph->mEpdMatch[0] == (100*epdpp+epdtt)  ){
+	  ph->mEpdHitNmip[0] = nmip;
+	}
+      }
+      //}
+    }
+    //std::cout << "=====DEEPDEBUG=====:"<<((ph->mFromCluster)?0:1) << "|" << ph->mEpdHitNmip[0] << std::endl;
+    //std::cout << "=====DEEPDEBUG=====:"<< ((ph->mFromCluster)?0:1) << "|" << ph->mEpdHitNmip[0] << std::endl;
+    mH2F_EpdNmip->Fill( ((ph->mFromCluster)?0:1),ph->mEpdHitNmip[0] );
+  }
+  //std::cout << "|nold:"<<noldhits << "|nnew:"<<nnewhits << "|ntotal:"<<ntotal << "|oldvert:"<<mOldVertex << "|newvert:"<<mUseVertex<< "|nepdhits:"<<nepdwesthits <<"|noldpoints:"<<mNOldPoints << "|npoints:"<<npoints << std::endl;
+
+  //std::cout << "|clustersize:"<<clustersize << "|ncandidates:"<<ncandidates << "|npoints:"<<npoints << std::endl;
+  return kStOk;
+}
+
+void StMuFcsAnaEpdMatch::CheckInsideEpdTile(StEpdGeom* epdgeo, FcsPhotonCandidate* photon, Double_t projx, Double_t projy )
+{
+  //loop over all west epd tiles so that even if no hit recorded can use as a veto
+  for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+    for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+      if( epdgeo->IsInTile(i_pp,i_tt, 1, projx,projy) ){ //Only care about west EPD tiles; hence the '1'
+	//TPolyLine* epd_ccw = EpdCCWOuterCorner(i_pp,i_tt);
+	photon->mEpdHitNmip[0] = 0;
+	photon->mEpdMatch[0] = 100*i_pp + i_tt;
+	//std::cout << " + |projx:"<<projx << "|projy:"<<projy << "|nmip:"<< photon->mEpdHitNmip[0] << "|epdkey:"<<photon->mEpdMatch[0] << std::endl;
+	break; //Inside match should be unique
+      }
+    }
+  }
+  if( photon->mEpdMatch[0]==0 ){ //If no intersection found it would be -1 so now check all the CCW adjacencies
+    //std::cout << "   - |projx:"<<projx << "|projy:"<<projy << "|nmip:"<< photon->mEpdHitNmip[0] << "|epdkey:"<<photon->mEpdMatch[0] << std::endl;
+    int ccwcounter = 1; //Should be 1 but Hack to check the drawing of the projections
+    for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+      for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
+	Int_t epdkey = 100*i_pp+i_tt;
+	TPolyLine* epd_outerccw = 0;
+	auto itr = mEpdCcwLines.find(epdkey);
+	if( itr!=mEpdCcwLines.end() ){ epd_outerccw = itr->second; }
+	else{
+	  epd_outerccw = EpdCCWOuterCorner(epdgeo,i_pp,i_tt);
+	  auto result = mEpdCcwLines.emplace(epdkey,epd_outerccw);
+	  if( !(result.second) ){ std::cout << "If you see this ERROR,, something went totally wrong and For some reason you tried to insert an EPD Tile Outer CCW that already exists" << std::endl; }
+	}
+	if( TMath::IsInside( projx, projy, epd_outerccw->GetN(), epd_outerccw->GetX(), epd_outerccw->GetY() ) ){
+	  //TPolyLine* epd_ccw = EpdCCWOuterCorner(i_pp,i_tt);
+	  photon->mEpdHitNmip[ccwcounter] = 0;
+	  photon->mEpdMatch[ccwcounter] = epdkey;
+	  //std::cout << "     - |ccwcounter:"<<ccwcounter << "|nmip:"<< photon->mEpdHitNmip[ccwcounter] << "|epdkey:"<<photon->mEpdMatch[ccwcounter] << std::endl;
+	  ++ccwcounter;
+	}
+      }
+    }
+  }
+  
+  int ncorners = 0;
+  for( int icorner=0; icorner<5; ++icorner ){
+    //std::cout << " + |projx:"<<projx << "|projy:"<<projy << "|epdkey:"<<photon->mEpdHitNmip[icorner] << std::endl;
+    if( photon->mEpdMatch[icorner]!=0 ){ ++ncorners; }
+  }
+  
+  if( ncorners>1 ){
+    int bestcorner = 0;
+    Double_t mindist = 999; //Pick some large distance so that the minimum will get set with first loop
+    for( int icorner=0; icorner<5; ++icorner ){
+      //Pick the best corner and set it to 0 value since the algorithm above only cares about the match in 0
+      //std::cout << " + |projx:"<<projx << "|projy:"<<projy << "|nmip:"<< photon->mEpdHitNmip[icorner] << "|epdkey:"<<photon->mEpdMatch[icorner];
+      if( photon->mEpdMatch[icorner]!=0 ){
+	int epdpp = photon->mEpdMatch[icorner]/100;
+	int epdtt = photon->mEpdMatch[icorner] - epdpp*100;
+	TVector3 epdhitxyz = epdgeo->TileCenter(epdpp,epdtt,1);//1 for west
+	Double_t distx = projx-epdhitxyz.x();
+	Double_t disty = projy-epdhitxyz.y();
+	Double_t dist = TMath::Sqrt(distx*distx+disty*disty);
+	//std::cout << "|("<<epdhitxyz.x() << ","<<epdhitxyz.y() <<")|dx:"<<distx << "|dy:"<< disty << "|dist:"<<dist;
+	if( dist<mindist ){ bestcorner = icorner; }
+      }
+      //else{std::cout << "|("<<0 << ","<<0 <<")"; }
+      //std::cout << std::endl;
+    }
+    //std::cout << "   + |ncorners:"<<ncorners << std::endl;
+    photon->mEpdMatch[0] = photon->mEpdMatch[bestcorner];
+    photon->mEpdHitNmip[0] = 0;
+  }
+  
+    /*
+    //For all tiles except 1, 2, or 3 only check Outer CCW since this will cover the gap for all tiles except 1, 2, or 3
+    TPolyLine* epd_outerccw = EpdCCWOuterCorner(i_pp,i_tt);
+      if( TMath::IsInside( projx, projy, epd_outerccw->GetN(), epd_outerccw->GetX(), epd_outerccw->GetY() ) ){
+	photon->mEpdHitNmip[1] = 0;
+	photon->mEpdMatch[1] = 100*i_pp + i_tt;
+      }
+      //else if( i_tt==1 || i_tt==2 || i_tt==3 ){
+      //For tiles 1, 2, and 3 need to check other than the outer CCW because of the pentagonal structure of tile 1 means that inner CCW, inner CW, and outer CW have a weird overlap that needs checking
+      TPolyLine* epd_innerccw = EpdCCWInnerCorner(i_pp,i_tt);
+      if( TMath::IsInside( projx, projy, epd_innerccw->GetN(), epd_innerccw->GetX(), epd_innerccw->GetY() ) ){
+	photon->mEpdHitNmip[2] = 0;
+	photon->mEpdMatch[2] = 100*i_pp + i_tt;
+      }
+      TPolyLine* epd_innercw = EpdCWInnerCorner(i_pp,i_tt);
+      if( TMath::IsInside( projx, projy, epd_innercw->GetN(), epd_innercw->GetX(), epd_innercw->GetY() ) ){
+	photon->mEpdHitNmip[3] = 0;
+	photon->mEpdMatch[3] = 100*i_pp + i_tt;
+      }
+      TPolyLine* epd_outercw = EpdCWOuterCorner(i_pp,i_tt);
+      if( TMath::IsInside( projx, projy, epd_outercw->GetN(), epd_outercw->GetX(), epd_outercw->GetY() ) ){
+	photon->mEpdHitNmip[4] = 0;
+	photon->mEpdMatch[4] = 100*i_pp + i_tt;
+      }
+    } //for i_tt
+  }   //for i_pp
+    */
+}
+
+std::vector<Int_t> StMuFcsAnaEpdMatch::GetAdjacentEpdIds(Int_t pp,Int_t tt)
+{
+  std::vector<Int_t> adjtiles;
+  //Start from top tile and go counterclockwise
+  Int_t adjpp = 0;
+  Int_t adjtt = 0;
+  GetEpdTileOuter(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileOuterCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInnerCCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInner(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileInnerCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+  GetEpdTileOuterCW(pp,tt,adjpp,adjtt);
+  if( adjpp==0 && adjtt==0 ){ adjtiles.push_back(100*adjpp+adjtt); }
+
+  return adjtiles;
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileOuter(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    newpp = pp;
+    newtt = tt+2;      //Outer tile is tt+2 for all but extreme cases
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1  ){ newpp=pp; newtt=2; }  ////tile going out is 2 (old:Nothing going "out" but OuterCCW and OuterCW will return 2 and 3)
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileOuterCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt+3;              //above CCW for even is tt+3 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt = tt+1;              //above CCW for odd is tt+1
+    }
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1  ){ newpp=pp+1;if(newpp==13){newpp=1;} newtt=3; } //Outer and going CCW is tile 3 and one over (old:2)
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt+1;              //CCW  tile for even is tt+1 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt = tt-1;  //CCW tile for odd is tt-1
+    }
+  }
+  else{
+    if( tt==1 ){ newpp=pp+1; if(newpp==13){ newpp=1; } newtt=1; }
+  }
+}
+  
+void StMuFcsAnaEpdMatch::GetEpdTileInnerCCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp+1;
+      if(newpp==13){ newpp=1; }  //loop back to pp 1 for pp 12
+      newtt = tt-1;              //Inner CCW tile for even is tt-1 and pp+1
+    }
+    else{
+      newpp = pp;
+      newtt=tt-3;                  //Inner CCW for odd is tt-3
+    }
+  }
+  else{
+    if( tt==3 ){ newpp=0;  newtt=0; }                               //There is no inner CCW (old:Inner CCW for tile 3 is tile in this supersector because it is the "most" CCW)
+    if( tt==2 ){ newpp = pp+1; if(newpp==13){ newpp=1; }  newtt=1; } //Inner CCW for tile 2 is next supersector over  tile 1 since it forms a nice corner there
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileInner(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    newpp = pp;
+    newtt = tt-2;
+  }
+  else{
+    if( tt==3 ){ newpp=0;  newtt=0; }  //Nothing more inner but will be handled by InnerCCW and InnerCW
+    if( tt==2 ){ newpp=pp;  newtt=1; }  //to match Outer (old:Nothing more inner but will be handled by InnerCCW and InnerCW)
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileInnerCW(Int_t pp, Int_t tt, Int_t &newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 4<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt-1;        //Inner CW for even is tt-1
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; }  //loop back to 12 for pp 1
+      newtt = tt-3;                //Inner CW for odd is tt-3 and pp-1
+    }
+  }
+  else{
+    if( tt==3 ){ newpp = pp-1; if( newpp==0 ){ newpp=12; } newtt=1; }  //InnerCW is tile 1 of next supersector over since it forms a nice corner
+    if( tt==2 ){ newpp = 0; newtt = 0; }                              //No inner CW (old:InnerCW is tile 1 of this supersector since it is "most" clockwise)
+    if( tt==1 ){ newpp=0;  newtt=0; }  //Innermost tile
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=31 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt+1;     //CW for even is tt+1
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; } //loop back to 12 for pp 1
+      newtt = tt-1;        //CW tile for odd is tt-1 and pp-1
+    }
+  }
+  else{
+    if( tt==1 ){ newpp = pp-1; if( newpp==0 ){ newpp=12; } newtt = 1; }
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdTileOuterCW(Int_t pp, Int_t tt, Int_t& newpp, Int_t& newtt)
+{
+  newpp = 0; newtt=0;    //Catch all just in case
+  if( 2<=tt && tt<=29 ){
+    if( tt%2==0 ){
+      newpp = pp;
+      newtt = tt+3;     //Outer CW for even is tt+3
+    }
+    else{
+      newpp = pp-1;
+      if( newpp==0 ){ newpp=12; } //loop back to 12 for pp 1
+      newtt = tt+1;        //Outer CW tile for odd is tt+1 and pp-1
+    }
+  }
+  else{
+    if( tt==30 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==31 ){ newpp=0; newtt=0; }  //Outermost tile
+    if( tt==1 ){  newpp=pp; newtt=3; }  //Outmost tile going CW is 3
+  }
+}
+
+void StMuFcsAnaEpdMatch::GetEpdPPandTTFromId(Int_t id, Int_t& pp, Int_t& tt)
+{
+  pp = id/100;  //Automatically should floor to lowest positive integer in implicity conversion
+  tt = id%100;  
+}
+
+
+TPolyLine* StMuFcsAnaEpdMatch::EpdTilePoly(StEpdGeom* epdgeo, short pp, short tt)
+{
+  if( epdgeo==0 ){ return 0; }
+  double x[5] = {0};
+  double y[5] = {0};
+  int ncorners = 0;
+  short eastwest = 1;   //1 means EPD west
+  epdgeo->GetCorners(pp,tt,eastwest,&ncorners,x,y);
+  if( ncorners==0 ){ return 0; }
+  std::vector<double> xvals;
+  std::vector<double> yvals;
+  for( int i=0; i<ncorners; ++i ){
+    xvals.emplace_back(x[i]);
+    yvals.emplace_back(y[i]);
+    if( i==ncorners-1 ){
+      xvals.emplace_back(x[0]);
+      yvals.emplace_back(y[0]);
+    }
+  }
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|n:"<<ncorners << "|";
+  for( unsigned int j=0; j<xvals.size(); ++j ){
+    //std::cout << "("<<xvals.at(j) << ","<<yvals.at(j) << ")|";
+  }
+  //std::cout << std::endl;
+  TPolyLine* polyline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+  return polyline;
+}
+
+
+//Makes the 2x2 
+TPolyLine* StMuFcsAnaEpdMatch::EpdCCWOuterCorner(StEpdGeom* epdgeo, short pp, short tt)
+{
+  //std::vector<Int_t> adjaenttiles = StMuFcsAnaEpdMatch::GetAdjacentEpdIds(pp,tt);
+  //std::vector<TPolyLine*> alllines;
+  //alllines.push_back(EpdTilePoly(pp,tt)); //Start with center tile
+  TPolyLine* main = EpdTilePoly(epdgeo, pp,tt);
+  Int_t nmain = main->GetN();
+  Double_t* xmain = main->GetX();
+  Double_t* ymain = main->GetY();
+  std::list<double> xvals;
+  std::list<double> yvals;
+  for( int i=0; i<nmain-1; ++i ){
+    xvals.push_back(xmain[i]);
+    yvals.push_back(ymain[i]);
+  }
+  std::list<double>::iterator xitr = xvals.begin();
+  std::list<double>::iterator yitr = yvals.begin();
+  /*
+  for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+    std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+    }*/
+  bool CCWIstt1 = false;
+  xitr = xvals.begin();
+  yitr = yvals.begin();
+  Int_t adjpp = 0;
+  Int_t adjtt = 0;
+  StMuFcsAnaEpdMatch::GetEpdTileCCW(pp,tt,adjpp,adjtt);
+  //std::cout << "CCW|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Know there is something in the counter clockwise direction
+    TPolyLine* adjline = EpdTilePoly(epdgeo,adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    int lastcorner = 3;  //For rectangular tiles this is the index to use
+    //std::cout << "|nadj:"<<nadj << std::endl;
+    if( nadj==6 ){
+      //For tile pp1
+      CCWIstt1 = true;
+      lastcorner = 4;  //For tt1 which is pentagonal this is the index to use
+    }
+    //if( nadj==5 ){  //5 is actually 4 corners since last element is the same as the start
+      //std::cout << "HERECCW:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      //Since "insert" will insert before the iterator advance to second corner which is the outer CCW corner
+      std::advance(xitr,1);
+      std::advance(yitr,1);
+      //Want to add CW inner edge first and then inner CCW edge
+      xvals.insert(xitr,adjxvals[lastcorner]);
+      yvals.insert(yitr,adjyvals[lastcorner]);
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      if( CCWIstt1 ){
+	//Add extra corner for tt1
+	xvals.insert(xitr,adjxvals[3]);
+	yvals.insert(yitr,adjyvals[3]);
+      }
+      //}
+    delete adjline;
+    
+    /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+  }
+  StMuFcsAnaEpdMatch::GetEpdTileOuter(pp,tt,adjpp,adjtt);
+  //std::cout << "Outer|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Erase point on this corner
+    //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+    xitr = xvals.erase(xitr); //Gets set to next element (corner)
+    yitr = yvals.erase(yitr);
+    //std::cout << "AFTERERASE" << std::endl;
+    /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+    --xitr;   //Go back to previous corner
+    --yitr;
+    //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+    //Know there is something above so add the points accordingly
+    TPolyLine* adjline = EpdTilePoly(epdgeo,adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    if( nadj==5 ){
+      //std::cout << "HEREOUTER:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      //Since "insert" will insert before the iterator advance to third corner of original tile
+      std::advance(xitr,1);
+      std::advance(yitr,1);
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      xvals.insert(xitr,adjxvals[3]);
+      yvals.insert(yitr,adjyvals[3]);
+    }
+    else{ std::cout << "MAJOR ERROR:TILE1 CANNOT BE AN OUTER TILE" << std::endl; }
+    delete adjline;
+    /*
+    for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+      std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+      }*/
+  }
+  StMuFcsAnaEpdMatch::GetEpdTileOuterCCW(pp,tt,adjpp,adjtt);
+  //std::cout << "OuterCCW|adjpp:"<<adjpp << "|adjtt:"<<adjtt << std::endl;
+  if( adjpp!=0 && adjtt!=0 ){
+    //Know there is something in the outer CCW position
+    TPolyLine* adjline = EpdTilePoly(epdgeo,adjpp,adjtt);
+    Int_t nadj = adjline->GetN();
+    Double_t* adjxvals = adjline->GetX();
+    Double_t* adjyvals = adjline->GetY();
+    if( nadj==5 ){
+      //std::cout << "HEREOUTERCCW:"<<adjxvals[0] <<"|"<<adjyvals[0] << std::endl;
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+       //Get to the points related to the inner corner and remove them
+      std::advance(xitr,4);
+      std::advance(yitr,4);
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      xitr = xvals.erase(xitr); //Gets set to next element (corner)
+      yitr = yvals.erase(yitr);
+      //std::cout << "AFTERERASE1" << std::endl;
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      xitr = xvals.erase(xitr);
+      yitr = yvals.erase(yitr);
+      if( CCWIstt1 ){
+	//Delete extra corner when tt1 was added CCW
+	xitr = xvals.erase(xitr);
+	yitr = yvals.erase(yitr);
+      }
+      //std::cout << "AFTERERASE2" << std::endl;
+      //std::cout << "  - |x:"<<*xitr << "|y:"<<*yitr << std::endl;
+      /*for( std::list<double>::iterator xit=xvals.begin(), yit=yvals.begin(); xit!=xvals.end() && yit!=yvals.end(); ++xit, ++yit ){
+	std::cout << " + |x:"<< *xit << "|y:"<<*yit << std::endl;
+	}*/
+      //Iterator has moved to next element which also needs to be deleted
+      //Since "insert" will insert before the iterator it is now pointing to correct "top left corner"
+      //Want to add clockwise edge first
+      xvals.insert(xitr,adjxvals[0]);
+      yvals.insert(yitr,adjyvals[0]);
+      xvals.insert(xitr,adjxvals[1]);
+      yvals.insert(yitr,adjyvals[1]);
+      xvals.insert(xitr,adjxvals[2]);
+      yvals.insert(yitr,adjyvals[2]);
+      //xvals.push_back(adjxvals[3]); //Don't insert last point which is now inside the shape
+      //yvals.push_back(adjyvals[3]);
+    }
+    delete adjline;
+  }
+
+  std::vector<double> newxvals;
+  std::vector<double> newyvals;
+  xitr=xvals.begin();
+  yitr=yvals.begin();
+  //std::cout << "=====final=====" << std::endl;
+  for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+    newxvals.push_back(*xitr);
+    newyvals.push_back(*yitr);
+    //std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+  }
+  //Add first element back in to close the polygon
+  xitr = xvals.begin();
+  yitr = yvals.begin();
+  newxvals.push_back(*xitr);
+  newyvals.push_back(*yitr);
+    
+  delete main;
+  TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+  return newline;
+}
+
+TPolyLine* StMuFcsAnaEpdMatch::EpdCWOuterCorner(StEpdGeom* epdgeo, short pp, short tt)
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuFcsAnaEpdMatch::GetEpdTileCW(pp,tt,newpp,newtt);
+  //std::cout << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newtt!=0 && newpp!=0 ){ return EpdCCWOuterCorner(epdgeo, newpp,newtt); }
+  else{ return 0; }
+}
+
+TPolyLine* StMuFcsAnaEpdMatch::EpdCCWInnerCorner(StEpdGeom* epdgeo, short pp, short tt)
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuFcsAnaEpdMatch::GetEpdTileInner(pp,tt,newpp,newtt);
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newpp!=0 && newtt!=0 ){ return EpdCCWOuterCorner(epdgeo,newpp,newtt); }
+  else{
+    if( tt==3 ){
+      //Special for tile 3 to group tile 1, 2 and 3 together
+      TPolyLine* tt1 = EpdTilePoly(epdgeo,pp,1);
+      TPolyLine* tt2 = EpdTilePoly(epdgeo,pp,2);
+      TPolyLine* tt3 = EpdTilePoly(epdgeo,pp,3);
+      Double_t* xtt1 = tt1->GetX();
+      Double_t* ytt1 = tt1->GetY();
+      Double_t* xtt2 = tt2->GetX();
+      Double_t* ytt2 = tt2->GetY();
+      Double_t* xtt3 = tt3->GetX();
+      Double_t* ytt3 = tt3->GetY();
+      std::vector<double> xvals;
+      std::vector<double> yvals;
+      //Manually adding corners
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      xvals.push_back(xtt1[1]);
+      yvals.push_back(ytt1[1]);
+      xvals.push_back(xtt2[0]);
+      yvals.push_back(ytt2[0]);
+      xvals.push_back(xtt2[1]);
+      yvals.push_back(ytt2[1]);
+      xvals.push_back(xtt2[2]);
+      yvals.push_back(ytt2[2]);
+      xvals.push_back(xtt3[1]);
+      yvals.push_back(ytt3[1]);
+      xvals.push_back(xtt3[2]);
+      yvals.push_back(ytt3[2]);
+      xvals.push_back(xtt3[3]);
+      yvals.push_back(ytt3[3]);
+      xvals.push_back(xtt1[3]);
+      yvals.push_back(ytt1[3]);
+      xvals.push_back(xtt1[4]);
+      yvals.push_back(ytt1[4]);
+      //Add last points back in to close the polygon
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      
+      delete tt1;
+      delete tt2;
+      delete tt3;
+      TPolyLine* newline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;      
+    }
+    if( tt==1 ){
+      //For tile 1 only add CCW tile
+      TPolyLine* main = EpdTilePoly(epdgeo,pp,tt);
+      Int_t nmain = main->GetN();
+      Double_t* xmain = main->GetX();
+      Double_t* ymain = main->GetY();
+      std::list<double> xvals;
+      std::list<double> yvals;
+      for( int i=0; i<nmain-1; ++i ){
+	xvals.push_back(xmain[i]);
+	yvals.push_back(ymain[i]);
+      }
+      std::list<double>::iterator xitr = xvals.begin();
+      std::list<double>::iterator yitr = yvals.begin();
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      bool CCWIstt1 = false;
+      Int_t adjpp = 0;
+      Int_t adjtt = 0;
+      StMuFcsAnaEpdMatch::GetEpdTileCCW(pp,tt,adjpp,adjtt);
+      if( adjpp!=0 && adjtt!=0 ){
+	//Know there is something in the counter clockwise direction
+	TPolyLine* adjline = EpdTilePoly(epdgeo,adjpp,adjtt);
+	Int_t nadj = adjline->GetN();
+	Double_t* adjxvals = adjline->GetX();
+	Double_t* adjyvals = adjline->GetY();
+	int lastcorner = 3;  //For rectangular tiles this is the index to use
+	//std::cout << "|nadj:"<<nadj << std::endl;
+	if( nadj==6 ){
+	  //For tile pp1
+	  CCWIstt1 = true;
+	  lastcorner = 4;  //For tt1 which is pentagonal this is the index to use
+	}
+	std::advance(xitr,1);
+	std::advance(yitr,1);
+	//Want to add CW inner edge first and then inner CCW edge
+	xvals.insert(xitr,adjxvals[lastcorner]);
+	yvals.insert(yitr,adjyvals[lastcorner]);
+	xvals.insert(xitr,adjxvals[0]);
+	yvals.insert(yitr,adjyvals[0]);
+	xvals.insert(xitr,adjxvals[1]);
+	yvals.insert(yitr,adjyvals[1]);
+	xvals.insert(xitr,adjxvals[2]);
+	yvals.insert(yitr,adjyvals[2]);
+	if( CCWIstt1 ){
+	  //Add extra corner for tt1
+	  xvals.insert(xitr,adjxvals[3]);
+	  yvals.insert(yitr,adjyvals[3]);
+	}
+	delete adjline;
+      }
+      std::vector<double> newxvals;
+      std::vector<double> newyvals;
+      xitr=xvals.begin();
+      yitr=yvals.begin();
+      //std::cout << "=====final=====" << std::endl;
+      for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+	newxvals.push_back(*xitr);
+	newyvals.push_back(*yitr);
+	//std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+      }
+      //Add first element back in to close the polygon
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      newxvals.push_back(*xitr);
+      newyvals.push_back(*yitr);
+    
+      delete main;
+      TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;
+    }
+  }
+  return 0;
+}
+
+TPolyLine* StMuFcsAnaEpdMatch::EpdCWInnerCorner(StEpdGeom* epdgeo, short pp, short tt)
+{
+  int newtt = 0;
+  int newpp = 0;
+  StMuFcsAnaEpdMatch::GetEpdTileInnerCW(pp,tt,newpp,newtt);
+  //std::cout << "|pp:"<<pp << "|tt:"<<tt << "|newpp:"<<newpp << "|newtt:"<<newtt << std::endl;
+  if( newpp!=0 && newtt!=0 ){ return EpdCCWOuterCorner(epdgeo,newpp,newtt); }
+  else{
+    if( tt==2 ){
+      //Special for tile 2 to group tile 1, 2 and 3 together
+      TPolyLine* tt1 = EpdTilePoly(epdgeo,pp,1);
+      TPolyLine* tt2 = EpdTilePoly(epdgeo,pp,2);
+      TPolyLine* tt3 = EpdTilePoly(epdgeo,pp,3);
+      Double_t* xtt1 = tt1->GetX();
+      Double_t* ytt1 = tt1->GetY();
+      Double_t* xtt2 = tt2->GetX();
+      Double_t* ytt2 = tt2->GetY();
+      Double_t* xtt3 = tt3->GetX();
+      Double_t* ytt3 = tt3->GetY();
+      std::vector<double> xvals;
+      std::vector<double> yvals;
+      //Manually adding corners
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      xvals.push_back(xtt1[1]);
+      yvals.push_back(ytt1[1]);
+      xvals.push_back(xtt2[0]);
+      yvals.push_back(ytt2[0]);
+      xvals.push_back(xtt2[1]);
+      yvals.push_back(ytt2[1]);
+      xvals.push_back(xtt2[2]);
+      yvals.push_back(ytt2[2]);
+      xvals.push_back(xtt3[1]);
+      yvals.push_back(ytt3[1]);
+      xvals.push_back(xtt3[2]);
+      yvals.push_back(ytt3[2]);
+      xvals.push_back(xtt3[3]);
+      yvals.push_back(ytt3[3]);
+      xvals.push_back(xtt1[3]);
+      yvals.push_back(ytt1[3]);
+      xvals.push_back(xtt1[4]);
+      yvals.push_back(ytt1[4]);
+      //Add last points back in to close the polygon
+      xvals.push_back(xtt1[0]);
+      yvals.push_back(ytt1[0]);
+      
+      delete tt1;
+      delete tt2;
+      delete tt3;
+      TPolyLine* newline = new TPolyLine(xvals.size(),xvals.data(),yvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;      
+    }
+    if( tt==1 ){
+      //For tile 1 only add CC tile
+      TPolyLine* main = EpdTilePoly(epdgeo,pp,tt);
+      Int_t nmain = main->GetN();
+      Double_t* xmain = main->GetX();
+      Double_t* ymain = main->GetY();
+      std::list<double> xvals;
+      std::list<double> yvals;
+      for( int i=0; i<nmain-1; ++i ){
+	xvals.push_back(xmain[i]);
+	yvals.push_back(ymain[i]);
+      }
+      std::list<double>::iterator xitr = xvals.end();
+      std::list<double>::iterator yitr = yvals.end();
+      xitr = xvals.end();
+      yitr = yvals.end();
+      Int_t adjpp = 0;
+      Int_t adjtt = 0;
+      StMuFcsAnaEpdMatch::GetEpdTileCW(pp,tt,adjpp,adjtt);
+      if( adjpp!=0 && adjtt!=0 ){
+	//Know there is something in the clockwise direction and it is tt 1 with 5 corners based on adjacent mapping
+	TPolyLine* adjline = EpdTilePoly(epdgeo,adjpp,adjtt);
+	//Int_t nadj = adjline->GetN();
+	Double_t* adjxvals = adjline->GetX();
+	Double_t* adjyvals = adjline->GetY();
+	//advance to last corner
+	--xitr;
+	--yitr;
+	//Want to add CCW outer edge first and then outer CW edge and so on
+	xvals.insert(xitr,adjxvals[1]);
+	yvals.insert(yitr,adjyvals[1]);
+	xvals.insert(xitr,adjxvals[2]);
+	yvals.insert(yitr,adjyvals[2]);
+	xvals.insert(xitr,adjxvals[3]);
+	yvals.insert(yitr,adjyvals[3]);
+	xvals.insert(xitr,adjxvals[4]);
+	yvals.insert(yitr,adjyvals[4]);
+	xvals.insert(xitr,adjxvals[0]);
+	yvals.insert(yitr,adjyvals[0]);
+	delete adjline;
+      }
+      std::vector<double> newxvals;
+      std::vector<double> newyvals;
+      xitr=xvals.begin();
+      yitr=yvals.begin();
+      //std::cout << "=====final=====" << std::endl;
+      for( ; xitr!=xvals.end() && yitr!=yvals.end(); ++xitr, ++yitr ){
+	newxvals.push_back(*xitr);
+	newyvals.push_back(*yitr);
+	//std::cout << " + |x:"<< *xitr << "|y:"<<*yitr << std::endl;
+      }
+      //Add first element back in to close the polygon
+      xitr = xvals.begin();
+      yitr = yvals.begin();
+      newxvals.push_back(*xitr);
+      newyvals.push_back(*yitr);
+    
+      delete main;
+      TPolyLine* newline = new TPolyLine(newxvals.size(),newxvals.data(),newyvals.data());  //Equal sizes so shouldn't matter which is used
+      return newline;
+    }
+  }
+  return 0;
+}
+
+void StMuFcsAnaEpdMatch::PaintEpdProjections(TCanvas* canv, const char* savename)   const
+{
+  canv->Clear();
+  
+  canv->Divide(2,2);
+  canv->cd(1)->SetLogz();
+  mH2F_EpdProjHitMap->Draw("colz");
+  canv->cd(2)->SetLogz();
+  mH2F_EpdProjHitMap_Vcut->Draw("colz");
+  canv->cd(3)->SetLogz();
+  mH2F_EpdNmip->Draw("colz");
+
+  canv->Print(savename);
+}
+			  

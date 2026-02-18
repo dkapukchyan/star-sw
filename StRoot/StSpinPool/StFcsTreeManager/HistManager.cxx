@@ -57,7 +57,7 @@ UInt_t HistManager::AddH1F(TFile* file, TH1*& h1, const char* name, const char* 
 {
   UInt_t status = 0;
   if( InitialCheck(h1,name) ){ return status; }
-
+  //std::cout << "B|File:"<<file << "|h1:"<<h1 << std::endl;
   if( file!=0 ){ h1 = (TH1*)file->Get(name); }
   if( h1==0 ){
     //h1 = (TH1*)FindObject(name);
@@ -71,6 +71,7 @@ UInt_t HistManager::AddH1F(TFile* file, TH1*& h1, const char* name, const char* 
     h1->SetBit(22);
     ++status;
   }
+  //std::cout << "A|File:"<<file << "|h1:"<<h1 << std::endl;
   h1->SetTitle(title);
   Add(h1,name);
   return status;//1 if histogram loaded or exists, 0 otherwise
