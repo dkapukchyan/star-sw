@@ -223,14 +223,14 @@ UInt_t StMuFcsAnaRun22Qa::LoadHists(TFile* file, HistManager* histman, StMuFcsAn
 
 Int_t StMuFcsAnaRun22Qa::DoMake(StMuFcsAnaData* anadata)
 {
-  Int_t infostatus = this->FillEventInfo(anadata);
-  switch( infostatus ){
-  case kStEOF: return kStEOF;
-  case kStErr: return kStErr;
-  case kStFatal: return kStFatal;
-  case kStSkip: return kStSkip;
-  case kStStop: return kStStop;
-  }
+  // Int_t infostatus = this->FillEventInfo(anadata);
+  // switch( infostatus ){
+  // case kStEOF: return kStEOF;
+  // case kStErr: return kStErr;
+  // case kStFatal: return kStFatal;
+  // case kStSkip: return kStSkip;
+  // case kStStop: return kStStop;
+  // }
 
   Int_t fcsstatus = this->FillFcsInfo(anadata);
   switch( fcsstatus ){
@@ -243,14 +243,15 @@ Int_t StMuFcsAnaRun22Qa::DoMake(StMuFcsAnaData* anadata)
   //std::cout << "Filled Fcs" << std::endl;
   //Local copy of needed variables to make things easier
   StMuFcsCollection* MuFcsColl = anadata->fcsColl();
-  const StTriggerData* TrigData = anadata->trigData();
+  //const StTriggerData* TrigData = anadata->trigData();
 
   unsigned int totalecalhits = MuFcsColl->numberOfHits(kFcsEcalNorthDetId) + MuFcsColl->numberOfHits(kFcsEcalSouthDetId);
-  mH2F_Mult_tofVecal->Fill(totalecalhits,TrigData->tofMultiplicity());
+  //mH2F_Mult_tofVecal->Fill(totalecalhits,TrigData->tofMultiplicity());
 
   //std::cout << "Finished Make" << std::endl;
-  if( infostatus==kStWarn || fcsstatus==kStWarn ){ return kStWarn; } //Now check if either returned a warning and if so returning warning
-  else{ return kStOk; } //Both were ok
+  //if( infostatus==kStWarn || fcsstatus==kStWarn ){ return kStWarn; } //Now check if either returned a warning and if so returning warning
+  //else{ return kStOk; } //Both were ok
+  return kStOk;
 }
 
 Int_t StMuFcsAnaRun22Qa::FillEventInfo(StMuFcsAnaData* anadata)
@@ -301,6 +302,7 @@ Int_t StMuFcsAnaRun22Qa::FillEventInfo(StMuFcsAnaData* anadata)
 
 Int_t StMuFcsAnaRun22Qa::FillFcsInfo(StMuFcsAnaData* anadata)
 {
+  std::cout << "========== StMuFcsAnaRun22Qa::FillFcsInfo Start ==========" << std::endl;
   //std::cout << "Filled Event" << std::endl;
   TClonesArray* MuEpdHits = 0;
   StEpdCollection* EpdColl = 0;
@@ -372,6 +374,7 @@ Int_t StMuFcsAnaRun22Qa::FillFcsInfo(StMuFcsAnaData* anadata)
 	  for( unsigned int i=0; i<ntb; ++i ){ ((TH1*) mH2F_Hit_adcVtb[idet]->UncheckedAt(hit_id))->Fill(hit->timebin(i),hit->adc(i)); }
 	}
 	if( kFcsPresNorthDetId<=idet && idet<=kFcsPresSouthDetId ){
+	  continue;
 	  if( hit_adcsum>250 ){ ++nhitcut; } //Pres Cut for nhit
 	  if( mEpdAdcQaOn || mEpdTacQaOn ){
 	    unsigned int nepdhits = 0;
@@ -436,6 +439,8 @@ Int_t StMuFcsAnaRun22Qa::FillFcsInfo(StMuFcsAnaData* anadata)
 	StThreeVectorD iclu_pos = FcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
 	StLorentzVectorD iclu_p = FcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
 
+	std::cout << " + |idet:"<<idet <<"|iclus:"<<iclus << "|clusid:"<<clu->id() << "|npoints:"<<clu->nPoints()<<"|sigmamin:"<<clu->sigmaMin() << "|sigmamax:"<<clu->sigmaMax() << std::endl;
+
 	if( mBestMassOn ){
 	  if( idet<=kFcsEcalSouthDetId ){
 	    if( iclus==(nc-1) ){ continue; }
@@ -485,6 +490,8 @@ Int_t StMuFcsAnaRun22Qa::FillFcsInfo(StMuFcsAnaData* anadata)
 	mH2F_Poi_yVx[idet]->Fill(ipoi_x,ipoi_y);
 	StThreeVectorD ipoi_pos = FcsDb->getStarXYZfromColumnRow( idet, ipoi_x, ipoi_y );
 	StLorentzVectorD ipoi_p = FcsDb->getLorentzVector(ipoi_pos, ipoi_energy, 0);
+
+	std::cout << " - |idet:"<<idet << "|ipoint:"<<ipoint << "|clusid:"<<point->parentClusterId() << "|nparentpoints:"<<point->nParentClusterPhotons()<</*"|parentclusternpoints:"<< point->cluster()->nPoints() <<"|sigmamin:"<< point->cluster()->sigmaMin() << "|sigmamax:"<<point->cluster()->sigmaMax() <<*/ std::endl;
 
 	if( mBestMassOn ){
 	  if( idet<=kFcsEcalSouthDetId ){

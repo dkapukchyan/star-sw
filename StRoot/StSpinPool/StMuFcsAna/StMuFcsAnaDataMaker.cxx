@@ -207,9 +207,11 @@ Int_t StMuFcsAnaDataMaker::Make()
   mAnaData->mMuEvent = mAnaData->mMuDst->event();
   if( mAnaData->mMuEvent==0 ){ LOG_ERROR <<"StMuFcsAnaDataMaker::Make_LoadEvent - !MuEvent" <<endm; return kStErr; }
   mAnaData->mTrigData = mAnaData->mMuEvent->triggerData();
-  if( mAnaData->mTrigData==0 ){ LOG_ERROR <<"StMuFcsAnaDataMaker::Make_LoadEvent - !TrigData" <<endm; return kStErr; }
+  //if( mAnaData->mTrigData==0 ){ LOG_ERROR <<"StMuFcsAnaDataMaker::Make_LoadEvent - !TrigData" <<endm; return kStErr; }
   mAnaData->mRunInfo = &(mAnaData->mMuEvent->runInfo());
   if( mAnaData->mRunInfo==0 ){ LOG_ERROR <<"StMuFcsAnaDataMaker::Make_LoadEvent - !RunInfo" <<endm; return kStErr; }
+
+  mAnaData->mStEvent = (StEvent*)GetInputDS("StEvent");
 
   mH1D_Entries->Fill(0); //This is just counting valid make calls (i.e. increment bin 1 by 1)
   
@@ -217,9 +219,9 @@ Int_t StMuFcsAnaDataMaker::Make()
   mAnaData->mEvtInfo->mRunNum          = mAnaData->mMuEvent->runNumber();
   mAnaData->mEvtInfo->mFill            = mAnaData->mMuEvent->eventInfo().time();
   mAnaData->mEvtInfo->mEvent           = mAnaData->mMuEvent->eventId();
-  mAnaData->mEvtInfo->mBx48Id          = mAnaData->mTrigData->bunchId48Bit();
-  mAnaData->mEvtInfo->mBx7Id           = mAnaData->mTrigData->bunchId7Bit();
-  mAnaData->mEvtInfo->mTofMultiplicity = mAnaData->mTrigData->tofMultiplicity();
+  //mAnaData->mEvtInfo->mBx48Id          = mAnaData->mTrigData->bunchId48Bit();
+  //mAnaData->mEvtInfo->mBx7Id           = mAnaData->mTrigData->bunchId7Bit();
+  //mAnaData->mEvtInfo->mTofMultiplicity = mAnaData->mTrigData->tofMultiplicity();
   //std::cout << "|runtime:"<<mEvtInfo->mRunTime << "|runnum:"<<mEvtInfo->mRunNum << "|event:"<<mEvtInfo->mEvent << std::endl;
 
   //Get EPD collection

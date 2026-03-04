@@ -109,6 +109,7 @@ public:
   static const Double_t xfbins[NXFBIN+1];// = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5}; //@[August 4, 2025] > New xF binning
 
   //STAR classes needed to access various STAR and event data
+  StEvent*             event()     { return mStEvent; }
   StMuDstMaker*        muDstMkr()  { return mMuDstMkr; }
   StMuDst*             muDst()     { return mMuDst; }
   StMuEvent*           muEvent()   { return mMuEvent; }
@@ -232,6 +233,7 @@ protected:
   UShort_t mTreeOnBitMap = 0x7;             ///< (0x7) Turn on or off branches in the pi0 tree. first bit is events, second bit is photon branch, third bit is pi0 branch. Turn on all branches by default
 
   //Mutable Makers that need to be changed in Make
+  StEvent* mStEvent = 0;
   StMuDstMaker* mMuDstMkr = 0;
   StMuDst* mMuDst = 0;
   StMuEvent* mMuEvent = 0;
