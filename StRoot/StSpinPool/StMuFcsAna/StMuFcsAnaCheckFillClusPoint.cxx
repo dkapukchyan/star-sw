@@ -10,6 +10,7 @@
 
 #include "StEvent.h"
 #include "StFcsCollection.h"
+#include "StFcsHit.h"
 #include "StFcsCluster.h"
 #include "StFcsPoint.h"
 
@@ -54,6 +55,13 @@ Int_t StMuFcsAnaCheckFillClusPoint::DoMake(StMuFcsAnaData* anadata)
       StThreeVectorD iclu_pos = FcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
       StLorentzVectorD iclu_p = FcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
       std::cout << " + |idet:"<<idet <<"|iclus:"<<iclus << "|clusid:"<<clu->id() << "|npoints:"<<clu->nPoints()<<"|sigmamin:"<<clu->sigmaMin() << "|sigmamax:"<<clu->sigmaMax() << std::endl;
+      if( clu->sigmaMin()<0.00001 || clu->sigmaMax()<0.00001 ){
+	StPtrVecFcsHit& cluhits = clu->hits();
+	for(unsigned int itow=0; itow<cluhits.size(); ++itow ){
+	  StFcsHit* hit = (StFcsHit*)cluhits[itow];
+	  std::cout << "    * |hit:"<<itow << "|col:"<< FcsDb->getColumnNumber(hit->detectorId(),hit->id()) << "|row:"<<FcsDb->getRowNumber(hit->detectorId(),hit->id()) << std::endl;
+	}
+      }
       //std::cout << "Cluster|detid:"<<ph->mDetId << "|mX:"<<ph->mX << "|mY:"<<ph->mY << "|mZ:"<<ph->mZ << std::endl;
     }
     

@@ -439,7 +439,14 @@ Int_t StMuFcsAnaRun22Qa::FillFcsInfo(StMuFcsAnaData* anadata)
 	StThreeVectorD iclu_pos = FcsDb->getStarXYZfromColumnRow( idet, iclu_x, iclu_y );
 	StLorentzVectorD iclu_p = FcsDb->getLorentzVector( iclu_pos, iclu_energy, 0 );
 
-	std::cout << " + |idet:"<<idet <<"|iclus:"<<iclus << "|clusid:"<<clu->id() << "|npoints:"<<clu->nPoints()<<"|sigmamin:"<<clu->sigmaMin() << "|sigmamax:"<<clu->sigmaMax() << std::endl;
+	std::cout << " + |idet:"<<idet <<"|iclus:"<<iclus << "|clusid:"<<clu->id() << "|npoints:"<<clu->nPoints() <<"|nTowers:"<<clu->nTowers()<<"|sigmamin:"<<clu->sigmaMin() << "|sigmamax:"<<clu->sigmaMax() << std::endl;
+	if( clu->sigmaMin()<0.00001 || clu->sigmaMax()<0.00001 ){
+	  TRefArray* cluhits = clu->hits();
+	  for(int itow=0; itow<cluhits->GetEntriesFast(); ++itow ){
+	    StMuFcsHit* hit = (StMuFcsHit*)cluhits->At(itow);
+	    std::cout << "    * |hit:"<<itow << "|col:"<< FcsDb->getColumnNumber(hit->detectorId(),hit->id()) << "|row:"<<FcsDb->getRowNumber(hit->detectorId(),hit->id()) << std::endl;
+	  }
+	}
 
 	if( mBestMassOn ){
 	  if( idet<=kFcsEcalSouthDetId ){
