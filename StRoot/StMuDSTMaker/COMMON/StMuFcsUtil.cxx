@@ -172,15 +172,15 @@ void StMuFcsUtil::rebuildRelationships(StFcsCollection* fcscol,
 
     // Take care of the Points
     for (unsigned int idet = 0; idet < kFcsNDet; idet++){
-      // StSPtrVecFcsHit vecHit = fcscol->hits(idet);
-      for(unsigned int i=0; i<fcscol->numberOfPoints(idet); i++){
-	if ( mMapPoints.count( fcscol->points(idet)[i] ) > 0 ) {
-	  StMuFcsPoint * muPoint = static_cast<StMuFcsPoint*>(mMapPoints[ fcscol->points(idet)[i] ]);
-	  muPoint->setCluster( static_cast<StMuFcsCluster*>(mMapClusters[ fcscol->points(idet)[i]->cluster() ]) );
-	} else {
-	  LOG_ERROR << "Cannot find StMuFcsPoint for StFcsPoint=" << fcscol->points(idet)[i] << endm;
-	} // if / else
-      } // for i
+        // StSPtrVecFcsHit vecHit = fcscol->hits(idet);
+        for(unsigned int i=0; i<fcscol->numberOfPoints(idet); i++){
+            if ( mMapPoints.count( fcscol->points(idet)[i] ) > 0 ) {
+                StMuFcsPoint * muPoint = static_cast<StMuFcsPoint*>(mMapPoints[ fcscol->points(idet)[i] ]);
+                muPoint->setCluster( static_cast<StMuFcsCluster*>(mMapClusters[ fcscol->points(idet)[i]->cluster() ]) );
+            } else {
+                LOG_ERROR << "Cannot find StMuFcsPoint for StFcsPoint=" << fcscol->points(idet)[i] << endm;
+            } // if / else
+        } // for i
     } // for idet
 } // rebuildRelationships(...)
 
