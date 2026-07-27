@@ -887,13 +887,10 @@ void StFwdAnaFcsRun22Qa::DrawFcsPointPi0(TCanvas* canv, const char* savename)
     canv->Print(savename);
   }
 }
-/*
-Int_t StFwdAnaFcsRun22Qa::LoadGraphsFromFile(TFile* file, TObjArray* graphs, StFwdAnaData* anadata )
+
+UInt_t StFwdAnaFcsRun22Qa::LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* anadata )
 {
-  Int_t gloaded = 0;
-  gloaded += StFwdAnaData::MakeGraph(file,graphs,mG_Entries,"G_Entries","Number of Entries vs. Run Index");
-  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexVpd,"GE_VertexVpd","VPD vertex mean (Err=RMS) vs. Run index");
-  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexBbc,"GE_VertexBbc","Bbc vertex mean (Err=RMS) vs. Run index");
+  UInt_t gloaded = 0;
   gloaded += StFwdAnaData::MakeGraph(file,graphs,mG_UpSpin,"G_UpSpin","Number of Spin Up states vs. Run Index");
   gloaded += StFwdAnaData::MakeGraph(file,graphs,mG_NoSpin,"G_NoSpin","Number of No Spin states vs. Run Index");
   gloaded += StFwdAnaData::MakeGraph(file,graphs,mG_DownSpin,"G_DownSpin","Number of Spin Down states vs. Run Index");
@@ -955,18 +952,7 @@ Int_t StFwdAnaFcsRun22Qa::LoadGraphsFromFile(TFile* file, TObjArray* graphs, StF
 }
 
 void StFwdAnaFcsRun22Qa::FillGraphs(Int_t irun)
-{
-  //Entries QA
-  //std::cout << "|mG_Entries:"<<mG_Entries << std::endl;
-  //std::cout << "|mH1F_Entries:"<<mH1F_Entries << std::endl;
-  //mG_Entries->SetPoint(irun,irun,mH1F_Entries->GetEntries());
-
-  //Vertex QA
-  mGE_VertexVpd->SetPoint(irun,irun,mH1F_VertexVpd->GetMean());
-  mGE_VertexVpd->SetPointError(irun,0,mH1F_VertexVpd->GetRMS());
-  mGE_VertexBbc->SetPoint(irun,irun,mH1F_VertexBbc->GetMean());
-  mGE_VertexBbc->SetPointError(irun,0,mH1F_VertexBbc->GetRMS());
-  
+{  
   //Trigger QA
   if( mH1F_AllFcsTriggers==0 || mH1F_AllFcsTriggers->GetNbinsX()!=65 ){ std::cout << "huge errors" << std::endl; return; }
   for( int i=0; i<65; ++i ){
@@ -1009,22 +995,16 @@ void StFwdAnaFcsRun22Qa::FillGraphs(Int_t irun)
 void StFwdAnaFcsRun22Qa::DrawGraphs(TCanvas* canv, const char* savename)
 {
   canv->Clear();
-  canv->Divide(2,3);
-  canv->cd(1);
-  mG_Entries->Draw("AL");
-
-  //Vertex QA
-  canv->cd(2);
-  mGE_VertexVpd->Draw("AL");
-  canv->cd(3);
-  mGE_VertexBbc->Draw("AL");
+  canv->Divide(2,2);
+  //canv->cd(1);
+  //mG_Entries->Draw("AL");
 
   //Spin state QA
-  canv->cd(4);
+  canv->cd(1);
   mG_UpSpin->Draw("AL");
-  canv->cd(5);
+  canv->cd(2);
   mG_NoSpin->Draw("AL");
-  canv->cd(6);
+  canv->cd(3);
   mG_DownSpin->Draw("AL");
 
   canv->Print(savename);
@@ -1145,7 +1125,7 @@ void StFwdAnaFcsRun22Qa::DrawGraphPoiEn(TCanvas* canv, const char* savename)
   }
   canv->Print(savename);
 }
-*/
+
 
 void StFwdAnaFcsRun22Qa::PrintSpinBits()
 {

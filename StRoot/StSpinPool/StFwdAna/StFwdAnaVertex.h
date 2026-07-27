@@ -11,6 +11,7 @@
   LOG
   @[January 15, 2026] > First instance where relevant functionality was copied from #StMuFcsTreeMaker
   @[July 1, 2026] > Changed name from StMuFcsAnaVertex to StFwdAnaVertex
+  @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
 */
 
 
@@ -27,10 +28,14 @@ public:
 
   virtual UInt_t LoadHists(TFile* file, HistManager* histman, StFwdAnaData* anadata);
   virtual Int_t DoMake(StFwdAnaData* anadata);
+  virtual UInt_t LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* anadata );
+  virtual void FillGraphs(Int_t irun);
 
   void DrawVertex(TCanvas* canv, const char* savename) const;
   void DrawVertexCorrelation(TCanvas* canv, const char* savename) const;
   void DrawVertexCorrelationNoZdc(TCanvas* canv, const char* savename) const;
+
+  void DrawVertexGraphs(TCanvas* canv, const char* savename="testGraphVertex.png") const;
   
 protected:
   TH1* mH2F_VertexPrim_yVx = 0;       ///< Vertex histogram from primary vertex y vs. x
@@ -50,9 +55,13 @@ protected:
   TH1* mH2F_VertexZ_vpdVbbc = 0;      ///< Correlation histogram between VPD z vertex vs. the BBC z vertex
   TH1* mH2F_VertexZ_vpdVzdc = 0;      ///< Correlation histogram between VPD z vertex vs. the ZDC z vertex
   TH1* mH2F_VertexZ_zdcVbbc = 0;      ///< Correlation histogram between ZDC z vertex vs. the BBC z vertex
-
-
+  
   TH1* mH2F_foundVvertex = 0;           ///< found vertex bit vs. Vertex
+
+  TGraphErrors* mGE_VertexPrimZ = 0;     ///< Graph for Mean primary Z vertex and Err as RMS vs. Run Index
+  TGraphErrors* mGE_VertexVpd = 0;       ///< Graph for Mean VPD vertex and Err as RMS vs. Run Index
+  TGraphErrors* mGE_VertexBbc = 0;       ///< Graph for Mean BBC vertex and Err as RMS vs. Run Index
+  TGraphErrors* mGE_VertexEpd = 0;       ///< Graph for Mean EPD vertex and Err as RMS vs. Run Index
   
   ClassDef(StFwdAnaVertex,1)
 };

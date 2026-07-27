@@ -52,6 +52,7 @@
   @[May 29, 2026] > Commented out printing for when I needed to test why the MuDsts did not contain the point-cluster associations
   @[June 3, 2026] > Commented out some extraneous code from the MuDst Q&A testing
   @[July 1, 2026] > Changed name from StMuFcsAnaRun22Qa to StFwdAnaFcsRun22Qa
+  @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -138,9 +139,9 @@ class StFwdAnaFcsRun22Qa : public StFwdAnaVirtual
   void DrawFcsClusterPi0(TCanvas* canv, const char* savename);
   void DrawFcsPointQa(TCanvas* canv, const char* savename);
   void DrawFcsPointPi0(TCanvas* canv, const char* savename);
-  /*
-  Int_t LoadGraphsFromFile(TFile* file, TObjArray* graphs, StMuFcsAnaData* anadata );
-  void FillGraphs(Int_t irun);
+  
+  virtual UInt_t LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* anadata );
+  virtual void FillGraphs(Int_t irun);
 
   void DrawGraphs(TCanvas* canv, const char* savename="testGraphs.png" );
   void DrawGraphTrig(TCanvas* canv, const char* savename );
@@ -152,7 +153,7 @@ class StFwdAnaFcsRun22Qa : public StFwdAnaVirtual
   void DrawGraphNPoints(TCanvas* canv, const char* savename="testGraphNPoints.png");
   void DrawGraphCluEn(TCanvas* canv, const char* savename="testGraphCluEn.png");
   void DrawGraphPoiEn(TCanvas* canv, const char* savename="testGraphPoiEn.png");
-  */
+  
   void PrintSpinBits();        ///< Special funtion to cross check the spin bit dump with spin bits stored in the histograms #mH1F_spin4Vbx7 and #mH1F_spin4Vbx48.
   
 protected:
@@ -216,10 +217,7 @@ protected:
   bool mEpdTacQaOn = true;             ///< For turning on/off Tac V PeakX histograms from the EPD data
   bool mBestMassOn = true;             ///< For turning on/off finding the best cluster and point mass pair
 
-  TGraph* mG_Entries = 0;                ///< Graph for number of entries vs. Run Index
   TGraph* mG_Triggers[65];               ///< Graph for number of events in a given trigger vs. run number
-  TGraphErrors* mGE_VertexVpd = 0;       ///< Graph for Mean VPD vertex and Err as RMS vs. Run Index
-  TGraphErrors* mGE_VertexBbc = 0;       ///< Graph for Mean BBC vertex and Err as RMS vs. Run Index
   TGraph* mG_UpSpin = 0;                 ///< Graph for Number of times Spin state was up (+1) vs. Run Index
   TGraph* mG_NoSpin = 0;                 ///< Graph for Number of times Spin state was nonexistent vs. Run Index
   TGraph* mG_DownSpin = 0;               ///< Graph for Number of times Spin state was down (-1) vs. Run Index

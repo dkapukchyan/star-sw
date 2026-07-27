@@ -41,6 +41,7 @@ StFwdAnaDataMaker::~StFwdAnaDataMaker()
   //std::cout << "StFwdAnaDataMaker::~StFwdAnaDataMaker()" << std::endl;
   delete mAnaData;
   if( mInternalHists ){ delete mHists; } //This deletes the file too
+  delete mGraphs;
   for( unsigned int i=0; i<mAnaList.size(); ++i ){
     delete mAnaList.at(i);
   }
@@ -265,6 +266,41 @@ Int_t StFwdAnaDataMaker::Finish()
     mHists->Write();
   }
   return kStOK;
+}
+
+UInt_t StFwdAnaDataMaker::LoadGraphsFromFile(TFile* file)
+{
+  if( mGraphs == 0 ){
+    mGraphs = new TObjArray();
+  }
+  
+  Int_t gloaded = 0;
+  gloaded += StFwdAnaData::MakeGraph(file,mGraphs,mG_Entries,"G_Entries","Number of Entries vs. Run Index");
+  for( unsigned int i=0; i<mAnaList.size(); ++i ){
+    gloaded += mAnaList.at(i)->LoadGraphs(file,mGraphs,mAnaData);
+  }
+  mGraphs->SetOwner(kTRUE);
+  
+  return gloaded;
+}
+
+void StFwdAnaDataMaker::FillGraphs( int irun )
+{
+  //Entries QA
+  //std::cout << "|mG_Entries:"<<mG_Entries << std::endl;
+  //std::cout << "|mH1F_Entries:"<<mH1F_Entries << std::endl;
+  mG_Entries->SetPoint(irun,irun,mH1D_Entries->GetEntries());
+
+  for( unsigned int i=0; i<mAnaList.size(); ++i ){
+    mAnaList.at(i)->FillGraphs(irun);
+  }
+}
+
+void StFwdAnaDataMaker::WriteGraphs(Int_t option, Int_t bufsize)
+{
+  for( int i=0; i<mGraphs->GetEntriesFast(); ++i ){
+    mGraphs->At(i)->Write(nullptr,option,bufsize);
+  }
 }
 
 /*  

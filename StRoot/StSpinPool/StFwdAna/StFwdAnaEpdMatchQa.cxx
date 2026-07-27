@@ -36,7 +36,7 @@ UInt_t StFwdAnaEpdMatchQa::LoadHists( TFile* file, HistManager* histman, StFwdAn
   if( histman==0 ){ return loaded; }
 
   //Turn this on if you ever need to plot the mH2F_ClusBadProjVcut_yVx or mH2F_PointBadProjVcut_yVx histograms with the EPD tiles
-  for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
+  /*for(int i_pp=1; i_pp<=12; ++i_pp){     //Supersector runs [1,12]
     for( int i_tt=1; i_tt<=31; ++i_tt ){ //Tile number [1,31]
       std::map<Int_t,TPolyLine*>::iterator epdhitit = mEpdTileMap.find(100*i_pp+i_tt);
       TPolyLine* polyline = 0;
@@ -56,7 +56,7 @@ UInt_t StFwdAnaEpdMatchQa::LoadHists( TFile* file, HistManager* histman, StFwdAn
       polyline->SetLineColor(kBlack);
       polyline->SetFillColorAlpha(kWhite,0);
     }
-  }
+    }*/
   
   //std::cout << "StFwdAnaEpdMatchQa::LoadHists()" << std::endl;
 
@@ -499,6 +499,7 @@ Int_t StFwdAnaEpdMatchQa::DrawEpdTileHitDistWithFcs(StFwdAnaData* anadata, TCanv
   if( anadata==0 ){ return 0; }
 
   Double_t usevertex = anadata->getEvtData()->mUseVertex;
+  //std::cout << "Real Z:"<<anadata->getEvtData()->mUseVertex << std::endl;
   Double_t vertexcutlow = anadata->vertexCutLow();
   Double_t vertexcuthigh = anadata->vertexCutHigh();
   if( !(vertexcutlow<=usevertex && usevertex<=vertexcuthigh) ){ return 0; }
@@ -583,6 +584,13 @@ Int_t StFwdAnaEpdMatchQa::DrawEpdTileHitDistWithFcs(StFwdAnaData* anadata, TCanv
       }
     }
     std::vector<Double_t> epdproj = StFwdAnaData::ProjectToEpd(ph->mX,ph->mY,ph->mZ,usevertex);
+    //Comparing z=0 vertex projection with real z vertex
+    //std::vector<Double_t> epdprojzero = StFwdAnaData::ProjectToEpd(ph->mX,ph->mY,ph->mZ,0);
+    //Double_t repdproj = sqrt(epdproj.at(0)*epdproj.at(0) + epdproj.at(1)*epdproj.at(1));
+    //Double_t repdprojzero = sqrt(epdprojzero.at(0)*epdprojzero.at(0) + epdprojzero.at(1)*epdprojzero.at(1));
+    //Double_t epddot = epdproj.at(0)*epdprojzero.at(0) + epdproj.at(1)*epdprojzero.at(1);
+    //Double_t phidiff = TMath::ACos( epddot/(repdproj*repdprojzero) );
+    //std::cout << " + |iph:"<<iph<<"|rproj:"<<repdproj << "|rzero:"<<repdprojzero <<"|phidiff:"<<phidiff << std::endl;
     //Checking with BBC vertex
     //std::vector<Double_t> epdproj = StFwdAnaData::ProjectToEpd(ph->mX,ph->mY,ph->mZ,anadata->getEvtInfo()->mBbcVz);
     //StFwdAnaEpdMatch::CheckInsideEpdTile( EpdGeom, ph, epdproj.at(0), epdproj.at(1) );

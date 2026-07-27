@@ -167,4 +167,45 @@ void StFwdAnaVertex::DrawVertexCorrelationNoZdc(TCanvas* canv, const char* saven
   canv->Print(savename);
 }
 
+
+UInt_t StFwdAnaVertex::LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* anadata )
+{
+  UInt_t gloaded = 0;
+
+  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexPrimZ,"GE_VertexPrimZ","Primary Z vertex mean (Err=RMS) vs. Run index");
+  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexVpd,"GE_VertexVpd","VPD vertex mean (Err=RMS) vs. Run index");
+  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexBbc,"GE_VertexBbc","BBC vertex mean (Err=RMS) vs. Run index");
+  gloaded += StFwdAnaData::MakeGraph(file,graphs,mGE_VertexEpd,"GE_VertexEpd","EPD vertex mean (Err=RMS) vs. Run index");
+
+  return gloaded;
+}
+
+void StFwdAnaVertex::FillGraphs(Int_t irun)
+{
+  //Vertex QA
+  mGE_VertexPrimZ->SetPoint(irun,irun,mH1F_VertexPrimZ->GetMean());
+  mGE_VertexPrimZ->SetPointError(irun,0,mH1F_VertexPrimZ->GetRMS());
+  mGE_VertexVpd->SetPoint(irun,irun,mH1F_VertexVpd->GetMean());
+  mGE_VertexVpd->SetPointError(irun,0,mH1F_VertexVpd->GetRMS());
+  mGE_VertexBbc->SetPoint(irun,irun,mH1F_VertexBbc->GetMean());
+  mGE_VertexBbc->SetPointError(irun,0,mH1F_VertexBbc->GetRMS());
+  mGE_VertexEpd->SetPoint(irun,irun,mH1F_VertexEpd->GetMean());
+  mGE_VertexEpd->SetPointError(irun,0,mH1F_VertexEpd->GetRMS());
+}
+
+void StFwdAnaVertex::DrawVertexGraphs(TCanvas* canv, const char* savename) const
+{
+  canv->Clear();
+  canv->Divide(2,2);
+  //Vertex QA
+  canv->cd(1);
+  mGE_VertexPrimZ->Draw("AL");
+  canv->cd(2);
+  mGE_VertexVpd->Draw("AL");
+  canv->cd(3);
+  mGE_VertexBbc->Draw("AL");
+  canv->cd(4);
+  mGE_VertexEpd->Draw("AL");
+}
+
 			  
