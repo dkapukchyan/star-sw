@@ -15,6 +15,7 @@
   @[June 8, 2026] > Implemented #StFwdAnaData::mEvent
   @[June 30, 2026] > Changed name from StMuFcsAnaDataMaker to StFwdAnaDataMaker to be consistent with new naming that is more general for STAR forward analysis. Changed StMuFcsAnaData::mEvtInfo to StFwdAnaData::mEvtData. Changed StMuFcsVirtualAna to StFwdAnaVirtual
   @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
+  @[August 3, 2026] > Implemented loading of MuFst collection and the raw hits and hits in that collection, MuFtt collection, and MuFwdTrack collection in Make()
 
 */
 

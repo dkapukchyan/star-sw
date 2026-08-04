@@ -160,6 +160,29 @@ UInt_t HistManager::AddH1FArr(TFile* file, TObjArray*& arr, UInt_t nobjs, const 
   return status;
 }
 
+UInt_t HistManager::AddH2S(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
+{
+  UInt_t status = 0;
+  if( InitialCheck(h2,name) ){ return status; }
+
+  if( file!=0 ){ h2 = (TH1*)file->Get(name); }
+  if( h2==0 ){
+    //h2 = (TH2*)FindObject(name);
+    //if( h2==0 ){
+    h2 = new TH2S(name,title, nbinsx,xlow,xhigh, nbinsy,ylow,yhigh);
+    h2->Sumw2();
+    //}
+    //else{ return 1; }
+  }
+  else{
+    h2->SetBit(22);
+    ++status;
+  }
+  h2->SetTitle(title);
+  Add(h2,name);
+  return status;//1 if histogram loaded, 0 if new
+}
+
 UInt_t HistManager::AddH2F(TFile* file, TH1*& h2, const char* name, const char* title, Int_t nbinsx, Double_t xlow, Double_t xhigh, Int_t nbinsy, Double_t ylow, Double_t yhigh)
 {
   UInt_t status = 0;

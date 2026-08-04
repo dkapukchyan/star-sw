@@ -232,9 +232,27 @@ Int_t StFwdAnaDataMaker::Make()
     if( (mAnaData->mEpdColl)==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No Epd hit information found" << endm; mAnaData->mEpdHitMkr=0; }//Set the hit maker back to zero so it can be used as a check that the epd collection doesn't exist
   }
 
-  //Get Fcs collection
+  //Get Mu Fcs collection
   mAnaData->mMuFcsColl = mAnaData->mMuDst->muFcsCollection();
-  if( mAnaData->mMuFcsColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No Fcs Collection" << endm; }
+  if( mAnaData->mMuFcsColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFcs Collection" << endm; }
+
+  //Get Mu Fst collection
+  mAnaData->mMuFstColl = mAnaData->mMuDst->muFstCollection();
+  if( mAnaData->mMuFstColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFst Collection" << endm; }
+  mAnaData->mMuFstRawHitColl = mAnaData->mMuFstColl->getRawHitArray();
+  if( mAnaData->mMuFstRawHitColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFst Raw Hit Collection" << endm; }
+  mAnaData->mMuFstHitColl = mAnaData->mMuFstColl->getHitArray();
+  if( mAnaData->mMuFstHitColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFst Hit Collection" << endm; }
+
+  //Get Ftt collection
+  mAnaData->mMuFttColl = mAnaData->mMuDst->muFttCollection();
+  if( mAnaData->mMuFttColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFtt Collection" << endm; }
+
+  //Get Track collection
+  mAnaData->mMuFwdTrkColl = mAnaData->mMuDst->muFwdTrackCollection();
+  if( mAnaData->mMuFwdTrkColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No Mu Fwd Track Collection" << endm; }
+  mAnaData->mFwdTrkMkr = (StFwdTrackMaker*) GetMaker("fwdTrack");
+  if( mAnaData->mFwdTrkMkr==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - NoFwd Track Maker" << endm; }
 
   //auto start = std::chrono::steady_clock::now();
   for( unsigned int i=0; i<mAnaList.size(); ++i ){

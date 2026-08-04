@@ -452,6 +452,18 @@ void StFwdAnaData::setPhPairOn(bool val)
   else{ mTreeOnBitMap &= ~(0x04); }
 }
 
+void StFwdAnaData::setFstRawOn(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x08; }
+  else{ mTreeOnBitMap &= ~(0x08); }
+}
+
+void StFwdAnaData::setFstHitOn(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x010; }
+  else{ mTreeOnBitMap &= ~(0x010); }
+}
+
 /*#ifndef __CINT__
 void StFwdAnaData::SetTrigs(const char* trigname,...)
 {
@@ -480,6 +492,18 @@ bool StFwdAnaData::isPhotonOn() const
 bool StFwdAnaData::isPhPairOn() const
 {
   if( mTreeOnBitMap & 0x04 ){ return true; }
+  else{ return false; }
+}
+
+bool StFwdAnaData::isFstRawOn() const
+{
+  if( mTreeOnBitMap & 0x08 ){ return true; }
+  else{ return false; }
+}
+
+bool StFwdAnaData::isFstHitOn() const
+{
+  if( mTreeOnBitMap & 0x010 ){ return true; }
   else{ return false; }
 }
 
@@ -554,6 +578,18 @@ void StFwdAnaData::loadTree(TFile* file)
       }
       else{ std::cout << "LoadDataFromFile - WARNING:No \"Pair\" branch found in mDataTree it could be that the tree was generated without this option." << std::endl; }
     }
+    if( isFstRawOn() ){
+      if( mDataTree->Branch("FstRaw")!=0 ){
+	mFstRawHitArr = new TClonesArray("StFstRawHitInfo");
+	mDataTree->SetBranchAddress("FstRaw",&mFstRawHitArr);
+      }
+    }
+    if( isFstHitOn() ){
+      if( mDataTree->Branch("FstHit")!=0 ){
+	mFstHitArr = new TClonesArray("StFstHitInfo");
+	mDataTree->SetBranchAddress("FstHit",&mFstHitArr);
+      }
+    }
   }
   //else{ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
 }
@@ -583,6 +619,8 @@ void StFwdAnaData::makeTree(TFile* file)
     }
     if( isPhotonOn() ){ mDataTree->Branch("Photon",&mPhArr); }
     if( isPhPairOn() ){ mDataTree->Branch("Pair",&mPhPairArr); }
+    if( isFstRawOn() ){ mDataTree->Branch("FstRaw",&mFstRawHitArr); }
+    if( isFstHitOn() ){ mDataTree->Branch("FstHit",&mFstHitArr); }
   }
 }
 

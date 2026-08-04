@@ -6,7 +6,7 @@
   Classes related to holding the event data for the forward analysis framework (StFwdAna)
 
   DESCRIPTION
-  Contains the class #FwdDataEvent that is used to store information related to the event and the trigger detectors. This includes, time, run number, fill number, spin information, and vertex information. Note that it does not use the prefix "St" since the idea is that these are decoupled from the STAR data scheme and can be loaded without any of the other STAR libraries
+  Contains the class #StFwdDataEvent that is used to store information related to the event and the trigger detectors. This includes, time, run number, fill number, spin information, and vertex information. Although it does use the prefix "St" it is decoupled from the STAR data scheme and can be loaded without any of the other STAR libraries
 
   LOG
   @[June 30, 2026] > Copied #FcsEventInfo from StMuFcsPi0Data.h into this new file and changed name from #FcsEventInfo to #StFwdEvent for new naming scheme that generalizes to any forward software analysis.
