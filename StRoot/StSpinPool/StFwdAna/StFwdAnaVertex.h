@@ -11,12 +11,16 @@
   LOG
   @[January 15, 2026] > First instance where relevant functionality was copied from #StMuFcsTreeMaker
   @[July 1, 2026] > Changed name from StMuFcsAnaVertex to StFwdAnaVertex
-  @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
+  @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms  
+  @[August 11, 2026] > Adjusted header loading to use minimum required
 */
 
 
 #ifndef STFWDANA_STFWDANAVERTEX_HH
 #define STFWDANA_STFWDANAVERTEX_HH
+
+#include "StEvent/StTriggerData.h"
+#include "StEvent/StTriggerId.h"
 
 #include "StFwdAnaVirtual.h"
 

@@ -53,6 +53,7 @@
   @[June 3, 2026] > Commented out some extraneous code from the MuDst Q&A testing
   @[July 1, 2026] > Changed name from StMuFcsAnaRun22Qa to StFwdAnaFcsRun22Qa
   @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
+  @[August 11, 2026] > Got rid of extraneous headers
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -64,42 +65,16 @@
 #include <iostream>
 
 //ROOT Headers
-// #include "TRandom3.h"
-// #include "TCanvas.h"
-// #include "TObjArray.h"
-// #include "TString.h"
-// #include "TFile.h"
-// #include "TTree.h"
-// #include "TH1F.h"
-// #include "TH2F.h"
-// #include "TGraphErrors.h"
 
 //STAR Headers
-// #include "StEnumerations.h"
-// #include "StMaker.h"
-// #include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-// #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-// #include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-// #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-// #include "StEvent/StTriggerData.h"
-// #include "StEvent/StTriggerId.h"
-// #include "StMessMgr.h"
-// #include "StMuDSTMaker/COMMON/StMuEvent.h"
-// #include "StMuDSTMaker/COMMON/StMuTypes.hh"
-// #include "Stypes.h"
-// #include "StFcsDbMaker/StFcsDbMaker.h"
-// #include "StFcsDbMaker/StFcsDb.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
-// #include "StEpdDbMaker/StEpdDbMaker.h"
-// #include "StEpdHitMaker/StEpdHitMaker.h"
+#include "StEvent/StTriggerData.h"
+#include "StEvent/StTriggerId.h"
+#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"   //Not in StMuTypes
+#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"     //Not in StMuTypes
+
 
 //Custom headers in this folder
-// #include "HistManager.h"
-// #include "StFcsRun22TriggerMap.h"
-#include "StFwdAnaVirtual.h"
+#include "StSpinPool/StFwdAna/StFwdAnaVirtual.h"
 
 class StFwdAnaFcsRun22Qa : public StFwdAnaVirtual
 {

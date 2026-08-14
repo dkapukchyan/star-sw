@@ -70,12 +70,17 @@ StFwdAnaData::StFwdAnaData()
 
 StFwdAnaData::~StFwdAnaData()
 {
+  //std::cout << "~StFwdAnaData" << std::endl;
   delete mEvtData;
   delete mPhArr;
   delete mPhPairArr;
+  delete mFstRawHitArr;
+  delete mFstHitArr;
+  delete mFttRawHitArr;
   delete mDataTree;
   for( auto itr=mPolarizationData.begin(); itr!=mPolarizationData.end(); ++itr){ delete itr->second; }
   mPolarizationData.clear();
+  //std::cout << "!~StFwdAnaData" << std::endl;
 }
 
 std::vector<Double_t> StFwdAnaData::ProjectToEpd(Double_t xfcs, Double_t yfcs, Double_t zfcs, Double_t zvertex)
@@ -432,6 +437,9 @@ void StFwdAnaData::resetEvent()
   mEvtData->Clear();
   mPhArr->Clear("C");
   mPhPairArr->Clear("C");
+  mFstRawHitArr->Clear("C");
+  mFstHitArr->Clear("C");
+  mFttRawHitArr->Clear("C");
 }
 
 void StFwdAnaData::setEventBit(bool val)
@@ -462,6 +470,12 @@ void StFwdAnaData::setFstHitOn(bool val)
 {
   if( val ){ mTreeOnBitMap |= 0x010; }
   else{ mTreeOnBitMap &= ~(0x010); }
+}
+
+void StFwdAnaData::setFttRawOn(bool val)
+{
+  if( val ){ mTreeOnBitMap |= 0x020; }
+  else{ mTreeOnBitMap &= ~(0x020); }
 }
 
 /*#ifndef __CINT__
@@ -504,6 +518,12 @@ bool StFwdAnaData::isFstRawOn() const
 bool StFwdAnaData::isFstHitOn() const
 {
   if( mTreeOnBitMap & 0x010 ){ return true; }
+  else{ return false; }
+}
+
+bool StFwdAnaData::isFttRawOn() const
+{
+  if( mTreeOnBitMap & 0x020 ){ return true; }
   else{ return false; }
 }
 
@@ -590,6 +610,12 @@ void StFwdAnaData::loadTree(TFile* file)
 	mDataTree->SetBranchAddress("FstHit",&mFstHitArr);
       }
     }
+    if( isFttRawOn() ){
+      if( mDataTree->Branch("FttRaw")!=0 ){
+	mFttRawHitArr = new TClonesArray("StFttRawHitInfo");
+	mDataTree->SetBranchAddress("FstRaw",&mFttRawHitArr);
+      }
+    }
   }
   //else{ std::cout << "LoadDataFromFile - WARNING:Pi0Tree not found in file" << std::endl; }
 }
@@ -605,10 +631,13 @@ void StFwdAnaData::makeTree(TFile* file)
   if( mTreeOnBitMap!=0 ){
     mDataTree     = new TTree("DataTree","Tree with StFcsPairCandidate");
   }
-  //These are still needed in Make so even if you are not writing the tree still need these objects
-  mEvtData     = new StFwdDataEvent();
-  mPhArr       = new TClonesArray("StFcsPhotonCandidate");
-  mPhPairArr      = new TClonesArray("StFcsPairCandidate");
+  //These are used by the various "StFwdAna" classes so even if you are not writing the tree still need these objects
+  mEvtData      = new StFwdDataEvent();
+  mPhArr        = new TClonesArray("StFcsPhotonCandidate");
+  mPhPairArr    = new TClonesArray("StFcsPairCandidate");
+  mFstRawHitArr = new TClonesArray("StFstRawHitInfo");
+  mFstHitArr    = new TClonesArray("StFstHitInfo");
+  mFttRawHitArr = new TClonesArray("StFttRawHitInfo");
 
   if( mTreeOnBitMap!=0 ){
     if( isEventOn() ){
@@ -621,6 +650,7 @@ void StFwdAnaData::makeTree(TFile* file)
     if( isPhPairOn() ){ mDataTree->Branch("Pair",&mPhPairArr); }
     if( isFstRawOn() ){ mDataTree->Branch("FstRaw",&mFstRawHitArr); }
     if( isFstHitOn() ){ mDataTree->Branch("FstHit",&mFstHitArr); }
+    if( isFttRawOn() ){ mDataTree->Branch("FttRaw",&mFttRawHitArr); }
   }
 }
 
@@ -629,7 +659,7 @@ void StFwdAnaData::Print(Option_t* opt) const
 {
   TString option(opt);
   option.ToLower();
-  if( option.Contains("a") ){ option = "etgp"; }
+  if( option.Contains("a") ){ option = "etgprhs"; }
   if( mEvtData!=0 && option.Contains("e") ){ mEvtData->Print(); }
   if( option.Contains("t") ){
     Int_t ntrig = getNTrig();
@@ -652,6 +682,27 @@ void StFwdAnaData::Print(Option_t* opt) const
     for( int i=0; i<mPhPairArr->GetEntriesFast(); ++i ){
       std::cout << " + ";
       mPhPairArr->At(i)->Print();
+    }
+  }
+  if( option.Contains("r") ){
+    std::cout << "## FST Raw Hit Information:"<<mFstRawHitArr->GetEntriesFast() << std::endl;
+    for( int i=0; i<mFstRawHitArr->GetEntriesFast(); ++i ){
+      std::cout << " + ";
+      mFstRawHitArr->At(i)->Print();
+    }
+  }
+  if( option.Contains("h") ){
+    std::cout << "## FST Hit Information:"<<mFstHitArr->GetEntriesFast() << std::endl;
+    for( int i=0; i<mFstHitArr->GetEntriesFast(); ++i ){
+      std::cout << " + ";
+      mFstHitArr->At(i)->Print();
+    }
+  }
+  if( option.Contains("s") ){
+    std::cout << "## FTT Raw Hit Information:"<<mFttRawHitArr->GetEntriesFast() << std::endl;
+    for( int i=0; i<mFttRawHitArr->GetEntriesFast(); ++i ){
+      std::cout << " + ";
+      mFttRawHitArr->At(i)->Print();
     }
   }
 }

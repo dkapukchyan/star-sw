@@ -1,15 +1,4 @@
-#include "StEnumerations.h"
-#include "StEvent/StEvent.h"
-#include "StEvent/StFcsCluster.h"
-#include "StEvent/StFcsCollection.h"
-#include "StEvent/StFcsHit.h"
 #include "StEvent/StEventTypes.h"
-#include "StFcsDbMaker/StFcsDbMaker.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "StSpinPool/StFcsRawDaqReader/StFcsRawDaqReader.h"
-#include "StThreeVectorF.hh"
-#include "Stypes.h"
 
 #include "StFwdAnaEpdQaAndVert.h"
 

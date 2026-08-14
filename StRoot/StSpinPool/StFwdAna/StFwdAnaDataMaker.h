@@ -15,8 +15,8 @@
   @[June 8, 2026] > Implemented #StFwdAnaData::mEvent
   @[June 30, 2026] > Changed name from StMuFcsAnaDataMaker to StFwdAnaDataMaker to be consistent with new naming that is more general for STAR forward analysis. Changed StMuFcsAnaData::mEvtInfo to StFwdAnaData::mEvtData. Changed StMuFcsVirtualAna to StFwdAnaVirtual
   @[July 24, 2026] > Implemented #LoadGraphs() and #FillGraphs() which is for doing run by run qa on the vertex histograms
-  @[August 3, 2026] > Implemented loading of MuFst collection and the raw hits and hits in that collection, MuFtt collection, and MuFwdTrack collection in Make()
-
+  @[August 3, 2026] > Implemented loading of MuFst collection and the raw hits and hits in that collection, MuFtt collection, and MuFwdTrack collection in #Make()
+  @[August 13, 2026] > Got rid of extraneous headers. #Make() now fills #StFwdAnaData with pointers related to FTT. Also, contains commented out code for getting FST collection from StEvent
 */
 
 
@@ -39,25 +39,13 @@
 #include "TGeoPolygon.h"
 
 //STAR Headers
-#include "StEnumerations.h"
-#include "StMaker.h"
-#include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-#include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-#include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-#include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-#include "StEvent/StTriggerData.h"
+#include "St_base/StMessMgr.h"       //STAR Logger
+#include "St_base/Stypes.h"          //StMaker return values
+#include "StChain/StMaker.h"         //STAR base class for analysis
+#include "StEvent/StTriggerData.h"   //STAR trigger information
 #include "StEvent/StTriggerId.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuEvent.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "Stypes.h"
-#include "StFcsDbMaker/StFcsDbMaker.h"
-#include "StFcsDbMaker/StFcsDb.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-#include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
 
+//Custom Headers
 #include "StFwdAnaVirtual.h"
 #include "StFwdAnaData.h"
 

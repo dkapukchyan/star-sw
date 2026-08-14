@@ -15,12 +15,18 @@
   @[January 14, 2026] > First instance where relevant functionality was copied from #StMuFcsTreeMaker
   @[June 4, 2026] > Fixed error printing to print this class's name and not old 'StMuFcsTreeMaker'
   @[July 1, 2026] > Changed name from StMuFcsAnaFillClusPoint to StFwdAnaFillEcalClusPoint
+  @[August 11, 2026] > Got rid of extraneous headers
 */
 
 
 #ifndef STFWDANA_STFWDANAFILLECALCLUSPOINT_HH
 #define STFWDANA_STFWDANAFILLECALCLUSPOINT_HH
 
+//STAR Headers
+#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"   //Not in StMuTypes
+#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"     //Not in StMuTypes
+
+//Custom Headers
 #include "StFwdAnaVirtual.h"
 
 class StFwdAnaFillEcalClusPoint : public StFwdAnaVirtual

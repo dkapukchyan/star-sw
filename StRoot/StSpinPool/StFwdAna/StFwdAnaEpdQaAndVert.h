@@ -21,6 +21,7 @@
 
   @[January 22, 2026] > Copied from #StMuEpdRun22QaMaker and modified for this analysis
   @[July 1, 2026] > Changed name from StMuFcsAnaEpdQaAndVert to StFwdAnaEpdQaAndVert
+  @[August 11, 2026] > Got rid of extraneous headers
   
   Do DEP calib of EPD chs, bunch xing analysis for spin. Change some plots so they use logz and move/remove the stats box for some of hte 2d histograms when plotting. Show on the fly EPD MIP peak locations and valleys
  */
@@ -29,44 +30,13 @@
 #define STFWDANA_STFWDANAEPDQAANDVERT_HH
 
 //C/C++ Headers
-// #include <iostream>
 
 //ROOT Headers
-// #include "TRandom3.h"
-// #include "TCanvas.h"
-// #include "TObjArray.h"
-// #include "TString.h"
-// #include "TFile.h"
-// #include "TTree.h"
-// #include "TH1F.h"
-// #include "TH2F.h"
 
 //STAR Headers
-// #include "StEnumerations.h"
-// #include "StMaker.h"
-// #include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-// #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-// #include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-// #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-// #include "StEvent/StTriggerData.h"
-// #include "StEvent/StTriggerId.h"
-// #include "StMessMgr.h"
-// #include "StMuDSTMaker/COMMON/StMuEvent.h"
-// #include "StMuDSTMaker/COMMON/StMuTypes.hh"
-// #include "Stypes.h"
-// #include "StFcsDbMaker/StFcsDbMaker.h"
-// #include "StFcsDbMaker/StFcsDb.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-// #include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
-// #include "StEpdDbMaker/StEpdDbMaker.h"
-// #include "StEpdHitMaker/StEpdHitMaker.h"
 
 //Custom headers in this folder
 #include "StFwdAnaVirtual.h"
-//#include "StMuFcsRun22QaMaker.h"   //For MakeGraph
-
 
 class StFwdAnaEpdQaAndVert : public StFwdAnaVirtual
 {

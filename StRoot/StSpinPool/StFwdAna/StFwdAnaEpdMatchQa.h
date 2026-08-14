@@ -16,6 +16,7 @@
   @[June 11, 2026] > Wanted to understand how best to match a cluster/point to the EPD tiles. Started by making histograms of the tile phi vs r position for all tiles and hit tiles and the idea was that by subtracting the two you would get holes where the "photons" are and activity where the "charged" particles are. Also did this for hits above a certain nmip threshold. This was checked on an event by event basis and it became clear very quickly that this was working and I could easily see holes between histograms with all tiles and those with hits. I realized right away that this would be much better if I can add the nmip information since it was hard to know how the nmip cut was effecting the hit tile distribution so I added nmip as a weight into the hit tiles. This worked very well and I realized I could do this for all tiles too. The only issue was that because for nmip=0 empty tiles would not show up when plotting the histogram which was bad since seeing those tiles give a clue as to whether a cluster/point should be "neutral" or "charged". For this reason I shifted nmip by 1 and the empty tiles appeared. I was plotting these in #PaintEpdTileHitDistQa() where you can see some of those legacy histograms. Looking at the phi vs. r distribution became a bit cumbersome so I switched to y vs. x using #mH2F_EpdTilesNmip_yVx and tried to do a 'polar' plot which did not help visualize anything but looking at y vs. x it became clear that this coordinate system is not the best. Therefore, I explored the nmip of EPD adjacencies in #mH1F_EpdAdjNmip but this only strengthed the idea that geometry information is just as important as knowing which tiles are adjacent since you can have large nmips in a 3x3 grid but without knowing the "x/y" the point favors it is hard to judge from just the adjacency. Additionallly, #DrawEpdTileHitDistWithFcs() was used in this testing process and drawing just the matched tiles reveals that often times clusters/points on the edge have a nearby tower that shows a signal. Looking at the EPD geometry it seems it is evenly segmented in phi and mostly evenly in r which was consist with the evenly spaced squares I saw in the #mH2F_EpdTiles_phiVr distribution. So, finally converged on #mH2F_EpdTilesNmip_rVphi which fills a 2D histogram with the r and phi values of all West EPD tiles with nMIP+1 as the weight. The r vs. phi space was much better to work in because at least there the EPD tiles form squares and is more intuitive and easier to visualise and understand. Looking at a few events it is clear that doing a 3x3 adjacency sum or picking the 3x3 adjacency max is not the best way to resolve the "charged" or "neutral" decision since points may overalp in those regions. Moving forward, I would like to try adding a distance criteria (in r phi space) on the cluster/point and only look at a given adjacency if the cluster/point is outside a given distance from the EPD tile center. If the cluster/point is further out in r then get the maximum nmip from the "outer" adjacency. If further out in phi then get "CW" adjacency. This criteria can easily be set because the EPD tiles are uniformly separted in phi and r (with the exception of tiles 1, 2, and 3). In x, y space this is not true so defining such a region would be more difficult.
   @[June 17, 2026] > Added #mH2F_ClusBadProjVcut_yVx and #mH2F_PointBadProjVcut_yVx to see where bad projected points end up. To QA the new EPD match algorithm added #mH1F_ClusEpdFoundRegion and #mH1F_PointEpdFoundRegion to see the distribution of the found regions of the projected clusters/points; also added #mH1F_ClusChargeId and #mH1F_PointChargeId to see the distribution of charge identification when the nmip cut is applied
   @[July 1, 2026] > Changed name from StMuFcsAnaEpdMatchQa to StFwdAnaEpdMatchQa
+  @[August 11, 2026] > Got rid of extraneous headers
 */
 
 
@@ -26,42 +27,13 @@
 #include <iostream>
 
 //ROOT Headers
-#include "TString.h"
-#include "TPolyLine.h"
-#include "TEllipse.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TLeaf.h"
-#include "TH1F.h"
-#include "TLegend.h"
-#include "TF1.h"
-#include "TGeoPolygon.h"
-#include "TPolyLine.h"
 #include "TMarker.h"
 
 //STAR Headers
-#include "StEnumerations.h"
-#include "StMaker.h"
-#include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-#include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-#include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-#include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-#include "StEvent/StTriggerData.h"
-#include "StEvent/StTriggerId.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuEvent.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "Stypes.h"
-#include "StFcsDbMaker/StFcsDbMaker.h"
-#include "StFcsDbMaker/StFcsDb.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-#include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
 
-#include "StSpinPool/StFwdData/StFwdDataFcs.h"
+//Custom Headers
+#include "StFwdAnaVirtual.h"
 #include "StFwdAnaEpdMatch.h"
-//#include "StFcsRun22TriggerMap.h"
 
 class StEpdGeom;
 

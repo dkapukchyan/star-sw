@@ -12,16 +12,18 @@
   @[January 12, 2026] > First instance
   @[July 1, 2026] > Changed name from StMuFcsVirtualAna to #StFwdAnaVirtual
   @[July 24, 2026] > Added #LoadGraphs() and #FillGraphs() to aid in the run by run qa
-
+  @[August 11, 2026] > #LoadGraphs() and #FillGraphs() no longer pure abstract virtual functions since not all classes need to implement them
 */
 
 
 #ifndef STFWDANA_STFWDANAVIRTUAL_HH
 #define STFWDANA_STFWDANAVIRTUAL_HH
 
+//C/C++ Headers
 #include "TObject.h"
 #include "TFile.h"
 
+//Custom Headers
 #include "StSpinPool/StFwdData/HistManager.h"
 #include "StSpinPool/StFwdAna/StFwdAnaData.h"
 
@@ -32,8 +34,8 @@ public:
   virtual ~StFwdAnaVirtual();
 
   virtual UInt_t LoadHists(TFile* file, HistManager* histman, StFwdAnaData* data) = 0;  ///< Function for creating and adding histograms to the hist manager object. Even though hist manager has its own internal file handler the argument is more of a flag to determine if hist manager will load histograms from the file passed in or create `new` ones. This has to happen this way because of ROOT handles file saving
-  virtual UInt_t LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* data ) = 0;  ///< Function for creating and adding graphs to an external TObjArray. This is useful for doing run by run QA. Since TGraphs don't care about TFiles existing don't need as complicated a structure as #HistManager is
-  virtual void FillGraphs(Int_t irun) = 0;       ///< Function for creating and filling graphs. The #irun is for setting the point on graph
+  virtual UInt_t LoadGraphs(TFile* file, TObjArray* graphs, StFwdAnaData* data );  ///< Function for creating and adding graphs to an external TObjArray. This is useful for doing run by run QA. Since TGraphs don't care about TFiles existing don't need as complicated a structure as #HistManager is
+  virtual void FillGraphs(Int_t irun);       ///< Function for creating and filling graphs. The #irun is for setting the point on graph
   virtual Int_t DoMake(StFwdAnaData* data) = 0;  ///< Different "Ana" modules will do different things in Make and should be put in this virtual function. This becomes effectively the "Make" function
 
   ClassDef(StFwdAnaVirtual,0)

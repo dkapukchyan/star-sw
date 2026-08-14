@@ -1,31 +1,6 @@
 #include <chrono>
 
-#include "StEnumerations.h"
-#include "StEvent/StEvent.h"
-#include "StEvent/StFcsCluster.h"
-#include "StEvent/StFcsCollection.h"
-#include "StEvent/StFcsHit.h"
-#include "StEvent/StEventTypes.h"
-#include "StFcsDbMaker/StFcsDbMaker.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "StSpinPool/StFcsQaMaker/StFcsQaMaker.h"
-#include "StSpinPool/StFcsRawDaqReader/StFcsRawDaqReader.h"
-#include "StRoot/StEpdUtil/StEpdGeom.h"
-#include "StThreeVectorF.hh"
-#include "Stypes.h"
-#include "TBox.h"
-#include "TCanvas.h"
-#include "TColor.h"
-#include "TFile.h"
-#include "TH1.h"
-#include "TH2.h"
-#include "TLine.h"
-#include "TMarker.h"
-#include "TROOT.h"
-#include "TString.h"
-#include "TStyle.h"
-#include "TText.h"
+#include "StEvent/StEvent.h"  //This needs to be in cxx file before other headers so that StSPtrVec* functions get correct dictionary generations
 
 #include "StFwdAnaDataMaker.h"
 
@@ -206,6 +181,7 @@ Int_t StFwdAnaDataMaker::Make()
   if( mAnaData->mRunInfo==0 ){ LOG_ERROR <<"StFwdAnaDataMaker::Make_LoadEvent - !RunInfo" <<endm; return kStErr; }
 
   mAnaData->mStEvent = (StEvent*)GetInputDS("StEvent");
+  //std::cout << "||StEvent:"<<mAnaData->mStEvent << std::endl;
 
   mAnaData->mEvent = mAnaData->mEvent+1;
 
@@ -236,6 +212,12 @@ Int_t StFwdAnaDataMaker::Make()
   mAnaData->mMuFcsColl = mAnaData->mMuDst->muFcsCollection();
   if( mAnaData->mMuFcsColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFcs Collection" << endm; }
 
+  //Get FST collection from stevent for raw hits (may only work when reading daq files and StFstRawHitMaker is called
+  //TObjectSet* fstdataset = (TObjectSet*)GetDataSet("fstRawHitAndCluster");
+  //std::cout << "|fstdataset:"<<fstdataset << std::endl;
+  //StFstCollection* fstcollptr = (StFstCollection*)fstdataset->GetObject();
+  //std::cout << "|fstcollptr:"<<fstcollptr << std::endl;
+  //mAnaData->mFstColl = fstcollptr;
   //Get Mu Fst collection
   mAnaData->mMuFstColl = mAnaData->mMuDst->muFstCollection();
   if( mAnaData->mMuFstColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFst Collection" << endm; }
@@ -247,12 +229,16 @@ Int_t StFwdAnaDataMaker::Make()
   //Get Ftt collection
   mAnaData->mMuFttColl = mAnaData->mMuDst->muFttCollection();
   if( mAnaData->mMuFttColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No MuFtt Collection" << endm; }
+  if( mAnaData->mStEvent!=0 ){
+    mAnaData->mFttColl = mAnaData->mStEvent->fttCollection();
+    if( mAnaData->mFttColl==0){ LOG_WARN << "StFwdAnaDataMaker::Make - No Ftt Collection" << endm; }
+  } else{ LOG_WARN << "StFwdAnaDataMaker::Make - No StEvent to get Ftt Collection" << endm; }
 
   //Get Track collection
   mAnaData->mMuFwdTrkColl = mAnaData->mMuDst->muFwdTrackCollection();
   if( mAnaData->mMuFwdTrkColl==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - No Mu Fwd Track Collection" << endm; }
-  mAnaData->mFwdTrkMkr = (StFwdTrackMaker*) GetMaker("fwdTrack");
-  if( mAnaData->mFwdTrkMkr==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - NoFwd Track Maker" << endm; }
+  //mAnaData->mFwdTrkMkr = (StFwdTrackMaker*) GetMaker("fwdTrack");
+  //if( mAnaData->mFwdTrkMkr==0 ){ LOG_WARN << "StFwdAnaDataMaker::Make - NoFwd Track Maker" << endm; }
 
   //auto start = std::chrono::steady_clock::now();
   for( unsigned int i=0; i<mAnaList.size(); ++i ){

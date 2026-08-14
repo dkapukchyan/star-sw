@@ -21,6 +21,7 @@
   @[July 1, 2026] > Added #getPolData() with no arguments which returns the polarization data based on the fill number in #StFwdDataEvent, made some getter functions const. Made variables that cut on energy, vertex, etc protected so they must be set and gotten with functions
   @[July 2, 2026] > Added AddHistStats() from my Rtools to here
   @[August 3, 2026] > Added FST collection of raw hits and "regular" hits to #mDataTree and the associated pointers and TClonesArrays to work with FST raw hits and hit. The "regular" hits, denoted as just 'hits' are the same as FST clusters except that they have the FST clusters position in STAR coordinate space. Added prototypes for FTT (sTGC) and forward tracks
+  @[August 12, 2026] > Got rid of extraneous headers. Added collection,hit objects, and arrays related to FTT data. Added print options for FST and FTT
 */
 
 
@@ -48,30 +49,20 @@
 #include "TCanvas.h"
 
 //STAR Headers
-#include "StEnumerations.h"
-#include "StMaker.h"
+#include "St_base/StMessMgr.h"       //STAR Logger
+#include "StMuDSTMaker/COMMON/StMuTypes.hh"   //Has most headers related to MuDst objects
 #include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-#include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-#include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-#include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-#include "StEvent/StTriggerData.h"
-#include "StEvent/StTriggerId.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuEvent.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "Stypes.h"
+#include "StFstUtil/StFstCollection.h"
 #include "StFcsDbMaker/StFcsDbMaker.h"
 #include "StFcsDbMaker/StFcsDb.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-#include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
+#include "StEpdUtil/StEpdGeom.h"
 #include "StEpdDbMaker/StEpdDbMaker.h"
 #include "StEpdHitMaker/StEpdHitMaker.h"
-#include "StFwdTrackMaker/StFwdTrackMaker.h"
 
+//Custom Headers
 #include "StSpinPool/StFwdData/StFwdDataEvent.h"
 #include "StSpinPool/StFwdData/StFwdDataFst.h"
+#include "StSpinPool/StFwdData/StFwdDataFtt.h"
 #include "StSpinPool/StFwdData/StFwdDataFcs.h"
 
 class StEpdGeom;
@@ -109,22 +100,23 @@ public:
   static const Double_t xfbins[NXFBIN+1];// = {0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.3, 0.5}; //@[August 4, 2025] > New xF binning
 
   //STAR classes needed to access various STAR and event data
-  StEvent*                event()     { return mStEvent; }
-  StMuDstMaker*           muDstMkr()  { return mMuDstMkr; }
-  StMuDst*                muDst()     { return mMuDst; }
-  StMuEvent*              muEvent()   { return mMuEvent; }
-  const StTriggerData*    trigData()  { return mTrigData; }
-  StRunInfo*              runInfo()   { return mRunInfo; }
-  StSpinDbMaker*          spinDbMkr() { return mSpinDbMkr; }
-  StFcsDb*                fcsDb()     { return mFcsDb; }
-  StEpdGeom*              epdGeom()   { return mEpdGeom; }
-  StMuFcsCollection*      fcsColl()   { return mMuFcsColl; }
-  StMuFttCollection*      muFttColl() { return mMuFttColl; }
-  StMuFstCollection*      muFstColl() { return mMuFstColl; }
-  TClonesArray*           muFstRawHitColl(){ return mMuFstRawHitColl; }
-  TClonesArray*           muFstHitColl(){ return mMuFstHitColl; }
-  StMuFwdTrackCollection* muTrkColl() { return mMuFwdTrkColl; }
-  StFwdTrackMaker*        fwdTrkMkr() { return mFwdTrkMkr; }
+  StEvent*                event()           const { return mStEvent; }
+  StMuDstMaker*           muDstMkr()        const { return mMuDstMkr; }
+  StMuDst*                muDst()           const { return mMuDst; }
+  StMuEvent*              muEvent()         const { return mMuEvent; }
+  const StTriggerData*    trigData()        const { return mTrigData; }
+  StRunInfo*              runInfo()         const { return mRunInfo; }
+  StSpinDbMaker*          spinDbMkr()       const { return mSpinDbMkr; }
+  StFcsDb*                fcsDb()           const { return mFcsDb; }
+  StEpdGeom*              epdGeom()         const { return mEpdGeom; }
+  StMuFcsCollection*      fcsColl()         const { return mMuFcsColl; }
+  StFttCollection*        fttColl()         const { return mFttColl; }
+  StMuFttCollection*      muFttColl()       const { return mMuFttColl; }
+  StMuFstCollection*      muFstColl()       const { return mMuFstColl; }
+  StFstCollection*        fstColl()         const { return mFstColl; }
+  TClonesArray*           muFstRawHitColl() const { return mMuFstRawHitColl; }
+  TClonesArray*           muFstHitColl()    const { return mMuFstHitColl; }
+  StMuFwdTrackCollection* muTrkColl()       const { return mMuFwdTrkColl; }
   void                 epdColl(TClonesArray*& epdmucoll, StEpdCollection*& epdcoll);  ///< Since the EPD hits coming from the MuDst and the EPD hits coming from StEpdHitMaker are of different types this is the cheapest solution I could find to return two types. Just check which one is nonzero and use that one. @[January 21, 2026] > [This solution was suggested here](https://cplusplus.com/forum/beginner/101409/). Another suggest solution was to return a pair but this also requires checking for which one is nonzero. This check can be performed with ternary operator as can be seen in #StMuFcsAnaEpdCheck. Its a bit messy but its too late to change the EPD code to give the same return types for either case.
 
   static Int_t MakeGraph(TFile* file, TObjArray* grapharr, TGraph*& graph, const char* name, const char* title );
@@ -164,6 +156,7 @@ public:
   void setPhPairOn(bool val=1);
   void setFstRawOn(bool val=1);
   void setFstHitOn(bool val=1);
+  void setFttRawOn(bool val=1);
 
   UShort_t checkTreeOnBit() const { return mTreeOnBitMap; }
   bool isEventOn() const;
@@ -171,6 +164,7 @@ public:
   bool isPhPairOn() const;
   bool isFstRawOn() const;
   bool isFstHitOn() const;
+  bool isFttRawOn() const;
 
   PolData* getPolData() const;                            //Get polarization data based on fill number in #StFwdDataEvent
   PolData* getPolData(Int_t fillnum) const;               //Get polarization data based on specific fill number
@@ -207,6 +201,10 @@ public:
   TClonesArray* getFstHitArr()const{return mFstHitArr;}
   Int_t getNFstHit()const{ return mFstHitArr->GetEntriesFast(); }
   StFstHitInfo* getFstHit(Int_t ihit)const{ return dynamic_cast<StFstHitInfo*>(mFstHitArr->UncheckedAt(ihit)); }
+
+  TClonesArray* getFttRawArr()const{ return mFttRawHitArr; }
+  Int_t getNFttRaw()const{ return mFttRawHitArr->GetEntriesFast(); }
+  StFttRawHitInfo* getFttRawHit(Int_t ihit)const{ return dynamic_cast<StFttRawHitInfo*>(mFttRawHitArr->UncheckedAt(ihit)); }
   
   //#ifndef __CINT__
   //void SetTrigs(const char* trigname,...);//{ mTargetTrig.emplace_back(trigname); }
@@ -260,14 +258,17 @@ protected:
   TClonesArray* mMuEpdHits = 0;
   StEpdCollection* mEpdColl = 0;
 
+  StFttCollection* mFttColl = 0;
   StMuFttCollection* mMuFttColl = 0;
-  
+  //StFttDb* mFttDb = 0;
+
+  StFstCollection* mFstColl = 0;
   StMuFstCollection* mMuFstColl = 0;
   TClonesArray* mMuFstRawHitColl = 0;   ///< Comes from StMuFstCollection
   TClonesArray* mMuFstHitColl = 0;      ///< Comes from StMuFstCollection
   
   StMuFwdTrackCollection* mMuFwdTrkColl = 0;
-  StFwdTrackMaker* mFwdTrkMkr = 0;
+  //StFwdTrackMaker* mFwdTrkMkr = 0;
 
   //Called in InitRun() shouldn't be changed unless InitRun() is called again
   StFcsDb* mFcsDb = 0;
@@ -284,6 +285,8 @@ protected:
   //For FST information
   TClonesArray* mFstRawHitArr = 0;      ///< Array of #StFstRawHitInfo
   TClonesArray* mFstHitArr = 0;         ///< Array of #StFstHitInfo
+  //For FTT information
+  TClonesArray* mFttRawHitArr = 0;      ///< Array of #StFttRawHitInfo
 
   void loadTree(TFile* file);   ///< Attempts to read the TTree from a file
   void makeTree(TFile* file);   ///< Creates a new TTree deleting old one if it exists

@@ -11,13 +11,20 @@
   LOG
   @[January 12, 2026] > First instance where relevant functionality was copied from #StMuFcsTreeMaker
   @[July 1, 2026] > Changed name from StMuFcsAnaPolarization to StFwdAnaPolarization
-
+  @[August 11, 2026] > Adjusted header loading to use minimum required
 */
 
 
 #ifndef STFWDANA_STFWDANAPOLARIZATION_HH
 #define STFWDANA_STFWDANAPOLARIZATION_HH
 
+//ROOT Headers
+#include "TCanvas.h"
+
+//STAR Headers
+#include "StEvent/StEnumerations.h"
+
+//Custom Headers
 #include "StFwdAnaVirtual.h"
 
 class StFwdAnaPolarization : public StFwdAnaVirtual

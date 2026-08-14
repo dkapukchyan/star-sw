@@ -10,6 +10,7 @@
 
   LOG
   @[July 27, 2026] > First instance that mostly copied from #StFstQAMaker
+  @[August 14, 2026] > Added two boolean flags #mRawHitOn, and #mHitOn which can be used to toggle QA for FST Raw Hits and/or FST Hits. The main reason is because MuDst trees don't contain FST Raw Hit information by default so it helps to save on number of histograms generated. Also changed name of histograms to include "Fst" since looking at the ROOT file of histograms, both FST and FTT use the same "RawHit" and "Hit" style of classes so it was hard to distinguish at a first glance which histograms are coming from FST QA and which from FTT QA.
 */
 
 #ifndef STFWDANA_STFWDANAFSTRUN22QA_HH
@@ -33,30 +34,36 @@ class StFwdAnaFstRun22Qa : public StFwdAnaVirtual
   
   virtual UInt_t LoadHists(TFile* file, HistManager* histman, StFwdAnaData* anadata);
   virtual Int_t DoMake(StFwdAnaData* anadata);
+  
+  void setRawHitQa(bool val){ mRawHitOn = val; }
+  void setHitQa(bool val){ mHitOn = val; }
 
 protected:
+  bool mRawHitOn = false;                        ///< Flag to turn on/off QA histograms for FST raw hits. Since these aren't normally stored in MuDsts it is off by default. Idea is to keep number of histograms smaller if no data present. Since there is no way to check before histogram creation if data contains FST Raw Hits; using a boolean flag
+  bool mHitOn = true;                            ///< Flag to turn on/off QA histograms for FST hits. Since these are "highest" level of FST reconstruction. Keep on by default
+  
   //position
-  TH1* mH2S_RawHitStrip_rVphi[kFstNumSensors];   ///< raw hit phistrip vs. rstrip per sensor
-  TH1* mH2S_HitStripMean_rVphi[kFstNumSensors];  ///< hit mean phistrip vs. mean rstrip per sensor
-  TH1* mH2S_Hit_rVphi[kFstNumDisk];              ///< hit map in r vs. phi per disk
-  TH1* mH2S_Hit_apvVgeoid[kFstNumDisk];          ///< hit map in APV geometry Id vs. module geometry Id per disk
-  TH1* mH2S_HitGlobal_yVx[kFstNumDisk];          ///< hit global x vs. y per disk
-  TH1* mH2S_HitGlobal_rVphi[kFstNumDisk];        ///< hit global r vs. phi per disk
+  TH1* mH2S_FstRawHitStrip_rVphi[kFstNumSensors];   ///< raw hit phistrip vs. rstrip per sensor
+  TH1* mH2S_FstHitStripMean_rVphi[kFstNumSensors];  ///< hit mean phistrip vs. mean rstrip per sensor
+  TH1* mH2S_FstHit_rVphi[kFstNumDisk];              ///< hit map in r vs. phi per disk
+  TH1* mH2S_FstHit_apvVgeoid[kFstNumDisk];          ///< hit map in APV geometry Id vs. module geometry Id per disk
+  TH1* mH2S_FstHitGlobal_yVx[kFstNumDisk];          ///< hit global x vs. y per disk
+  TH1* mH2S_FstHitGlobal_rVphi[kFstNumDisk];        ///< hit global r vs. phi per disk
   //Charge
-  TH1* mH2S_RawHit_adcVgeoid[kFstNumTimeBins];   ///< Charge (ADC) vs channel ID over all time bins
-  TH1* mH2S_RawHit_adcerrVgeoid = 0;             ///< RMS noise vs channel ID
-  TH1* mH2S_RawHit_maxtbVapv = 0;                ///< Raw hit max ADC time bin vs APV electronics ID [48*(ARC-1)+16*ARM+APV]
-  TH1* mH2S_Hit_adcVid = 0;                      ///< Charge vs sensorID
-  TH1* mH2S_Hit_adcerrVid = 0;                   ///< Charge uncertainty vs sensorID
-  TH1* mH2S_Hit_maxtbVid = 0;	                 ///< hit max ADC time bin vs sensorID
+  TH1* mH2S_FstRawHit_adcVgeoid[kFstNumTimeBins];   ///< Charge (ADC) vs channel ID over all time bins
+  TH1* mH2S_FstRawHit_adcerrVgeoid = 0;             ///< RMS noise vs channel ID
+  TH1* mH2S_FstRawHit_maxtbVapv = 0;                ///< Raw hit max ADC time bin vs APV electronics ID [48*(ARC-1)+16*ARM+APV]
+  TH1* mH2S_FstHit_adcVid = 0;                      ///< Charge vs sensorID
+  TH1* mH2S_FstHit_adcerrVid = 0;                   ///< Charge uncertainty vs sensorID
+  TH1* mH2S_FstHit_maxtbVid = 0;	                 ///< hit max ADC time bin vs sensorID
   //hit or raw hit number
-  TH1* mH2S_nrawhitsVid = 0;                     ///< number of raw hits vs sensor Id
-  TH1* mH2S_nhitsVid = 0;	                 ///< number of hits vs sensor Id
+  TH1* mH2S_Fst_nrawhitsVid = 0;                     ///< number of raw hits vs sensor Id
+  TH1* mH2S_Fst_nhitsVid = 0;	                 ///< number of hits vs sensor Id
   //TProfile* numOfRawHits_EventId[kFstNumSensors];
   //cluster size
-  TH1* mH2S_Hit_nrawhitsVid = 0;                 ///< hit cluster size
-  TH1* mH2S_Hit_nrawhitsrVid = 0;                ///< hit cluster size in R direction
-  TH1* mH2S_Hit_nrawhitsphiVid = 0;              ///< hit cluster size in Phi direction  
+  TH1* mH2S_FstHit_nrawhitsVid = 0;                 ///< hit cluster size
+  TH1* mH2S_FstHit_nrawhitsrVid = 0;                ///< hit cluster size in R direction
+  TH1* mH2S_FstHit_nrawhitsphiVid = 0;              ///< hit cluster size in Phi direction  
 
   ClassDef(StFwdAnaFstRun22Qa,1);
 };

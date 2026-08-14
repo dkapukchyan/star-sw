@@ -14,6 +14,7 @@
   @[May 13, 2026] > Copied old StMuFcsPointEpdMixedEventMaker into StMuFcsAnaEpdFcsMixedEvent which utilizes new #StMuFcsVirtualAna framework and methods
   @[June 17, 2026] > Changed angle difference to use dot product so changed range on phi histograms to 0 to pi to match arccos function
   @[July 1, 2026] > Changed name from StMuFcsAnaEpdFcsMixedEvent to StFwdAnaEpdFcsMixedEvent
+  @[August 11, 2026] > Got rid of extraneous headers
 */
 
 
@@ -24,40 +25,11 @@
 #include <iostream>
 
 //ROOT Headers
-#include "TString.h"
-#include "TPolyLine.h"
-#include "TEllipse.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TLeaf.h"
-#include "TH1F.h"
-#include "TLegend.h"
-#include "TF1.h"
-#include "TGeoPolygon.h"
 
 //STAR Headers
-#include "StEnumerations.h"
-#include "StMaker.h"
-#include "StSpinPool/StSpinDbMaker/StSpinDbMaker.h"
-#include "StMuDSTMaker/COMMON/StMuDstMaker.h"
-#include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
-#include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
-#include "StEvent/StTriggerData.h"
-#include "StEvent/StTriggerId.h"
-#include "StMessMgr.h"
-#include "StMuDSTMaker/COMMON/StMuEvent.h"
-#include "StMuDSTMaker/COMMON/StMuTypes.hh"
-#include "Stypes.h"
-#include "StFcsDbMaker/StFcsDbMaker.h"
-#include "StFcsDbMaker/StFcsDb.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
-#include "StMuDSTMaker/COMMON/StMuFcsHit.h"
-#include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
-#include "StMuDSTMaker/COMMON/StMuFcsPoint.h"
 
-#include "StSpinPool/StFwdData/StFwdDataFcs.h"
+//Custom Headers
 #include "StFwdAnaEpdMatch.h"
-//#include "StFcsRun22TriggerMap.h"
 
 class StEpdGeom;
 
