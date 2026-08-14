@@ -1,8 +1,16 @@
-#include "TVector3.h"
-#include "TH1F.h"
-#include "TH2F.h"
+#include "StFwdUtils/StFwdAnalysisMaker.h"
+#include "StFwdTrackMaker/Common.h"
 
-#include "St_base/StMessMgr.h"
+#include "TMath.h"
+#include "TVector3.h"
+
+#include <limits>
+#include <map>
+#include <string>
+#include <string>
+#include <vector>
+
+#include "StBFChain/StBFChain.h"
 
 #include "StEvent/StEvent.h"
 #include "StEvent/StEnumerations.h"
@@ -17,16 +25,29 @@
 #include "StMuDSTMaker/COMMON/StMuFwdTrack.h"
 #include "StMuDSTMaker/COMMON/StMuFwdTrackCollection.h"
 
-#include "StFcsDbMaker/StFcsDb.h"
-#include "StFwdTrackMaker/Common.h"
-#include "StFwdUtils/StFwdAnalysisMaker.h"
 
-//________________________________________________________________________
+#include "tables/St_g2t_fts_hit_Table.h"
+#include "tables/St_g2t_track_Table.h"
+#include "tables/St_g2t_vertex_Table.h"
+#include "tables/St_g2t_event_Table.h"
+
+#include "StarMagField/StarMagField.h"
+
+#include "St_base/StMessMgr.h"
+#include "StarClassLibrary/StPhysicalHelix.hh"
+#include "StarClassLibrary/SystemOfUnits.h"
+
+
+#include "TROOT.h"
+#include "TLorentzVector.h"
+#include "StEvent/StFwdTrack.h"
+#include "StFcsDbMaker/StFcsDb.h"
+
 StFwdAnalysisMaker::StFwdAnalysisMaker() : StMaker("fwdAna"){
     setLocalOutputFile( "" ); // default off
 };
-int StFwdAnalysisMaker::Finish() { 
-    
+int StFwdAnalysisMaker::Finish() {
+
     if ( mLocalOutputFile != "" ){
         TDirectory* prevDir = TDirectory::CurrentDirectory();
         
@@ -44,12 +65,12 @@ int StFwdAnalysisMaker::Finish() {
         LOG_INFO << "Done writing StFwdAnalysisMaker output to local file : " << mLocalOutputFile << endm;
     }
 
-    return kStOk; 
+    return kStOk;
 }
 
 //________________________________________________________________________
-int StFwdAnalysisMaker::Init() { 
-    LOG_DEBUG << "StFwdAnalysisMaker::Init" << endm; 
+int StFwdAnalysisMaker::Init() {
+    LOG_DEBUG << "StFwdAnalysisMaker::Init" << endm;
 
     AddHist( mHists["fwdMultFailed"] =      new TH1F("fwdMultFailed", ";N_{ch}^{FWD}; counts", 100, 0, 100) );
     AddHist( mHists["fwdMultAll"] =         new TH1F("fwdMultAll", ";N_{ch}^{FWD}; counts", 100, 0, 100) );
@@ -105,7 +126,7 @@ int StFwdAnalysisMaker::Make() {
     long long itStart = FwdTrackerUtils::nowNanoSecond();
     if (!mAnalyzeMuDst)
         ProcessFwdTracks();
-    else 
+    else
         ProcessFwdMuTracks();
     LOG_DEBUG << "Processing Fwd Tracks took: " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e6 << " ms" << endm;
     return kStOK;
@@ -119,7 +140,7 @@ void StFwdAnalysisMaker::ProcessFwdTracks(  ){
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     if (!stEvent)
         return;
-    
+
     if (stEvent){
         StFttCollection *fttCol = stEvent->fttCollection();
         if (fttCol){
@@ -182,7 +203,7 @@ void StFwdAnalysisMaker::ProcessFwdTracks(  ){
 
         getHist("ecalMatchPerTrack")->Fill( fwdTrack->ecalClusters().size() );
         getHist("hcalMatchPerTrack")->Fill( fwdTrack->hcalClusters().size() );
-        
+
         getHist( "nHitsFit" )->Fill( fwdTrack->numberOfFitPoints() );
 
         if (fwdTrack->mFSTPoints.size() > 0){
@@ -194,7 +215,7 @@ void StFwdAnalysisMaker::ProcessFwdTracks(  ){
         getHist("pt")->Fill( fwdTrack->momentum().perp() );
 
         getHist("charge")->Fill( fwdTrack->charge() );
-    
+
         // ecal proj
         int detId = kFcsWcalId;
         TVector3 ecalXYZ;
@@ -258,7 +279,7 @@ void StFwdAnalysisMaker::ProcessFwdTracks(  ){
         }
 
         if (hcalProj.mXYZ.z() > 500){
-            
+
             double mindR = 999;
             StFcsCluster * cclu = nullptr;
             for ( int iDet = 2; iDet < 4; iDet++ ){
@@ -275,7 +296,7 @@ void StFwdAnalysisMaker::ProcessFwdTracks(  ){
                     if ( fabs(dy) < 25 ){
                         getHist( "hcaldX" )->Fill( dx );
                         getHist( "hcaldXdNFit" )->Fill( dx, fwdTrack->numberOfFitPoints() );
-                        
+
                     }
                     if ( fabs(dx) < 25 ){
                         getHist( "hcaldY" )->Fill( dy );
@@ -363,7 +384,7 @@ void StFwdAnalysisMaker::ProcessFwdMuTracks(  ){
         if (muFwdTrack->mHcalClusters.GetEntries() > 0)
             fwdMultHcalMatch++;
 
-        
+
         // ecal proj
         int detId = kFcsWcalId;
         TVector3 ecalXYZ;
@@ -394,12 +415,12 @@ void StFwdAnalysisMaker::ProcessFwdMuTracks(  ){
             } // i
         } // foundEcalProj
 
-        
+
         for ( int i = 0; i < muFwdTrack->mEcalClusters.GetEntries(); i++ ){
             auto c = (StMuFcsCluster*) muFwdTrack->mEcalClusters.At(i);
             if (!c) continue;
             getHist("ecalEnergy")->Fill( c->energy() );
-            
+
             LOG_DEBUG << "eCal Cluster detId = " << c->detectorId() << endm;
             StThreeVectorD xyz = mFcsDb->getStarXYZfromColumnRow(c->detectorId(), c->x(), c->y());
             getHist("ecalXY")->Fill( xyz.x(), xyz.y() );

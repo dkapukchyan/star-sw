@@ -29,6 +29,18 @@
 
 #include "StFttDbMaker/StFttDb.h"
 
+// Per-file gating of STAR logging macros via mDebug. Bypasses a leak in the
+// log4cxx pipeline (~312 B per LOG_INFO call). When mDebug==false the entire
+// LOG expression is skipped at the AST level — no allocation, no leak.
+// Affects only this translation unit. The `if (!mDebug) {} else` form guards
+// against dangling-else attaching to a caller's `if`.
+#undef  LOG_INFO
+#undef  LOG_DEBUG
+#undef  LOG_WARN
+#define LOG_INFO  if (!mDebug) {} else LOGGERMESSAGE(Info)
+#define LOG_DEBUG if (!mDebug) {} else LOGGERMESSAGE(Debug)
+#define LOG_WARN  if (!mDebug) {} else LOGGERMESSAGE(Warning)
+
 
 //_____________________________________________________________
 StFttClusterMaker::StFttClusterMaker( const char* name )
@@ -38,7 +50,7 @@ StFttClusterMaker::StFttClusterMaker( const char* name )
   mDebug( false ),       /// print out of all full messages for debugging
   mFttDb( nullptr )
 {
-    LOG_DEBUG << "StFttClusterMaker::ctor"  << endm;
+    LOG_INFO << "StFttClusterMaker::ctor"  << endm;
 }
 
 //_____________________________________________________________
@@ -97,14 +109,16 @@ StFttClusterMaker::Make()
         LOG_WARN << "No StFttCollection" << endm;
         return kStOk;
     }
+    LOG_INFO << "DEBUG: mFttCollection->numberOfClusters() = " << mFttCollection->numberOfClusters() << endm;
+    mFttCollection->clusters().clear();
+
+
 
     mFttDb = static_cast<StFttDb*>(GetDataSet("fttDb"));
     assert( mFttDb );
 
-    LOG_DEBUG << "Found " << mFttCollection->rawHits().size() << " Ftt Hits" << endm;
+    LOG_INFO << "Found " << mFttCollection->rawHits().size() << " Ftt Hits" << endm;
     ApplyHardwareMap();
-
-    
 
     // InjectTestData();
 
@@ -144,38 +158,49 @@ StFttClusterMaker::Make()
         }
     } // loop on hit
 
+    
+
     size_t nClusters = 0;
-    LOG_DEBUG << "StFttClusterMaker::Make{ nStripsHit = " << nStripsHit << " }" << endm;
+    LOG_INFO << "StFttClusterMaker::Make{ nStripsHit = " << nStripsHit << " }" << endm;
+
+    static const std::vector<StFttRawHit*> emptyHits;
+    auto getHits = [&]( const std::map<UChar_t, std::vector<StFttRawHit*>>& m, UChar_t key ) -> const std::vector<StFttRawHit*>& {
+        auto it = m.find( key );
+        return it != m.end() ? it->second : emptyHits;
+    };
+
+    
+
     if ( nStripsHit > 0 ){ // could make more strict?
         for ( UChar_t iRob = 1; iRob < StFttDb::nRob+1; iRob++ ){
 
-            auto hClusters = FindClusters( hStripsPerRob[iRob] );
-            // Add them to StEvent  
+            auto hClusters = FindClusters( getHits( hStripsPerRob, iRob ) );
+            // Add them to StEvent
             for ( StFttCluster * clu : hClusters ){
                 mFttCollection->addCluster( clu );
                 nClusters++;
             }
-            auto vClusters = FindClusters( vStripsPerRob[iRob] );
-            // Add them to StEvent  
+            auto vClusters = FindClusters( getHits( vStripsPerRob, iRob ) );
+            // Add them to StEvent
             for ( StFttCluster * clu : vClusters ){
                 mFttCollection->addCluster( clu );
                 nClusters++;
             }
-            auto hdClusters = FindClusters( dhStripsPerRob[iRob] );
-            // Add them to StEvent  
+            auto hdClusters = FindClusters( getHits( dhStripsPerRob, iRob ) );
+            // Add them to StEvent
             for ( StFttCluster * clu : hdClusters ){
                 mFttCollection->addCluster( clu );
                 nClusters++;
             }
-            auto vdClusters = FindClusters( dvStripsPerRob[iRob] );
-            // Add them to StEvent  
+            auto vdClusters = FindClusters( getHits( dvStripsPerRob, iRob ) );
+            // Add them to StEvent
             for ( StFttCluster * clu : vdClusters ){
                 mFttCollection->addCluster( clu );
                 nClusters++;
             }
         } // loop on iRob
     } // nStripsHit
-    LOG_DEBUG << "Found " << nClusters << " clusters this event" << endm;
+    LOG_INFO << "StFttClusterMaker produced " << nClusters << " clusters this event" << endm;
 
     return kStOk;
 } // Make
@@ -234,7 +259,7 @@ bool StFttClusterMaker::PassTimeCut( StFttRawHit * hit ){
         int hitTimeMode = (int)kHitCalibratedTime;
 
         mFttDb->getTimeCut(hit, hitTimeMode, timeCutMin, timeCutMax);
-        LOG_DEBUG << TString::Format( "StFttClusterMaker::PassTimeCut - DB gave hit time mode: %d, time cut min: %d, time cut max: %d", hitTimeMode, timeCutMin, timeCutMax ) << endm;
+        LOG_INFO << TString::Format( "StFttClusterMaker::PassTimeCut - DB gave hit time mode: %d, time cut min: %d, time cut max: %d", hitTimeMode, timeCutMin, timeCutMax ) << endm;
         if (hitTimeMode == kHitCalibratedTime) {
             return (hit->time() >= timeCutMin && hit->time() <= timeCutMax);
         } else if ( hitTimeMode == kHitTimebin ) {
@@ -257,7 +282,7 @@ bool StFttClusterMaker::PassTimeCut( StFttRawHit * hit ){
 } // PassTimeCut
 
 
-StFttRawHit * StFttClusterMaker::FindMaxAdc( std::vector<StFttRawHit *> hits, size_t &pos ){
+StFttRawHit * StFttClusterMaker::FindMaxAdc( const std::vector<StFttRawHit *>& hits, size_t &pos ){
     auto itMax = std::max_element(hits.begin(),
                              hits.end(),
                              [](const StFttRawHit* a,const StFttRawHit* b) { return a->adc() < b->adc(); });
@@ -267,7 +292,7 @@ StFttRawHit * StFttClusterMaker::FindMaxAdc( std::vector<StFttRawHit *> hits, si
     return *itMax;
 }
 
-void StFttClusterMaker::SearchClusterEdges( std::vector< StFttRawHit * > hits, 
+void StFttClusterMaker::SearchClusterEdges( const std::vector< StFttRawHit * >& hits, 
                                             size_t start, // start index at MaxADC
                                             size_t &left, size_t &right ){
     // set initial values
@@ -283,7 +308,9 @@ void StFttClusterMaker::SearchClusterEdges( std::vector< StFttRawHit * > hits,
     StFttRawHit *hitLeft = nullptr, *hitRight = nullptr;
 
     while ( searchRight || searchLeft ){
-            LOG_DEBUG << "LEFT: " << left << ", RIGHT: " << right <<  ", start = " << start << ", size=" << hits.size() << endm;
+            if (mDebug){
+                LOG_DEBUG << "LEFT: " << left << ", RIGHT: " << right <<  ", start = " << start << ", size=" << hits.size() << endm;
+            }
         if ( searchRight ){
             if ( right == hits.size() || right == hits.size() - 1 ){ 
                 searchRight = false;
@@ -355,9 +382,21 @@ void StFttClusterMaker::CalculateClusterInfo( StFttCluster * clu ){
     // m2Sum = accumulated variance (2nd moment)
 
     clu->setSumAdc( m0Sum );
-    clu->setX( m1Sum / m0Sum );
-    float var = (m2Sum - m1Sum*m1Sum / m0Sum) / m0Sum;
-    clu->setSigma( sqrt( var ) );
+    if ( m0Sum > 0 ){
+        clu->setX( m1Sum / m0Sum );
+        float var = (m2Sum - m1Sum*m1Sum / m0Sum) / m0Sum;
+        // Fix (Issue #21): for single-strip clusters var==0 (all charge in one
+        // strip, m2Sum/m0Sum = mean^2). A zero sigma gives GenFit infinite weight
+        // in the precise direction, forcing the track through the strip centre
+        // exactly and causing numerical instability. Clamp to pitch/sqrt(12) =
+        // 0.924 mm. x is computed as strip*3.2 - 1.6, so units here are mm
+        // (pitch = 3.2 mm).
+        const float kSigmaMin = 3.2f / sqrtf(12.f); // 0.924 mm = pitch/sqrt12
+        clu->setSigma( std::max( sqrtf(std::max(var, 0.f)), kSigmaMin ) );
+    } else {
+        clu->setX( -999 );
+        clu->setSigma( -999 );
+    }
 }
 
 
@@ -410,10 +449,10 @@ std::vector<StFttCluster*> StFttClusterMaker::FindClusters( std::vector< StFttRa
         StFttCluster * clu = new StFttCluster();
 
         if ( Debug() ){
-            LOG_DEBUG << "CLUSTER FIND START WITH HITS:" << endm;
+            LOG_INFO << "CLUSTER FIND START WITH HITS:" << endm;
             size_t i = 0;
             for ( auto *h : hits ){
-                LOG_DEBUG << "[" << i << "]" << *h;
+                LOG_INFO << "[" << i << "]" << *h;
                 i++;
             }
         }
@@ -423,12 +462,31 @@ std::vector<StFttCluster*> StFttClusterMaker::FindClusters( std::vector< StFttRa
         clu->setQuadrant    ( maxAdcHit->quadrant    ( ) );
         clu->setRow         ( maxAdcHit->row         ( ) );
         clu->setOrientation ( maxAdcHit->orientation ( ) );
+        // Fix (2026-07-17): this was the only max-ADC-hit field never copied onto the
+        // cluster, so StFttCluster::maxStripLength() stayed at its -999 default forever.
+        // That -999 flows into StFttClusterPointMaker's row-position formula
+        // (YX_StripGroupEdge[row] + maxStripLength()/2), producing a huge negative local
+        // value that -- combined with the per-quadrant sign flips -- swaps which end of
+        // each row lands near vs. far from y=0. See jpsi/electron_45.html for the
+        // derivation (this single line explains the top/bottom+north/south swap and the
+        // bowtie shape both).
+        clu->setMaxStripLength( maxAdcHit->stripLength( ) );
+        // Fix (2026-07-18): same bug shape as maxStripLength above -- setMaxStripCenter
+        // was also never called, so StFttCluster::maxStripCenter() stayed at its -999
+        // default forever. StFttClusterPointMaker used a row-averaged fallback
+        // (YX_StripGroupEdge[row]+maxStripLength/2) for the off-axis coordinate instead,
+        // which collapses the off-axis coordinate to one constant value for the ~92% of
+        // same-row hits sharing an identical maxStripLength, discarding real per-strip
+        // resolution. maxAdcHit->stripCenter() comes from the same scMapXY table already
+        // used (correctly) for the precision coordinate via cluster x()/y() -- no row
+        // dependence in that lookup, so this is safe for all rows, not just row 0.
+        clu->setMaxStripCenter( maxAdcHit->stripCenter( ) );
 
         // Now find the cluster edges
         size_t left = anchor, right = anchor;
         SearchClusterEdges( hits, anchor, left, right);
         
-        LOG_DEBUG << "Cluster points ( " << left << ", " << anchor << ", " << right << " )" << endm;
+        LOG_INFO << "Cluster points ( " << left << ", " << anchor << ", " << right << " )" << endm;
         
         
         // OK now add these hits to the cluster
@@ -436,13 +494,15 @@ std::vector<StFttCluster*> StFttClusterMaker::FindClusters( std::vector< StFttRa
             clu->addRawHit( hits[i] );
         }
 
+        // Take ownership before calling CalculateClusterInfo so clu is not leaked on throw
+        clusters.push_back( clu );
+
         // Compute cluster information from the added hits
         CalculateClusterInfo( clu );
 
         if (mDebug){
             LOG_INFO << *clu << endm;;
         }
-        clusters.push_back( clu );
 
         // Now erase all hits from this cluster so that we can move on to find the next one
         hits.erase( hits.begin() + left, hits.begin() + right + 1 );

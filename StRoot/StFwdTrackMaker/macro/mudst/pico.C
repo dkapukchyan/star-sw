@@ -125,7 +125,7 @@ void loadLibsFwd()
   gSystem->Load("StEventMaker");
 
   // Fwd
-  gSystem->Load("StFwdUtils");
+  
   gSystem->Load("libStarGeneratorUtil.so");
   gSystem->Load("libXMLIO");
   gSystem->Load("libgenfit2");
@@ -134,8 +134,7 @@ void loadLibsFwd()
   gSystem->Load("libMathMore");
   gSystem->Load("StEventUtilities");
   gSystem->Load("StEpdUtil");
-  gSystem->Load("StFwdTrackMaker");
-  gSystem->Load("StFwdUtils");
+  
   //Ftt
   gSystem->Load("StFttDbMaker");
   gSystem->Load("StFttRawHitMaker");
@@ -157,6 +156,9 @@ void loadLibsFwd()
   gSystem->Load("StFstRawHitMaker");
   gSystem->Load("StFstClusterMaker");
   gSystem->Load("StFstHitMaker");
+
+  gSystem->Load("StFwdTrackMaker");
+  gSystem->Load("StFwdUtils");
 }
 
 void procGeoTag(TObjArray* optionTokens)
@@ -321,35 +323,31 @@ void genDst(unsigned int First,
     // StFcsPointMaker * fcsPoint = new StFcsPointMaker();
 
     // FTT chain
-    StFttDbMaker * fttDbMk = new StFttDbMaker();
-    StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
-    StFttClusterMaker * fttclu = new StFttClusterMaker();
-    fttclu->SetTimeCut(1, -40, 40);
-    StFttPointMaker * fttpoint = new StFttPointMaker();
+    // StFttDbMaker * fttDbMk = new StFttDbMaker();
+    // StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
+    // StFttClusterMaker * fttclu = new StFttClusterMaker();
+    // fttclu->SetTimeCut(1, -40, 40);
+    // StFttPointMaker * fttpoint = new StFttPointMaker();
 
 
-    StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
-    fwdTrack->setConfigForData( );
-    fwdTrack->setGeoCache( "fGeom.root" );
-    fwdTrack->setSeedFindingWithFst();
-    fwdTrack->setIncludePrimaryVertexInFit(true);
-    fwdTrack->setMaxFailedHitsInFit(2);
-    fwdTrack->SetDebug(2);
+    // StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
+    // fwdTrack->setGeoCache( "fGeom.root" );
+    // fwdTrack->SetDebug(2);
 
-    StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
-    match->setMaxDistance(6,10);
-    match->setFileName("fcstrk.root");
-    match->SetDebug();
+    // StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
+    // match->setMaxDistance(6,10);
+    // match->setFileName("fcstrk.root");
+    // match->SetDebug();
 
-    StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-    fwdAna->SetDebug();
-    fwdAna->setLocalOutputFile( "StFwdAnalysisMaker.root");
+    // StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+    // fwdAna->SetDebug();
+    // fwdAna->setLocalOutputFile( "StFwdAnalysisMaker.root");
 
-    StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
-    fwdFitQA->SetDebug();
+    // StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+    // fwdFitQA->SetDebug();
 
-    StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
-    fwdQAMk->SetDebug(2);
+    // StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
+    // fwdQAMk->SetDebug(2);
     // chain->AddAfter("fwdTrack", fwdQAMk);
 
     if (findAndRemoveOption("btofmatch",optionTokens)) {
@@ -407,8 +405,8 @@ void genDst(unsigned int First,
 
     // Specify inactive branches but first enable all branches
     muDstMaker.SetStatus("*",1);
-    muDstMaker.SetStatus("PrimaryTracks",0);
-    muDstMaker.SetStatus("PrimaryVertices",0);
+    // muDstMaker.SetStatus("PrimaryTracks",0);
+    // muDstMaker.SetStatus("PrimaryVertices",0);
 
     // Create new branch
     // TClonesArray* verticesRefitted = new TClonesArray("StMuPrimaryVertex", 1000);
@@ -513,7 +511,7 @@ void genDst(unsigned int First,
       // StEvent * stEv = new StEvent();
       // fullChain.AddData( stEv );
       fullChain.SetDebug(2);
-      fwdTrack->SetDebug(2);
+      // fwdTrack->SetDebug(2);
 
      int iMake = fullChain.Make();
      if (iMake) {fullChain.FatalErr(iMake,"on make"); return;}
@@ -557,7 +555,7 @@ void genDst(unsigned int Last,
 }
 
 void pico(){
-  genDst(5000, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/work/st_fwd_22355048_raw_1000012.MuDst.root", "PROD.root");
+  genDst(500, "y2024a picodst PicoVtxMode:PicoVtxDefault", "st_physics_23055058_raw_1500001.MuDst.root", "PROD.root");
 }
 
 void pico( TString f, int n = 500){

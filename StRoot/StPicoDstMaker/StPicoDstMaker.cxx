@@ -8,6 +8,9 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <cstdio>
+#include <cstdlib>
+#include <malloc.h>
 
 // ROOT headers
 #include "TRegexp.h"
@@ -761,7 +764,9 @@ void StPicoDstMaker::finishEmc() {
 void StPicoDstMaker::Clear(char const*) {
   if (StMaker::m_Mode == PicoIoMode::IoRead)
     return;
+  
   clearArrays();
+  
 }
 
 //_________________
@@ -883,6 +888,8 @@ Int_t StPicoDstMaker::MakeWrite() {
 
   mBField = muEvent->magneticField();
 
+  
+
 #if !defined (__TFG__VERSION__)
   // Get Emc collection
   mEmcCollection = mMuDst->emcCollection();
@@ -906,13 +913,17 @@ Int_t StPicoDstMaker::MakeWrite() {
     fillBTowHits();
   }
 #endif /* !__TFG__VERSION__ */
+
   
 
   // Fill StPicoEvent members
   fillMcVertices();
   fillMcTracks();
+
   fillTracks();
+  
   fillEvent();
+  
   fillEmcTrigger();
   fillMtdTrigger();
   fillBTofHits();
@@ -920,9 +931,11 @@ Int_t StPicoDstMaker::MakeWrite() {
   fillEpdHits();
   fillBbcHits();
   fillETofHits();
+  
   fillFcsHits();
   fillFcsClusters();
   fillFwdTracks();
+  
 
   // Could be a good idea to move this call to Init() or InitRun()
   StFmsDbMaker* fmsDbMaker = static_cast<StFmsDbMaker*>(GetMaker("fmsDb"));
@@ -932,16 +945,19 @@ Int_t StPicoDstMaker::MakeWrite() {
   }
 
   mFmsFiller.fill(*mMuDst);
+  
 
   if (Debug()) mPicoDst->printTracks();
-  
+
   mTTree->Fill();
+  
   if ( isFromDaq ) {
 //    delete mEmcCollection;
     mEmcCollection = nullptr;
   }
 
   mMuDst->setVertexIndex(originalVertexId);
+  
 
   return kStOK;
 }
@@ -2629,11 +2645,12 @@ void StPicoDstMaker::fillFwdTracks() {
     }
   } else {
     LOG_DEBUG << "Cannot get Fwd Tracks from StEvent" << endm;
+    return;
   }
 
   // Fill FwdVertex also
   // get primary vertex from StEvent
-  LOG_DEBUG << "There are " << evt->numberOfPrimaryVertices() << " primary vertices from StEvent" << endm; 
+  LOG_DEBUG << "There are " << evt->numberOfPrimaryVertices() << " primary vertices from StEvent" << endm;
   for ( size_t i = 0; i < evt->numberOfPrimaryVertices(); i++ ){
     StPrimaryVertex * evVertex = evt->primaryVertex(i);
     if (!evVertex || !evVertex->isFwdVtx()) continue; // only save valid FwdVertex
@@ -2646,6 +2663,21 @@ void StPicoDstMaker::fillFwdTracks() {
     int counter = mPicoArrays[StPicoArrays::FwdVertex]->GetEntries();
     new((*(mPicoArrays[StPicoArrays::FwdVertex]))[counter]) StPicoFwdVertex(picoFwdVertex);
   } // for each primary vertex
+
+  // Fill BLC vertex into StPicoEvent (one per event, stored as scalar fields)
+  StPicoEvent *picoEvent = (StPicoEvent*)mPicoArrays[StPicoArrays::Event]->At(0);
+  if ( picoEvent ) {
+    for ( size_t i = 0; i < evt->numberOfPrimaryVertices(); i++ ){
+      StPrimaryVertex *evVertex = evt->primaryVertex(i);
+      if (!evVertex || !evVertex->isBLCVertex()) continue;
+      picoEvent->setBLCVertexPosition( evVertex->position().x(), evVertex->position().y(), evVertex->position().z() );
+      double blcCov[6]; evVertex->covarianceMatrix(blcCov);
+      picoEvent->setBLCVertexSigmaZ( (Float_t)sqrt(blcCov[5]) );  // cov[5] = sigZ^2
+      picoEvent->setBLCVertexNTracks( (UShort_t)evVertex->numTracksUsedInFinder() );
+      LOG_DEBUG << "Added BLC vertex to StPicoEvent z=" << evVertex->position().z() << endm;
+      break; // only one BLC vertex per event
+    }
+  }
 
 } //fillFwdTracks
 

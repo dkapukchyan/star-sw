@@ -17,9 +17,16 @@ public:
     }
 
     void fill( UShort_t uuid, Short_t dbcid ){
-        dbcidHist[ uuid ][ dbcid ]++;
-        if (  dbcidHist[ uuid ].size() > MIN_BCID_SAMPLES ){
-            auto x = std::max_element(dbcidHist[ uuid ].begin(), dbcidHist[ uuid ].end(),
+        auto& hist = dbcidHist[ uuid ];
+        if ( hist.size() > MIN_BCID_SAMPLES ) {
+            // Map is full: only update existing keys to prevent unbounded growth
+            auto it = hist.find( dbcid );
+            if ( it != hist.end() ) it->second++;
+        } else {
+            hist[ dbcid ]++;
+        }
+        if ( hist.size() > MIN_BCID_SAMPLES ){
+            auto x = std::max_element( hist.begin(), hist.end(),
                 [](const pair<Short_t, Int_t>& p1, const pair<Short_t, Int_t>& p2) {
                     return p1.second < p2.second; });
             dbcidAnchor[ uuid ] = x->first;
@@ -27,7 +34,14 @@ public:
     }
 
     Short_t time( UShort_t uuid, Short_t dbcid ){
-        return dbcid - dbcidAnchor[ uuid ]; // TODO: handle wrap around?
+        // dbcid is a 12-bit (4096) circular counter -- a channel whose true
+        // anchor sits near the 0/4095 edge would otherwise get hits on the
+        // far side of the wrap reported as a difference near +-4096 instead
+        // of their true small offset. Wrap to the shortest signed distance.
+        Short_t diff = dbcid - dbcidAnchor[ uuid ];
+        if ( diff > 2048 ) diff -= 4096;
+        if ( diff < -2048 ) diff += 4096;
+        return diff;
     }
 
     Short_t anchor( UShort_t uuid ) {
@@ -40,7 +54,7 @@ public:
     size_t samples( UShort_t uuid ) {
         if (  dbcidHist.count(uuid) > 0 ){
             size_t n = 0;
-            for ( auto kv : dbcidHist[uuid]  ){
+            for ( const auto& kv : dbcidHist[uuid]  ){
                 n += kv.second;
             }
             return n;
@@ -48,7 +62,7 @@ public:
         return 0;
     }
 
-     map<Short_t, Int_t> histFor( UShort_t uuid ) {
+     const map<Short_t, Int_t>& histFor( UShort_t uuid ) {
         return dbcidHist[ uuid ];
      }
 

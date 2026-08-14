@@ -56,6 +56,7 @@ class TrackFitter {
                 track.reset();
             }
         }
+        mFitTracks.clear();
     }
 
   public:
@@ -198,8 +199,47 @@ class TrackFitter {
             }
         }
 
+        // Fix (Issue #24): warm-start KalmanFitter, a simple forward/backward
+        // Kalman with a small blowUpFactor. Used to refine an already-converged
+        // track with tight FST r+phi sigma (pitch/sqrt12) without the instability
+        // caused by blowing up the covariance 1e9x each iteration. Deliberately
+        // outside the kVerbose block above -- it must always be initialized, not
+        // only when verbose logging is on.
+        mWarmFitter = std::unique_ptr<genfit::KalmanFitter>(
+            new genfit::KalmanFitter(20, 1e-3, 1e3, true /*sqrt formalism*/)
+        );
+        mWarmFitter->setBlowUpFactor( 1e6 ); // large enough to reset, small enough vs RefTrack 1e9
+        mWarmFitter->setMaxFailedHits(-1);
 
     } // setupGenfitKalmanFitter
+
+    /**
+     * @brief Check whether a covariance matrix is positive definite (Sylvester's criterion).
+     *        Returns false for any NaN/Inf entries or non-positive leading principal minors.
+     *        Call this before creating GenFit measurements to avoid matrix inversion failures
+     *        that would otherwise cause a fatal crash inside processTrack().
+     */
+    static bool isCovMatPositiveDefinite(const TMatrixDSym &cov) {
+        const int n = cov.GetNrows();
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (!std::isfinite(cov(i, j))) return false;
+            }
+        }
+        // Check leading principal minors via Sylvester's criterion
+        if (n >= 1 && cov(0, 0) <= 0) return false;
+        if (n >= 2) {
+            double det2 = cov(0,0)*cov(1,1) - cov(0,1)*cov(0,1);
+            if (det2 <= 0) return false;
+        }
+        if (n >= 3) {
+            double det3 = cov(0,0)*(cov(1,1)*cov(2,2) - cov(1,2)*cov(1,2))
+                        - cov(0,1)*(cov(0,1)*cov(2,2) - cov(1,2)*cov(0,2))
+                        + cov(0,2)*(cov(0,1)*cov(1,2) - cov(1,1)*cov(0,2));
+            if (det3 <= 0) return false;
+        }
+        return true;
+    }
 
     /**
      * @brief Convert the 3x3 covmat to 2x2 by dropping z
@@ -212,6 +252,47 @@ class TrackFitter {
         cm(0, 0) = static_cast<FwdHit*>(h)->_covmat(0, 0);
         cm(1, 1) = static_cast<FwdHit*>(h)->_covmat(1, 1);
         cm(0, 1) = static_cast<FwdHit*>(h)->_covmat(0, 1);
+        return cm;
+    }
+
+    /**
+     * @brief Rotate the 3x3 global covmat into the plane's local (u,v) frame -> 2x2
+     *
+     * For a tilted plane the measurement covariance must be expressed in the
+     * same local basis that is used for the hit coordinates, otherwise the
+     * errors are inconsistent with the residuals GenFit computes.
+     *
+     * C_local = R * C_global * R^T   where R = [u^T; v^T] (2x3)
+     *
+     * @param h     : hit with 3x3 global covariance matrix
+     * @param plane : genfit DetPlane whose U/V axes define the local frame
+     * @return TMatrixDSym : 2x2 covariance in local (u,v) frame
+     */
+    TMatrixDSym CovMatPlaneLocal(KiTrack::IHit *h, genfit::SharedPlanePtr plane) {
+        auto fh = static_cast<FwdHit*>(h);
+        TVector3 u = plane->getU();
+        TVector3 v = plane->getV();
+
+        // 2x3 rotation matrix  R = [ u^T ]
+        //                           [ v^T ]
+        TMatrixD R(2, 3);
+        R(0, 0) = u.X();  R(0, 1) = u.Y();  R(0, 2) = u.Z();
+        R(1, 0) = v.X();  R(1, 1) = v.Y();  R(1, 2) = v.Z();
+
+        // Copy 3x3 global covariance
+        TMatrixD C(3, 3);
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                C(i, j) = fh->_covmat(i, j);
+
+        // C_local = R * C * R^T
+        TMatrixD Rt(TMatrixD::kTransposed, R);
+        TMatrixD Cl = R * C * Rt;
+
+        TMatrixDSym cm(2);
+        cm(0, 0) = Cl(0, 0);
+        cm(1, 1) = Cl(1, 1);
+        cm(0, 1) = Cl(0, 1);
         return cm;
     }
 
@@ -351,9 +432,7 @@ class TrackFitter {
         StMemStat::PrintMem("TrackFitter::stressTest END (out of scope)");
         double memEndOutside = StMemStat::Used();
 
-#ifdef __GLIBC__
         malloc_trim(0);
-#endif
 
         StMemStat::PrintMem("TrackFitter::stressTest END (clear HEAP)");
         double memEndFinal= StMemStat::Used();
@@ -374,27 +453,101 @@ class TrackFitter {
     }
 
     genfit::TrackPoint* createTrackPointFromPlanarMeasurement(std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId){
-        if (fh == nullptr) {
-            LOG_ERROR << "FwdHit pointer is null, cannot create planar measurement" << endm;
+        assert( fh != nullptr && "FwdHit pointer is null, cannot create planar measurement" );
+
+        genfit::SharedPlanePtr plane = getPlaneFor( fh );
+        if (!plane) {
+            LOG_ERROR << "No plane for hit, cannot create planar measurement" << endm;
             return nullptr;
         }
+
+        if (kVerbose >= 1) {
+            LOG_INFO << "Plane for hit (detid=" << fh->_detid << ", planeIdx=" << fh->_genfit_plane_index << "):"
+                 << " O=(" << plane->getO().X() << "," << plane->getO().Y() << "," << plane->getO().Z() << ")"
+                 << " U=(" << plane->getU().X() << "," << plane->getU().Y() << "," << plane->getU().Z() << ")"
+                 << " V=(" << plane->getV().X() << "," << plane->getV().Y() << "," << plane->getV().Z() << ")"
+                 << " FwdHit=(" << fh->getX() << "," << fh->getY() << "," << fh->getZ() << ")"
+                 << endm;
+        }
+
+        // Compute the hit position in the plane's local (u,v) Cartesian frame.
+        // FST _localPosition stores strip-native polar coordinates:
+        //   r        = radial strip center
+        //   stripPhi = meanPhiStrip * pitch
+        // Convert those directly to the FTUS sensor-local Cartesian frame.  In the
+        // GenFit DetPlane from FwdGeomUtils, U is radial at the wedge center and V is
+        // the counterclockwise phi-like direction.  The measurement coordinates are
+        // therefore independent of the plane's current global placement:
+        //   hitOnPlane[0] = r*cos(dphi) - centerU
+        //   hitOnPlane[1] = r*sin(dphi) - centerV
+        // where dphi is the hit angle relative to the wedge-center radial axis.
+        // For FTT, the stored global position is projected directly onto the plane.
         TVectorD hitOnPlane(2);
-        hitOnPlane[0] = fh->getX();
-        hitOnPlane[1] = fh->getY();
+        if (fh->isFst() && fh->_localPosition[0] >= 0.f) {
+            const int globalSensor = static_cast<int>(fh->_genfit_plane_index);
+            const int disk = globalSensor / (kFstNumWedgePerDisk * kFstNumSensorsPerWedge);
+            const int electronicWedge = (globalSensor / kFstNumSensorsPerWedge) % kFstNumWedgePerDisk;
+            const int sensor = globalSensor % kFstNumSensorsPerWedge;
+
+            const double r = fh->_localPosition[0];
+            const double stripPhi = fh->_localPosition[1];
+            const double stripSign = kFstzFilp[disk] * kFstzDirct[electronicWedge];
+            const double halfWedgePhi = 0.5 * kFstNumPhiSegPerWedge * kFstStripPitchPhi;
+            const double edgeToCenterPhi = halfWedgePhi - 0.5 * kFstStripPitchPhi;
+
+            double dphi = stripSign * (stripPhi - edgeToCenterPhi);
+            if (sensor == 1) {
+                dphi = stripSign * (edgeToCenterPhi - stripPhi - 0.5 * kFstStripGapPhi);
+            } else if (sensor == 2) {
+                dphi = stripSign * (edgeToCenterPhi - stripPhi + 0.5 * kFstStripGapPhi);
+            }
+
+            const double sensorRSpan = 0.5 * kFstNumRStripsPerWedge * kFstStripPitchR;
+            const double centerR = (sensor == 0)
+                ? kFstrStart[0] + 0.5 * sensorRSpan
+                : kFstrStart[kFstNumRStripsPerWedge / 2] + 0.5 * sensorRSpan;
+            const double outerCenterDphi = 0.5 * (halfWedgePhi + kFstStripGapPhi);
+            double centerDphi = 0.0;
+            if (sensor == 1) {
+                centerDphi = stripSign * outerCenterDphi;
+            } else if (sensor == 2) {
+                centerDphi = -stripSign * outerCenterDphi;
+            }
+
+            hitOnPlane[0] = r * TMath::Cos(dphi) - centerR * TMath::Cos(centerDphi);
+            hitOnPlane[1] = r * TMath::Sin(dphi) - centerR * TMath::Sin(centerDphi);
+        } else {
+            TVector3 diff = TVector3(fh->getX(), fh->getY(), fh->getZ()) - plane->getO();
+            hitOnPlane[0] = diff.Dot(plane->getU());
+            hitOnPlane[1] = diff.Dot(plane->getV());
+        }
+
+        // Debug: compare the FwdHit global position (from ideal geometry at hit loading)
+        // with the global position GenFit derives from the local measurement on the
+        // realistic GEANT plane.  Any difference reflects sensor misalignment.
+        TVector3 measGlobal = plane->toLab(TVector2(hitOnPlane[0], hitOnPlane[1]));
+        if (kVerbose >= 1) {
+            LOG_INFO << "PlanarMeasurement pos check (detid=" << fh->_detid << "):"
+                  << " FwdHit=(" << fh->getX() << "," << fh->getY() << "," << fh->getZ() << ")"
+                  << " GenFit=(" << measGlobal.X() << "," << measGlobal.Y() << "," << measGlobal.Z() << ")"
+                  << " deltaPhi=" << (TMath::ATan2(fh->getY(), fh->getX()) * TMath::RadToDeg() - TMath::ATan2(fh->getY(), fh->getX()) * TMath::RadToDeg())
+                  << endm;
+        }
+
         auto tp = new genfit::TrackPoint();
-        genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitOnPlane, CovMatPlane(fh), fh->_detid, ++hitId, tp);
-        genfit::SharedPlanePtr plane = getPlaneFor( fh );
+        genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitOnPlane, CovMatPlaneLocal(fh, plane), fh->_detid, ++hitId, tp);
         int planeId = fh->_genfit_plane_index;
-        
-        // I do this to make the planeId unique between FST and FTT
+        int sortingParameter = planeId + 1; // reserve sorting=0 for PV
+        // Offset FTT plane ids to keep them unique from FST plane ids
         if (fh->isFtt()) {
             planeId = kFstNumSensors + fh->_genfit_plane_index;
+            sortingParameter = kFstNumSensors + 1 + fh->_genfit_plane_index;
         }          
         measurement->setPlane(plane, planeId);
 
         tp->addRawMeasurement(measurement);
         tp->setTrack(fitTrack.get());
-        tp->setSortingParameter(planeId); // or use the hitId?
+        tp->setSortingParameter(sortingParameter); // or use the hitId?
         if (fitTrack)
             fitTrack->insertPoint( tp );
         return tp;
@@ -402,8 +555,11 @@ class TrackFitter {
 
 
     genfit::TrackPoint* createTrackSpacepointFromMeasurement( std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId ) {
-        if (fh == nullptr) {
-            LOG_ERROR << "FwdHit pointer is null, cannot create space point" << endm;
+        assert( fh != nullptr && "FwdHit pointer is null, cannot create space point" );
+
+        if (!isCovMatPositiveDefinite(fh->_covmat)) {
+            LOG_WARN << "createTrackSpacepointFromMeasurement: skipping hit with non-positive-definite covariance matrix "
+                     << "(detid=" << fh->_detid << " x=" << fh->getX() << " y=" << fh->getY() << " z=" << fh->getZ() << ")" << endm;
             return nullptr;
         }
 
@@ -486,16 +642,16 @@ class TrackFitter {
      * @param seedPos : seed position
      * @param Vertex : primary vertex
      */
-    bool setupTrack(Seed_t trackSeed, TVector3 *externalSeedMom = nullptr ) {
-        
+    bool setupTrack(Seed_t trackSeed, TVector3 *externalSeedMom = nullptr, int externalCharge = 0 ) {
+
         mCurrentTrackSeed = trackSeed;
         // setup the track fit seed parameters
         GenericFitSeeder gfs;
         mCurrentSeedCharge = 0; // explicitly reset because a zero charge indicates a failed seed
-        gfs.makeSeed(   trackSeed, 
-                        mCurrentSeedPosition, 
-                        mCurrentSeedMomentum, 
-                        mCurrentSeedCharge 
+        gfs.makeSeed(   trackSeed,
+                        mCurrentSeedPosition,
+                        mCurrentSeedMomentum,
+                        mCurrentSeedCharge
                     );
         if ( mCurrentSeedMomentum.Perp() > 1000 ) {
             LOG_WARN << "Seed momentum is too high, setting to (0,0,1)" << endm;
@@ -505,11 +661,18 @@ class TrackFitter {
         if ( externalSeedMom != nullptr ) {
             LOG_INFO << "Note: Using externally provided seed momentum" << endm;
             mCurrentSeedMomentum = *externalSeedMom;
-        } else {
-            // mCurrentSeedMomentum.SetXYZ(0, 0, 10);
         }
 
-        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(px=%f, py=%f, pz=%f)", mCurrentSeedPosition.X(), mCurrentSeedPosition.Y(), mCurrentSeedPosition.Z() )  << endm; 
+        // Fix (Issue #19): when the global fit has a reliable charge, propagate it
+        // directly instead of re-deriving from GenericFitSeeder::averageCurvature.
+        // For near-straight forward tracks (curvature ~= 0) the signed curvature is
+        // numerically unstable and flips the charge sign ~20% of the time.
+        if ( externalCharge != 0 ) {
+            LOG_INFO << "Note: Using externally provided seed charge = " << externalCharge << endm;
+            mCurrentSeedCharge = externalCharge;
+        }
+
+        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(px=%f, py=%f, pz=%f)", mCurrentSeedPosition.X(), mCurrentSeedPosition.Y(), mCurrentSeedPosition.Z() )  << endm;
         LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", mCurrentSeedMomentum.X(), mCurrentSeedMomentum.Y(), mCurrentSeedMomentum.Z() ) << endm;
         if ( mCurrentSeedMomentum.Perp() > 1e-5 && (mCurrentSeedMomentum.Perp() / mCurrentSeedMomentum.Pz()) > 1e-5 ) {
             LOG_DEBUG << "\t" << TString::Format( "(pT=%f, eta=%f, phi=%f)", mCurrentSeedMomentum.Perp(), mCurrentSeedMomentum.Eta(), mCurrentSeedMomentum.Phi() ) << endm;
@@ -562,6 +725,10 @@ class TrackFitter {
             if ( kUseSpacePoints || fh->isPV() ) {
                 LOG_DEBUG << "Treating " << hitType << " hit as a spacepoint" << endm;
                 auto tp = createTrackSpacepointFromMeasurement( mFitTrack, fh, hitId );
+                if (tp == nullptr) {
+                    LOG_WARN << "Skipping hit with invalid covariance (detid=" << fh->_detid << ")" << endm;
+                    continue;
+                }
                 setSortingParameter(fh, tp, idxFtt, idxFst);
                 // add the spacepoint to the track
                 mFitTrack->insertPoint( tp );
@@ -629,7 +796,9 @@ class TrackFitter {
 
 
         } catch (genfit::Exception &e) {
-            LOG_ERROR << "Exception on fit update" << e.what() << endm;
+            LOG_ERROR << "Exception on fit update (genfit): " << e.what() << endm;
+        } catch (std::exception &e) {
+            LOG_ERROR << "Exception on fit update (std): " << e.what() << endm;
         }
         if ( kVerbose > 0 ) {
             LOG_INFO << "Track fit update complete!" << endm;
@@ -693,7 +862,7 @@ class TrackFitter {
      * @param seedMomentum : seed momentum (can be from MC)
      * @return void : the results can be accessed via the getTrack() method
      */
-    long long fitTrack(Seed_t trackSeed, TVector3 *seedMomentum = 0) {
+    long long fitTrack(Seed_t trackSeed, TVector3 *seedMomentum = 0, int seedCharge = 0) {
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         LOG_DEBUG << "Fitting track with " << trackSeed.size() << " FWD Measurements" << endm;
 
@@ -708,7 +877,7 @@ class TrackFitter {
         /******************************************************************************************************************
 		 * Setup the track fit seed parameters and objects
 		 ******************************************************************************************************************/
-        bool valid = setupTrack(trackSeed, seedMomentum);
+        bool valid = setupTrack(trackSeed, seedMomentum, seedCharge);
         if ( !valid ){
             LOG_ERROR << "Failed to setup track for fit" << endm;
             return -1;
@@ -723,6 +892,89 @@ class TrackFitter {
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         return duration;
     } // fitTrack
+
+    /**
+     * @brief Fix (Issue #24): warm-start refinement of mFitTrack using tight FST
+     *  sigma (pitch/sqrt12 for both r and phi).
+     *  Steps:
+     *   1. Re-seed mFitTrack with current fitted momentum (warm start).
+     *   2. Tighten FST U (radial) and V (phi) covariance in-place by factor 12.
+     *   3. Run mWarmFitter (KalmanFitter, blowUpFactor=1e6) on mFitTrack.
+     *  mFitTrack is left in the tight-sigma fitted state on success; caller calls
+     *  gtr.refreshFromTrack() to propagate updated momentum, charge, and covariance.
+     *  No restore: every subsequent fitTrack() creates a new shared_ptr<genfit::Track>.
+     *  @return true if warm fit converged
+     */
+    bool warmFitFstTightSigma( Seed_t &seed ) {
+        if ( !mFitTrack || !mWarmFitter ) return false;
+
+        // Step 1: re-seed from fitted state
+        try {
+            auto cr  = mFitTrack->getCardinalRep();
+            auto msp = mFitTrack->getFittedState(0, cr);
+            if ( msp.getMom().Mag() < 0.05 ) return false;
+            // set seed state = fitted pos+mom so warm fitter starts from good estimate
+            mFitTrack->setStateSeed( msp.getPos(), msp.getMom() );
+            TMatrixDSym warmCov(6); warmCov.Zero();
+            double p2 = msp.getMom().Mag2();
+            for(int i=0;i<3;i++) warmCov(i,i) = 0.01;       // 1mm pos uncertainty
+            for(int i=3;i<6;i++) warmCov(i,i) = 0.01 * p2;  // 10% mom uncertainty
+            mFitTrack->setCovSeed(warmCov);
+        } catch (...) { return false; }
+
+        // Step 2: tighten FST U (radial) and V (phi) covariance in-place.
+        // The 2x2 local plane covariance is stored as rawHitCov_ in each PlanarMeasurement.
+        // U = radial direction, V = azimuthal direction.
+        // Both start from full pitch in the initial fit (to keep the Kalman search window wide).
+        // Here, post-convergence, hits are already associated -- safe to tighten both to pitch/sqrt12.
+        // We divide all 4 elements by scale = 12 = (pitch_full/pitch_sqrt12)^2.
+        const float scale = 12.f;  // (full_pitch / (pitch/sqrt12))^2
+        std::vector<std::pair<genfit::AbsMeasurement*,TMatrixDSym>> savedMeas;
+        for (int ip = 0; ip < (int)mFitTrack->getNumPoints(); ip++) {
+            auto tp = mFitTrack->getPointWithMeasurement(ip);
+            if (!tp) continue;
+            for (int im = 0; im < (int)tp->getNumRawMeasurements(); im++) {
+                auto meas = tp->getRawMeasurement(im);
+                if (!meas) continue;
+                // Identify FST hits by their detId (kFstId) stored in AbsMeasurement.
+                // For PlanarMeasurements: detId = fh->_detid = kFstId or kFttId.
+                // For spacepoints (BLC): detId may be kTpcId (beamline/PV) or kFcsPresId.
+                // Only tighten phi on FST PlanarMeasurements.
+                if ( meas->getDetId() != kFstId ) continue; // skip non-FST (FTT, beamline, EPD)
+                TMatrixDSym origCov = meas->getRawHitCov(); // save
+                savedMeas.push_back({meas, origCov});
+                // Tighten both C_UU (radial) and C_VV (phi) -- and cross-terms -- by scale=12.
+                // This brings full-pitch sigma down to pitch/sqrt12 for both directions.
+                TMatrixDSym tightCov = origCov;
+                tightCov(0,0) /= scale;
+                tightCov(1,1) /= scale;
+                tightCov(0,1) /= scale;
+                tightCov(1,0) /= scale;
+                meas->setRawHitCov(tightCov);
+            }
+        }
+
+        // Step 3: run KalmanFitter on mFitTrack IN-PLACE with tight sigma.
+        // mFitTrack is left in the tight-sigma fitted state -- the caller (refitTrack)
+        // calls gtr.refreshFromTrack() to pick up the updated momentum, charge,
+        // covariance, and convergence flags. No restore is needed because every
+        // subsequent fitTrack() call creates a brand-new shared_ptr<genfit::Track>.
+        bool converged = false;
+        try {
+            mWarmFitter->processTrack(mFitTrack.get());
+            mFitTrack->checkConsistency();
+            mFitTrack->determineCardinalRep();
+            auto status = mFitTrack->getFitStatus();
+            converged = status && status->isFitConverged();
+        } catch (genfit::Exception &e) {
+            LOG_WARN << "warmFitFstTightSigma exception: " << e.what() << endm;
+            // Restore measurement covariances so mFitTrack is at least self-consistent
+            for (auto &sv : savedMeas) sv.first->setRawHitCov(sv.second);
+        } catch (...) {
+            for (auto &sv : savedMeas) sv.first->setRawHitCov(sv.second);
+        }
+        return converged;
+    }
 
     genfit::SharedPlanePtr getPlaneFor( FwdHit * fh ){
         
@@ -761,6 +1013,9 @@ class TrackFitter {
 
     // Main GenFit fitter instance
     std::unique_ptr<genfit::AbsKalmanFitter> mFitter = nullptr;
+    // Warm-start second-pass fitter (Issue #24) -- see setupGenfitKalmanFitter()
+    // and warmFitFstTightSigma().
+    std::unique_ptr<genfit::KalmanFitter> mWarmFitter = nullptr;
 
     // PDG codes for the default plc type for fits
     static const int mPdgPiPlus = 211;

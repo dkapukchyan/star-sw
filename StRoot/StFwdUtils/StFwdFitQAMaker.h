@@ -1,0 +1,130 @@
+#ifndef ST_FWD_FIT_QA_MAKER_H
+#define ST_FWD_FIT_QA_MAKER_H
+
+#include <map>
+
+#include "StChain/StMaker.h"
+#include "TVector3.h"
+#include "TString.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TProfile.h"
+#include "TString.h"
+
+
+class g2t_track_st;
+class McFwdTrack {
+  public:
+  TVector3 p;
+  int pid = -1;
+  int id = -1;
+  int q = 0;
+  int numFST = 0;
+  int numFTT = 0;
+  g2t_track_st *g2track = nullptr;
+};
+
+class StFwdTrack;
+
+// this provides lexical ordering for TString map keys
+struct TStringCaseInsensitiveLess {
+  bool operator()(const TString& a, const TString& b) const {
+      return a.CompareTo(b, TString::kIgnoreCase) < 0;
+  }
+};
+
+class StFwdFitQAMaker : public StMaker
+{
+  public:
+    StFwdFitQAMaker();
+    ~StFwdFitQAMaker(){/* nada */};
+
+    int Init();
+    int Finish();
+    int Make();
+    void Clear(const Option_t *opts = "");
+    void ProcessData();
+    void ProcessFwdTracks();
+    void ProcessFwdMuTracks();
+    void setOutputFilename(TString f) {mOutputFilename = f;}
+
+    // StEvent analyzed by default
+    // call this to analyze the MuDst instead
+    void setMuDstInput() { mAnalyzeMuDst = true; }
+    void FillTrackSeedHistograms( StFwdTrack *fwdTrack );
+    void FillEventStats();
+
+  protected:
+
+    /**
+     * @brief Map of <name (TString), histogram>
+     * 
+     */
+    std::map<TString, TH1*, TStringCaseInsensitiveLess> mHists;
+    std::map<TString, TString> mHistsDirectories;
+    
+
+    /**
+     * @brief Add a histogram to the map
+     * 
+     * Convenience method to avoid duplicate typing name / possible mismatch
+     * @param h1 TH1* histogram object
+     * @return TH1* return the same object for ease of use
+     */
+    TH1 * addHist( TH1 * h1, TString dir = "" ){
+      mHists[h1->GetName()] = h1;
+      mHistsDirectories[h1->GetName()] = dir;
+      h1->SetDirectory(0); // don't write to the file yet
+      return h1;
+    }
+
+    /**
+     * @brief Get the Hist object from the map
+     *  - Additional check and safety for missing histograms
+     * @param n Histogram name
+     * @return TH1* histogram if found, otherwise a 'nil' histogram with one bin
+     */
+    TH1* getHist( TString n ){
+      if (mHists.count(n))
+        return mHists[n];
+      LOG_ERROR << "Attempting to access non-existing histogram: " << n.Data() << endm;
+      return new TH1F( "NULL", "NULL", 1, 0, 1 ); // returning nullptr can lead to seg fault, this fails softly
+    }
+
+    TH2* getHist2( TString n ){
+      return (TH2*) getHist(n);
+    }
+
+    void makeHistogramSet( TString baseName, int nBinsX, double xMin, double xMax,
+                          TString title = "", TString dir = "" ){
+      
+      addHist( new TH1F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax ), dir );
+    }
+
+    void makeHistogramSet( TString baseName, int nBinsX, double xMin, double xMax,
+      int nBinsY, double yMin, double yMax,
+      TString title = "", TString dir = "" ){
+      addHist( new TH2F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+    }
+
+
+    /**
+     * @brief Control whether the analysis uses StEvent (default) or MuDst as input
+     * 
+     */
+    bool mAnalyzeMuDst = false;
+    vector<McFwdTrack> mcTracks;
+    TString mOutputFilename;
+
+    std::vector<TVector3> mFcsPreHitsLastEvent;
+
+  ClassDef(StFwdFitQAMaker, 0);
+};
+
+#endif

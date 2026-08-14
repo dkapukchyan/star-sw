@@ -1,68 +1,104 @@
-//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-2000}')'; exit $?
-// that is a valid shebang to run script as executable, but with only one arg
+//usr/bin/env root4star -l -b -q $0'("'${1:-/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw/Jet_Data_NoFilter_500/pythia_jet_vz0_run100.fzd}'",'${2:-100}')'; exit $?
+// that is a valid shebang to run script as executable, but with only two arg
 
-
-// Run very fast fwd tracking
 // generate some input data using genfzd
 
 TFile *output = 0;
 
-void sim(       char *inFile =  "sim.fzd",
-                int n = 100, // nEvents to run
-                bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
-                bool enableTrackRefit = true, // Enable track refit (default off)
-                bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
-                bool useZeroB = false
-            ) {
+bool RunFttChain = false; // obsolete - we use GEANT directly
+bool RunFstChain = false; // obsolete - we use GEANT directly
+bool RunFcsChain = true;
+bool RunFwdChain = true;
+bool RunMuDstMaker = true;
+bool RunPicoWrite = true;
+
+// Real StFttDb reconstruction chain (StFttDbMaker -> StFttSimHitMaker ->
+// StFttClusterMaker -> StFttClusterPointMaker, mUseGeantData=false) in
+// place of reading GEANT truth directly (MakeGeantPoints, mUseGeantData=
+// true) -- exercises the same geometry/clustering code real data uses.
+// Set false for the old/original GEANT-truth-direct behavior.
+bool UseFttSimHitMaker = true;
+
+bool UseCachedGeom = true;
+bool UseConstBz = false;
+bool UseZeroB = false;
+
+TString _fttChain = "fttSim";
+TString _fcsChain = "fcsSim fcsWFF fcsCluster";
+TString _fstChain = "fstFastSim";
+TString _fwdTrackChain = "fwdTrack";
+TString _geom = "y2024 agml usexgeom";
+
+void DisableTrackFitting() {
+    // Disable track fitting
+    StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
+    assert( fwdTrack );
+    fwdTrack->setTrackFittingOff();
+}
+
+void DoOnlyGlobalTrackFitting() {
+    // Disable track fitting
+    StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
+    if ( fwdTrack ){
+        fwdTrack->setConfigKeyValue("TrackFitter:refit", false);
+        fwdTrack->setConfigKeyValue("TrackFitter:doGlobalTrackFitting", true);
+        fwdTrack->setConfigKeyValue("TrackFitter:doBeamlineTrackFitting", false);
+        fwdTrack->setConfigKeyValue("TrackFitter:doPrimaryTrackFitting", false);
+        fwdTrack->setConfigKeyValue("TrackFitter:doSecondaryTrackFitting", false);
+        // skip finding fwd vertices
+        fwdTrack->setConfigKeyValue("TrackFitter:findFwdVertices", false);
+    }
+}
+
+void sim(   char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw/Jet_Data_NoFilter_500/pythia_jet_vz0_run100.fzd",
+            int n = 1000 // nEvents to run
+        ) {
     // report all of the parameters passed in
     cout << "inFile = " << inFile << endl;
-    cout << "n = " << n << endl;
-    cout << "useFstForSeedFinding = " << useFstForSeedFinding << endl;
-    cout << "enableTrackRefit = " << enableTrackRefit << endl;
-    cout << "realisticSim = " << realisticSim << endl;
-    cout << "useZeroB = " << useZeroB << endl;
-    const char *geom = "y2024 agml usexgeom";
-    TString _geom = geom;
-
-    // Switches for common options
-    bool SiIneff = false;
-    bool useConstBz = false;
-    bool useFCS = true;
-
-    // use cached
-    _geom = "";
+    cout << "# of Events = " << n << endl;
 
     // to use the geom cache (skip agml build which is faster)
     // set the _geom string to "" and make sure the cache file ("fGeom.root") is present
-    // _geom = "";
+    if (UseCachedGeom)
+        _geom = "";
 
     // Setup the chain for reading an FZD
-    TString _chain;
-    if ( useFCS )
-        _chain = Form("fzin %s sdt20211016 fstFastSim fcsSim fcsWFF fcsCluster fwdTrack MakeEvent StEvent McEvent ReverseField bigbig evout cmudst tree", _geom.Data() );
-    else
-        _chain = Form("fzin %s sdt20211016 MakeEvent StEvent ReverseField bigbig fstFastSim fcsSim fwdTrack evout cmudst tree", _geom.Data());
+    TString _chain = "";
+
+    // Now turn off parts of the chain that we don't need
+    if (!RunFttChain)
+        _fttChain = "";
+    if (!RunFcsChain)
+        _fcsChain = "";
+    if (!RunFstChain)
+        _fstChain = "";
+    if (!RunFwdChain)
+        _fwdTrackChain = "";
+
+    if (RunFcsChain && RunFwdChain){
+        _fwdTrackChain = "fwdTrack fcsTrackMatch";
+    }
+
+    TString _timestamp = "sdt20211016";
+    _timestamp = "";
+    
+    // Form the complete chain
+    _chain = Form("fzin %s %s %s %s %s %s MakeEvent StEvent McEvent ReverseField bigbig evout cmudst tree", _geom.Data(), _timestamp.Data(), _fttChain.Data(), _fcsChain.Data(), _fstChain.Data(), _fwdTrackChain.Data()); 
+    // Note, I dont include the PicoWrite and PicoVtxless in chain because they load a bunch of things I dont want (and somehow cannot remove with -options)
+    printf("Chain: \n%s\n", _chain.Data());
+    
 
     gSystem->Load( "libStarRoot.so" );
-    gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
     gROOT->LoadMacro("bfc.C");
     bfc(-1, _chain, inFile);
 
-    if ( useConstBz )
+    // gSystem->Load("StEEmcDb.so");
+
+    if ( UseConstBz )
         StarMagField::setConstBz(true);
 
-    gSystem->Load( "libStFttSimMaker" );
-    gSystem->Load( "libStFcsTrackMatchMaker" );
-
-    gSystem->Load( "libMathMore.so" );
-    gSystem->Load( "libStarGeneratorUtil" );
-
-    StFttFastSimMaker * fttSim = new StFttFastSimMaker();
-    fttSim->SetDebug();
-    chain->AddAfter("fcsSim", fttSim);
-
     // FCS setup, if included
-    if (useFCS) {
+    if (RunFcsChain) {
 
         StFcsDbMaker* fcsdbmkr = (StFcsDbMaker*) chain->GetMaker("fcsDbMkr");
         cout << "fcsdbmkr="<<fcsdbmkr<<endl;
@@ -84,137 +120,164 @@ void sim(       char *inFile =  "sim.fzd",
         fcsclu->setDebug(1);
     }
 
-    // {
-        gSystem->Load("StFwdUtils.so");
-    //     StFwdJPsiMaker *fwdJPsi = new StFwdJPsiMaker();
-    //     fwdJPsi->SetDebug();
-    //     chain->AddMaker(fwdJPsi);
-    //     goto chain_loop;
-    // }
-
+    
 
     // Configure FST FastSim
-        TString qaoutname(gSystem->BaseName(inFile));
-        qaoutname.ReplaceAll(".fzd", ".FastSimu.QA.root");
+    if (RunFstChain){ // otherwise it is not loaded
         StFstFastSimMaker *fstFastSim = (StFstFastSimMaker*) chain->GetMaker( "fstFastSim" );;
+        if (fstFastSim) {
+            gSystem->Load("StarGeneratorBase");
+            printf("fstFastSim = %p\n", fstFastSim);
+            TString qaoutname(gSystem->BaseName(inFile));
+            qaoutname.ReplaceAll(".fzd", ".FastSimu.QA.root");
+            
+            // if (SiIneff)
+            //     fstFastSim->SetInEfficiency(0.1); // inefficiency of Si
 
-        if (SiIneff)
-            fstFastSim->SetInEfficiency(0.1); // inefficiency of Si
+            fstFastSim->SetQAFileName(qaoutname);
+        }
+    }
 
-        fstFastSim->SetQAFileName(qaoutname);
+    if ( UseFttSimHitMaker ) {
+        // Real chain: StFttDbMaker -> StFttSimHitMaker -> StFttClusterMaker ->
+        // StFttClusterPointMaker (mUseGeantData=false), same makers/order as
+        // fwd_afterburner_db.C's real-data chain, with StFttSimHitMaker in
+        // place of StFttRawHitMaker/StFttHitCalibMaker.
+        gSystem->Load( "libStFttDbMaker.so" );
+        gSystem->Load( "libStFttSimHitMaker.so" );
+        gSystem->Load( "libStFttClusterMaker.so" );
+        gSystem->Load( "libStFttClusterPointMaker.so" );
 
-        cout << "Adding StFstFastSimMaker to chain" << endl;
-        chain->AddAfter("fcsSim", fstFastSim);
+        StFttDbMaker * fttDbMk = new StFttDbMaker();
+        chain->AddMaker(fttDbMk);
 
+        StFttSimHitMaker * fttSimHit = new StFttSimHitMaker();
+        chain->AddMaker(fttSimHit);
 
+        StFttClusterMaker * fttClu = new StFttClusterMaker();
+        fttClu->SetTimeCut( 1 /*kTimeCutModeAcceptAll*/, -9999, 9999 ); // no real timing in MC
+        chain->AddMaker(fttClu);
+
+        StFttClusterPointMaker * fttClusterPointMaker = new StFttClusterPointMaker("fttClusterPointMaker");
+        fttClusterPointMaker->SetDebug(1);
+        // mUseGeantData left at its constructor default (false) -- take the
+        // real MakeLocalPoints/MakeGlobalPoints path through StFttDb.
+        chain->AddBefore("fwdTrack", fttClusterPointMaker);
+    } else {
+        // Old/original behavior: read GEANT truth directly in global
+        // coordinates (StFttClusterPointMaker::MakeGeantPoints()) -- never
+        // calls into StFttDb's real geometry transform. Kept for backward
+        // compatibility (UseFttSimHitMaker = false).
+        gSystem->Load( "StFttDbMaker" );
+        gSystem->Load( "libStFttSimMaker" );
+        gSystem->Load( "libStFttClusterPointMaker" );
+
+        StFttClusterPointMaker * fttClusterPointMaker = new StFttClusterPointMaker("fttClusterPointMaker");
+        fttClusterPointMaker->SetDebug(1);
+        fttClusterPointMaker->setUseGeantData( true );
+        chain->AddBefore("fwdTrack", fttClusterPointMaker);
+    }
+        
     // Configure the Forward Tracker
+    if (RunFwdChain) {
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
 
         if ( fwdTrack ){
-            fwdTrack->SetDebug(1);
-            // config file set here for ideal simulation
-            if (!realisticSim){
-                cout << "Configured for ideal simulation (MC finding + MC mom seed)" << endl;
-                fwdTrack->setConfigForIdealSim( );
-            } else {
-                cout << "Configured for realistic simulation" << endl;
-                fwdTrack->setConfigForRealisticSim( );
-                cout << "Configured for realistic simulation DONE" << endl;
-            }
-
             if ( _geom == "" ){
                 cout << "Using the Geometry cache: fGeom.root" << endl;
                 fwdTrack->setGeoCache( "fGeom.root" );
             }
+            gSystem->Load("StFwdUtils.so");
 
-            // choose
-                if (useFstForSeedFinding)
-                    fwdTrack->setSeedFindingWithFst();
-                else { // default for this true/false option
-                    fwdTrack->setSeedFindingWithFtt();
-                }
-            // other options
-                // fwdTrack->setSeedFindingWithFtt();
-                // fwdTrack->setSeedFindingWithFstFttSequential();
-                // fwdTrack->setSeedFindingWithFstFttSimultaneous();
-
-            fwdTrack->setTrackRefit( enableTrackRefit );
-            fwdTrack->setConstB( useConstBz );
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
-            fwdTrack->SetVisualize( false );
-            fwdTrack->SetDebug();
-            fwdTrack->setIncludePrimaryVertexInFit( false );
 
+            // Fitter
+            fwdTrack->setFitDebugLvl( 0 );
+            fwdTrack->setFitMinIterations( 10 );
+            fwdTrack->setFitMaxIterations( 20 );
+            
+            fwdTrack->setDeltaPval( 1e-1 );
+            fwdTrack->setRelChi2Change( 1e-6 );
+            
+            // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+            fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::IGNORE*/ );
+            fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+
+            // DisableTrackFitting();
+            // DoOnlyGlobalTrackFitting();
             // fwdTrack->setTrackFittingOff();
-            // fwdTrack->setUseMcSeedForFit(true);
-            // fwdTrack->setConfigKeyValue("")
-            if ( useZeroB ){
+            fwdTrack->setConfigKeyValue( "TrackFitter:refit", true );
+            
+            if ( UseZeroB ){
                 cout << "Setting B = 0" << endl;
                 fwdTrack->setZeroB( true );
             }
-            bool doFitQA = true;
-            if ( doFitQA ){
-                StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
-                fwdFitQA->SetDebug();
-                TString fitqaoutname(gSystem->BaseName(inFile));
-                fitqaoutname.ReplaceAll(".fzd", ".FwdFitQA.root");
-                fwdFitQA->setOutputFilename( fitqaoutname );
-                chain->AddAfter("fwdTrack", fwdFitQA);
+            if ( UseConstBz ){
+                cout << "Setting Bz = const everywhere" << endl;
+                fwdTrack->setConstBz( true );
             }
+
+            
             cout << "fwd tracker setup" << endl;
         }
+    }
+    
+    bool doFitQA = false;
+    if ( doFitQA ){
+        StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+        fwdFitQA->SetDebug();
+        TString fitqaoutname(gSystem->BaseName(inFile));
+        fitqaoutname.ReplaceAll(".fzd", ".FwdFitQA.root");
+        fwdFitQA->setOutputFilename( fitqaoutname );
+        chain->AddAfter("fwdTrack", fwdFitQA);
+    }
 
-        bool doFwdAna = true;
-        if (!useFCS && doFwdAna ){
-            StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-            fwdAna->SetDebug();
-            chain->AddAfter("fwdTrack", fwdAna);
-        }
+    bool doFwdAna = false;
+    if (!RunFcsChain && doFwdAna ){
+        StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+        fwdAna->SetDebug();
+        chain->AddAfter("fwdTrack", fwdAna);
+    }
 
 
     StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
-    if (useFCS) {
-        // FwdTrack and FcsCluster assciation
-        gSystem->Load("StFcsTrackMatchMaker");
-        StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
-        match->setMaxDistance(6,10);
-        match->setFileName("fcstrk.root");
-        match->SetDebug();
-        chain->AddMaker(match);
+    // if (RunFcsChain) {
+    //     // FwdTrack and FcsCluster assciation
+    //     gSystem->Load("StFcsTrackMatchMaker");
+    //     StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
+    //     match->setMaxDistance(6,10);
+    //     match->setFileName("fcstrk.root");
+    //     match->SetDebug();
+    //     chain->AddMaker(match);
 
-        if ( doFwdAna ){
-            StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-            fwdAna->SetDebug();
-            chain->AddAfter("FcsTrkMatch", fwdAna);
-        }
+    //     if ( doFwdAna ){
+    //         StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+    //         fwdAna->SetDebug();
+    //         chain->AddAfter("FcsTrkMatch", fwdAna);
+    //     }
 
-        // Produce MuDst output
-        if ( muDstMaker )
-            chain->AddAfter( "FcsTrkMatch", muDstMaker );
-    } else {
-        if ( muDstMaker )
-            chain->AddAfter( "fwdAna", muDstMaker );
-    }
-
-    if (muDstMaker){
-        StFwdQAMaker *fwdQA = new StFwdQAMaker();
-        fwdQA->SetDebug(2);
-        TString fwdqaname(gSystem->BaseName(inFile));
-        fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
-        fwdQA->setTreeFilename(fwdqaname);
-        chain->AddAfter("MuDst", fwdQA);
-    }
+    //     // Produce MuDst output
+    //     if ( muDstMaker )
+    //         chain->AddAfter( "FcsTrkMatch", muDstMaker );
+    // } else {
+    //     if ( muDstMaker && doFwdAna )
+    //         chain->AddAfter( "fwdAna", muDstMaker );
+    // }
 
     // The PicoDst
-    gSystem->Load("libStPicoEvent");
-    gSystem->Load("libStPicoDstMaker");
-    StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
-    cout << "picoMk = " << picoMk << endl;
-    picoMk->setVtxMode(StPicoDstMaker::Default);
+    if (RunPicoWrite) {
+        gSystem->Load("libStPicoEvent");
+        gSystem->Load("libStPicoDstMaker");
+        StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+        cout << "picoMk = " << picoMk << endl;
+        picoMk->setVtxMode(StPicoDstMaker::Vtxless);
+    }
 
-
+    StMemStat stmem;
+    stmem.PrintMem("MEM before Chain::Init");
 chain_loop:
 	chain->Init();
+    stmem.PrintMem("MEM after Chain::Init");
 
     //_____________________________________________________________________________
     //
@@ -224,10 +287,31 @@ chain_loop:
 
         cout << "--------->START EVENT: " << i << endl;
 
+        if (i > 1)
+            stmem.PrintMem("MEM before Chain::Clear + Make");
         chain->Clear();
         if (kStOK != chain->Make())
             break;
 
+        if (i > 1)
+            stmem.PrintMem("MEM after Chain::Clear + Make");
+
+        // Per-event VmRSS readout (what the OOM killer actually measures).
+        // Tag is "RSS_EVT" so it's trivially grep-able out of LOG.
+        {
+            FILE* f = fopen("/proc/self/status", "r");
+            if (f) {
+                char buf[256]; long rss_kb = -1, vsz_kb = -1;
+                while (fgets(buf, sizeof(buf), f)) {
+                    if (rss_kb < 0) sscanf(buf, "VmRSS: %ld", &rss_kb);
+                    if (vsz_kb < 0) sscanf(buf, "VmSize: %ld", &vsz_kb);
+                    if (rss_kb >= 0 && vsz_kb >= 0) break;
+                }
+                fclose(f);
+                fprintf(stderr, "RSS_EVT %d  VmRSS=%ld kB  VmSize=%ld kB\n",
+                        i, rss_kb, vsz_kb);
+            }
+        }
 
         // StMuDst * mds = muDstMaker->muDst();
         // StMuFwdTrackCollection * ftc = mds->muFwdTrackCollection();
@@ -239,4 +323,8 @@ chain_loop:
         // }
         cout << "<---------- END EVENT" << endl;
     } // event loop
+
+    stmem.PrintMem("MEM after event loop");
+    // delete chain;
+    stmem.PrintMem("MEM after delete chain");
 }

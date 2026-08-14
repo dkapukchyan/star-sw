@@ -1727,6 +1727,8 @@ Bfc_st BFC[] = { // standard chains
    "StFcsPointMaker","StFcsPointMaker,libMinuit","Fill FCS points",                                 kFALSE},
   {"fcsPi0Libs","", "", "MuDst", "", "StFcsPi0FinderForEcal", "Libs for FCS Pi0 Finder",            kFALSE},
   // FTT
+  {"fttSim","fttChain","","StEvent,fttDb",
+   "StFttFastSimulatorMaker","StFttFastSimulatorMaker","Ftt Fast Simulator",                        kFALSE},
   {"ftt","fttChain","","FttDat,FttHitCalib,FttClu,FttPoint", "StMaker","StChain","FST chain"        ,kFALSE}, 
   {"FttDat","","fttChain","StEvent","StFttRawHitMaker","StFttRawHitMaker,StEvent",
                                                             "sTGC Raw hit maker",                   kFALSE},
@@ -1734,13 +1736,18 @@ Bfc_st BFC[] = { // standard chains
                                                             "sTGC hit calib maker",                 kFALSE},
   {"FttClu","","fttChain","StEvent,fttDb","StFttClusterMaker","StFttClusterMaker,StEvent,StFttDbMaker", 
                                                                            "sTGC Cluster maker",    kFALSE},
-  {"FttPoint","","fttChain","StEvent,fttDb","StFttPointMaker","StFttPointMaker,StEvent,StFttDbMaker", 
+  {"FttPoint","","fttChain","StEvent,fttDb","StFttPointMaker","StFttPointMaker,StEvent,StFttDbMaker",
                                                                              "sTGC Point maker",    kFALSE},
+  {"FttClusterPoint","","fttChain","StEvent,fttDb","StFttClusterPointMaker","StFttClusterPointMaker,StEvent,StFttDbMaker",
+                                                              "sTGC ClusterPoint maker",  kFALSE},
   {"FttQA","","fttChain","","StFttQAMaker","StFttQAMaker", "sTGC Raw hit QA maker",                 kFALSE},
 
   {"FwdTrack","","","fcsDb","StFwdTrackMaker",
    "XMLIO,genfit2,KiTrack,StarGeneratorUtil,libMathMore,StEventUtilities,StEpdUtil,StFwdTrackMaker",
                                                                              "Forward Track Maker", kFALSE},
+  {"FcsTrackMatch","","","FwdTrack","StFcsTrackMatchMaker",
+  "StFcsTrackMatchMaker",
+                                                                "Forward Track to FCS Match Maker", kFALSE},
 
 #if 0
   {"fpd"         ,"fpd","","",                  "StFpdMaker","StFpdMaker","FPD/BBC Data base chain",kFALSE},

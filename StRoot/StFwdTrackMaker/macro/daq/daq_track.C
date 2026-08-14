@@ -3,8 +3,9 @@
 
 
 void daq_track(    int n = 50,
-                    const char *inFile = "st_fwd_23074018_raw_1000013.daq",
+                    const char *inFile = "indaq/st_physics_23072022_raw_4000001.daq",
                     const char *geom = "y2023") {
+    cout << "Running daq_track" << endl;
     TString _chain;
     gSystem->Load( "libStarRoot.so" );
 
@@ -16,7 +17,13 @@ void daq_track(    int n = 50,
     gROOT->SetMacroPath(".:/star-sw/StRoot/macros:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
 
     gROOT->LoadMacro("bfc.C");
+
+    gROOT->LoadMacro("$STAR/StRoot/StMuDSTMaker/COMMON/macros/loadSharedLibraries.C");
+	loadSharedLibraries();
+
+    printf("Running bfc\n");
     bfc(-1, _chain, inFile);
+    printf("Done running bfc -1\n");
 
 
     StFttClusterMaker *fttClu = (StFttClusterMaker*) chain->GetMaker("stgcCluster");
@@ -32,37 +39,41 @@ void daq_track(    int n = 50,
         if ( fwdTrack ){ //if it is in the chain
             cout << "Setting up Fwd Tracking in chain" << endl;
             // fwdTrack->SetConfigFile( configFile );
-            fwdTrack->setConfigForData();
-            fwdTrack->setZeroB();
-            fwdTrack->setSeedFindingWithFst();
+            // fwdTrack->setConfigForData();
+            // fwdTrack->setZeroB();
+            // fwdTrack->setSeedFindingWithFst();
             // write out wavefront OBJ files
-            fwdTrack->SetVisualize( false );
-            fwdTrack->SetDebug(2);
-            fwdTrack->setTrackRefit(true);
+            // fwdTrack->SetVisualize( false );
+            fwdTrack->SetDebug(1);
+            // fwdTrack->setTrackRefit(true);
             fwdTrack->setGeoCache( "fGeom.root" );
+            printf("Loading config for FwdTrackMaker\n");
+            fwdTrack->LoadConfiguration();
             // fwdTrack->setDebug();
 
             
         }
     }
 
-      // The PicoDst
-    gSystem->Load("libStPicoEvent");
-    gSystem->Load("libStPicoDstMaker");
-    StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
-    cout << "picoMk = " << picoMk << endl;
-    picoMk->setVtxMode(StPicoDstMaker::Default);
+    if (true){
+        // The PicoDst
+        gSystem->Load("libStPicoEvent");
+        gSystem->Load("libStPicoDstMaker");
+        StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+        cout << "picoMk = " << picoMk << endl;
+        picoMk->setVtxMode(StPicoDstMaker::Default);
 
-        // Generate FWD QA
-    StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
-    fwdQAMk->SetDebug(2);
-    chain->AddAfter("fwdTrack", fwdQAMk);
+            // Generate FWD QA
+        StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
+        fwdQAMk->SetDebug(2);
+        chain->AddAfter("fwdTrack", fwdQAMk);
+    }
 
-
-    
-    chain->Print();
+    // chain->Print();
     // Initialize the chain
+    printf("-------->Initializing chain\n");
     chain->Init();
+    printf("-------->Done initializing chain\n");
 
     //
 

@@ -22,7 +22,21 @@
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 
-TMatrixDSym makeFstCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.0040906154) {
+// Per-file gating of STAR logging macros. Bypasses a per-call allocation leak
+// in the log4cxx pipeline. Hardcoded OFF here because this is a non-StMaker
+// helper class with no per-instance debug flag. The `if (true) {} else` form
+// guards against dangling-else attaching to a caller's `if`. Flip `true` to
+// `false` (or to a flag) to re-enable logging in this translation unit.
+#undef  LOG_INFO
+#undef  LOG_DEBUG
+#undef  LOG_WARN
+#define LOG_INFO  if (true) {} else LOGGERMESSAGE(Info)
+#define LOG_DEBUG if (true) {} else LOGGERMESSAGE(Debug)
+#define LOG_WARN  if (true) {} else LOGGERMESSAGE(Warning)
+
+// Issue #5: default rSize was 3.0, not kFstStripPitchR (2.875 cm) -- the actual
+// FST strip pitch in r. phiSize stays numeric (= kFstStripPitchPhi).
+TMatrixDSym makeFstCovMat(TVector3 hit, float rSize = kFstStripPitchR, float phiSize = 0.0040906154) {
     // we can calculate the CovMat since we know the det info, but in future we should probably keep this info in the hit itself
     // measurements on a plane only need 2x2
     // for Si geom we need to convert from cylindrical to cartesian coords
@@ -76,6 +90,7 @@ TMatrixDSym makeFstCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.00
 }
 
 int StFwdHitLoader::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    // cout << "log4cxx NDC depth: " << log4cxx::NDC::getDepth() << endl;
     if ( mFttDataSource == StFwdHitLoader::DataSource::IGNORE ){
         // this is a warning because it should not be set during production
         // but it is useful for testing
@@ -121,11 +136,42 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             float ycm = point->xyz().y();
             float zcm = point->xyz().z();
 
-            // Not in StRoot yet...
-            // hitCov3(0, 0) = (double)point->cov()[0][0];
-            // hitCov3(0, 1) = (double)point->cov()[0][1];
-            // hitCov3(1, 0) = (double)point->cov()[1][0];
-            // hitCov3(1, 1) = (double)point->cov()[1][1];
+            hitCov3(0, 0) = (double)point->cov()[0][0];
+            hitCov3(0, 1) = (double)point->cov()[0][1];
+            hitCov3(1, 0) = (double)point->cov()[1][0];
+            hitCov3(1, 1) = (double)point->cov()[1][1];
+
+            LOG_INFO << "Loaded FTT point with local x: " << xcm << " y: " << ycm << " z: " << zcm << ", disk = " << ((int)point->plane()) << endm;
+            stringstream sstr;
+            sstr << "\t dx = " << sqrt(hitCov3(0, 0)) << " dy = " << sqrt(hitCov3(1, 1));
+            if ( sqrt(hitCov3(0, 0)) > sqrt(hitCov3(1, 1)) ){
+                sstr << " (horizontal strip)";
+            } else if ( sqrt(hitCov3(1, 1)) > sqrt(hitCov3(0, 0)) ){
+                sstr << " (vertical strip)";
+            } else {
+                sstr << " (unknown orientation)";
+            }
+            LOG_INFO << sstr.str() << endm;
+
+            if ( sqrt(hitCov3(0, 0)) != sqrt(hitCov3(0, 0)) ){
+                if ( kLogLevel >= kLogVerbose ) {LOG_INFO << "Covariance matrix has NaN entries, skipping this hit" << endm;}
+                continue;
+            }
+            if ( sqrt(hitCov3(1, 1)) != sqrt(hitCov3(1, 1)) ){
+                if ( kLogLevel >= kLogVerbose ) {LOG_INFO << "Covariance matrix has NaN entries, skipping this hit" << endm;}
+                continue;
+            }
+
+            // for now we skip diagonal strips
+            // We need to develop the matching algorithm in FwdTracker to be able to use these hits, 
+            // but for now we want to make sure they are not causing issues in the fitter
+            if ( sqrt(hitCov3(0, 0)) == sqrt(hitCov3(1, 1)) ){
+                LOG_INFO << "Skipping FTT point with equal covariance (diagonal/combined): "
+                         << "dx=" << sqrt(hitCov3(0, 0)) << " dy=" << sqrt(hitCov3(1, 1))
+                         << " disk=" << ((int)point->plane()) << endm;
+                continue;
+            }
+
 
             // get the track id
             int track_id = point->idTruth();
@@ -287,6 +333,10 @@ int StFwdHitLoader::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDat
 
 int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
     int count = 0;
+
+    if ( kLogLevel >= kLogVerbose ) {
+        LOG_INFO << "Loading FST hits from MuDst" << endm;
+    }
     if(!mMuDstMaker) {
         LOG_WARN << " No MuDstMaker ... bye-bye" << endm;
         return 0;
@@ -313,15 +363,17 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
         float vPhi = muFstHit->localPosition(1);
         float vZ = muFstHit->localPosition(2);
 
-        int wedgeIndex  = muFstHit->getWedge();
-        int sensorIndex = muFstHit->getSensor();
-        int diskIndex   = muFstHit->getDisk();
+        int diskIndex   = muFstHit->getDisk() - 1;                                    // getDisk() is 1-indexed; convert to 0-indexed
+        int wedgeIndex  = (muFstHit->getWedge() - 1) % kFstNumWedgePerDisk;           // getWedge() is global 1-indexed (1-36); convert to per-disk 0-indexed (0-11)
+        int sensorIndex = muFstHit->getSensor();                                       // getSensor() is already 0-indexed
         int globalIndex = FwdHit::fstGlobalSensorIndex( diskIndex, wedgeIndex, sensorIndex );
+        if ( kLogLevel >= kLogVerbose ) {LOG_INFO << "wedgeIndex: " << wedgeIndex << ", sensorIndex: " << sensorIndex << ", diskIndex: " << diskIndex << ", globalIndex: " << globalIndex << endm;}
 
         float x0 = vR * cos( vPhi );
         float y0 = vR * sin( vPhi );
         hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
         mSpacepointsFst.push_back( TVector3( x0, y0, vZ)  );
+        if ( kLogLevel >= kLogVerbose ) {LOG_INFO << TString::Format("FST local position: %f %f %f, global position: %f %f %f", vR, vPhi, vZ, x0, y0, vZ) << endm;}
 
         // we use d+4 so that both FTT and FST start at 4
         mFwdHitsFst.push_back(
@@ -336,6 +388,12 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
             )
         );
         mFwdHitsFst.back()._genfit_plane_index = globalIndex;
+        // Store strip-native local position (no global azimuthal rotation).
+        {
+            int rStrip = (int)muFstHit->getMeanRStrip();
+            mFwdHitsFst.back()._localPosition[0] = kFstrStart[rStrip] + 0.5f * kFstStripPitchR;
+            mFwdHitsFst.back()._localPosition[1] = muFstHit->getMeanPhiStrip() * kFstStripPitchPhi;
+        }
     } // index
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
@@ -368,7 +426,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
     if ( fstHitCollection && fstHitCollection->numberOfHits() > 0){
         // reuse this to store cov mat
         TMatrixDSym hitCov3(3);
-        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "StFstHitCollection is NOT NULL, loading hits" << endm;}
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "StFstHitCollection is NOT NULL, loading FST hits from StEvent" << endm;}
         for ( unsigned int iw = 0; iw < kFstNumWedges; iw++ ){
             StFstWedgeHitCollection * wc = fstHitCollection->wedge( iw );
             if ( !wc ) continue;
@@ -387,7 +445,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     int diskIndex   = iw / kFstNumWedgePerDisk;
                     int globalIndex = FwdHit::fstGlobalSensorIndex( diskIndex, wedgeIndex, sensorIndex );
 
-                    if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;}
+                    if ( kLogLevel >= kLogVerbose ) {LOG_INFO << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;}
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
                     hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
@@ -419,6 +477,14 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     // store a pointer to the original StFstHit
                     mFwdHitsFst.back()._hit = fsthits[ih];
                     mFwdHitsFst.back()._genfit_plane_index = globalIndex;
+                    // Store strip-native local position (no global azimuthal rotation).
+                    // kFstrStart[] gives the inner edge of each r-strip in cm; the half-pitch
+                    // centers the position within the strip.
+                    {
+                        int rStrip = (int)fsthits[ih]->getMeanRStrip();
+                        mFwdHitsFst.back()._localPosition[0] = kFstrStart[rStrip] + 0.5f * kFstStripPitchR;
+                        mFwdHitsFst.back()._localPosition[1] = fsthits[ih]->getMeanPhiStrip() * kFstStripPitchPhi;
+                    }
                 }
             } // loop is
         } // loop iw
@@ -580,12 +646,28 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
             double y0 = (y[0] + y[1] + y[2] + y[3]) / 4.0;
             mSpacepointsEpd.push_back( TVector3( x0, y0, zepd ) );
 
-            // make the covariance matrix based on max x and y distance
+            // Fix (Issue #23): covariance from tile corners, not a hardcoded
+            // isotropic sigma_xy=4cm. EPD tiles are trapezoidal with very
+            // different radial (sigma_r~1-2cm) and azimuthal (sigma_phi*r~3-8cm)
+            // extents, and for a tile not aligned with x/y the (x,y) covariance
+            // has a non-zero off-diagonal term -- both were missing. For a
+            // uniform distribution over a quadrilateral, C = (1/3)*mean(corner
+            // outer-products) = sum/12, exact for rectangles/parallelograms and a
+            // good approximation for the mildly trapezoidal EPD tiles. This
+            // naturally gives the anisotropic, correlated (x,y) uncertainty from
+            // the actual tile shape (corners already available above via
+            // epdgeo.GetCorners) without any hardcoded approximation.
             TMatrixDSym hitCov3(3);
-            const double sigXY = 4; //cm TODO: get good
-            hitCov3(0, 0) = sigXY * sigXY;
-            hitCov3(1, 1) = sigXY * sigXY;
-            hitCov3(2, 2) = 1; //cm // unused if they are loaded as points on plane
+            double cxx=0, cyy=0, cxy=0;
+            for(int k=0;k<4;k++){
+                double dx=x[k]-x0, dy=y[k]-y0;
+                cxx+=dx*dx; cyy+=dy*dy; cxy+=dx*dy;
+            }
+            hitCov3(0, 0) = cxx / 12.0;
+            hitCov3(1, 1) = cyy / 12.0;
+            hitCov3(0, 1) = cxy / 12.0;
+            hitCov3(1, 0) = cxy / 12.0;
+            hitCov3(2, 2) = 1.0; // σ_z² = 1 cm² (tile thickness ≈ 2 cm / √12 ≈ 0.58 cm; conservative)
 
             const vector<pair<unsigned int, float>> gt = hit->getGeantTracks();
             int track_id = -1;

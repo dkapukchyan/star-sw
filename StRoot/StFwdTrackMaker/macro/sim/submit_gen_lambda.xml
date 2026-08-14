@@ -1,0 +1,32 @@
+<job  name="FwdLambdaGun"  simulateSubmission="false" nProcesses="100">
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/err_$JOBID.err" />
+
+    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/" />
+    <!-- MUST be submitted from ALMA nodes -->
+    <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
+    <command>
+        echo "JOBINDEX = ${JOBINDEX}"
+        echo "JOBID = ${JOBID}"
+        ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
+
+        set SEED = `od -An -N4 -tu4 /dev/urandom | tr -d ' '`
+        echo "RNG Seed: $SEED"
+
+        starver dev
+        echo root4star -b -q -l 'sim/lambda.C( 1000, '"$SEED"' )'
+        root4star -b -q -l 'sim/lambda.C( 1000, '"$SEED"' )' 
+        mv fwd_lambda.fzd job_${JOBID}_fwd_lambda.fzd
+    </command>
+
+    <SandBox>
+        <Package>
+            <File>file:./StRoot</File>
+            <File>file:./.sl73_x8664_gcc485/</File>
+        </Package>
+    </SandBox>
+
+    <Generator>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/gen</Location>
+    </Generator>
+</job>

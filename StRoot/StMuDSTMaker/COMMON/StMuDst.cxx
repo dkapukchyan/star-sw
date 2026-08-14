@@ -6,8 +6,12 @@
  ***************************************************************************/
 
 #include <map>
+#include <cstdio>
+#include <cstdlib>
+#include <malloc.h>
 
 #include "StMuDst.h"
+
 
 #include "StContainers.h"
 #include "StEvent/StEventTypes.h"
@@ -704,7 +708,9 @@ StEvent* StMuDst::createStEvent() {
   StTimer timer;
   timer.start();
 
-  StMuEvent* mu = event(); 
+  
+
+  StMuEvent* mu = event();
   if(!mu) return NULL;
   StEvent* ev = new StEvent();
 
@@ -734,10 +740,12 @@ StEvent* StMuDst::createStEvent() {
   ev->setL0Trigger ( new StL0Trigger(mu->l0Trigger()) );
   //   ev->setL1Trigger ( new StL0Trigger(mu->l0Trigger()) );
   ev->setL3Trigger ( new StL3Trigger() );
-  
-  StPrimaryVertex* vp  = new StPrimaryVertex();  
+
+  StPrimaryVertex* vp  = new StPrimaryVertex();
   ev->addPrimaryVertex(vp);
   vp->setPosition( mu->eventSummary().primaryVertexPosition() );
+
+  
 
   int nGlobals = arrays[muGlobal]->GetEntriesFast();
 
@@ -756,6 +764,8 @@ StEvent* StMuDst::createStEvent() {
       global_indices[i]=-1;
     }
   }
+
+  
 
   /// add primary tracks and primary vertex
   ///
@@ -778,17 +788,20 @@ StEvent* StMuDst::createStEvent() {
     vp->addDaughter( t );
   }
 
+  
+
   /// do the same excercise for the l3 tracks
   /// we do this later
   /// we do this later
   /// we do this later
-  
+
   // add detector states
   int nStates = arrays[muState]->GetEntriesFast();
   for (int i=0; i<nStates; i++) {
       StDetectorState* det = new StDetectorState(*detectorStates(i));
       ev->addDetectorState(det);
   }
+
   
 
   // now get the EMC stuff and put it in the StEvent
@@ -798,6 +811,7 @@ StEvent* StMuDst::createStEvent() {
     StEmcCollection *EMC = mEmcUtil->getEmc(emc);
     if(EMC) ev->setEmcCollection(EMC);
   }
+  
   // now get the FMS stuff and put it in the StEvent
   static StMuFmsUtil* mFmsUtil = new StMuFmsUtil();
   StMuFmsCollection *fms = muFmsCollection();
@@ -805,6 +819,7 @@ StEvent* StMuDst::createStEvent() {
      StFmsCollection *FMS = mFmsUtil->getFms(fms);
      if(FMS) ev->setFmsCollection(FMS);
   }
+  
   // now get the RHICf stuff and put it in the StEvent
   static StMuRHICfUtil* mRHICfUtil = new StMuRHICfUtil();
   StMuRHICfCollection *rhicf = muRHICfCollection();
@@ -812,6 +827,7 @@ StEvent* StMuDst::createStEvent() {
     StRHICfCollection *RHICf = mRHICfUtil->getRHICf(rhicf);
     if(RHICf) ev->setRHICfCollection(RHICf);
   }
+  
   // now get the FCS stuff and put it in the StEvent
   static StMuFcsUtil* mFcsUtil = new StMuFcsUtil();
   StMuFcsCollection *fcs = muFcsCollection();
@@ -819,6 +835,7 @@ StEvent* StMuDst::createStEvent() {
      StFcsCollection *FCS = mFcsUtil->getFcs(fcs);
      if(FCS) ev->setFcsCollection(FCS);
   }
+  
   // now get the FTT stuff and put it in the StEvent
   static StMuFttUtil* mFttUtil = new StMuFttUtil();
   StMuFttCollection *ftt = muFttCollection();
@@ -826,6 +843,7 @@ StEvent* StMuDst::createStEvent() {
      StFttCollection *FTT = mFttUtil->getFtt(ftt);
      if(FTT) ev->setFttCollection(FTT);
   }
+  
   // now get the FST stuff and put it in the StEvent
   static StMuFstUtil* mFstUtil = new StMuFstUtil();
   StMuFstCollection *fst = muFstCollection();
@@ -833,6 +851,7 @@ StEvent* StMuDst::createStEvent() {
      StFstHitCollection *FST = mFstUtil->getFst(fst);
      if(FST) ev->setFstHitCollection(FST);
   }
+  
  // now get the FWD Tracks and put it in the StEvent
   static StMuFwdTrackUtil* mFwdTrackUtil = new StMuFwdTrackUtil();
   StMuFwdTrackCollection *fwdTrack = muFwdTrackCollection();
@@ -840,6 +859,7 @@ StEvent* StMuDst::createStEvent() {
      StFwdTrackCollection *theFwdTrack = mFwdTrackUtil->getFwdTrack(fwdTrack);
      if(theFwdTrack) ev->setFwdTrackCollection(theFwdTrack);
   }
+  
   // now get the PMD stuff and put it in the StEvent
   static StMuPmdUtil* mPmdUtil = new StMuPmdUtil();
   StMuPmdCollection *pmd = pmdCollection();
@@ -847,6 +867,7 @@ StEvent* StMuDst::createStEvent() {
     StPhmdCollection *PMD = mPmdUtil->getPmd(pmd);
     if(PMD) ev->setPhmdCollection(PMD);
   }
+  
 
 // now get tof (after fix from Xin)
   StTofCollection *tofcoll = new StTofCollection();
@@ -885,6 +906,8 @@ StEvent* StMuDst::createStEvent() {
     tofcoll->addRawData(aRawData);
   }
 
+  
+
   // now create, fill the StBTofCollection - dongx
   StBTofCollection *btofcoll = new StBTofCollection();
   ev->setBTofCollection(btofcoll);
@@ -899,6 +922,7 @@ StEvent* StMuDst::createStEvent() {
     btofcoll->addRawHit(aRawHit);
   }
   if(btofHeader()) btofcoll->setHeader(new StBTofHeader(*(btofHeader())));
+  
   // now create, fill and add new StTriggerIdCollection to the StEvent
   StTriggerIdCollection* triggerIdCollection = new StTriggerIdCollection();
   StTriggerId triggerId;
@@ -911,8 +935,9 @@ StEvent* StMuDst::createStEvent() {
   triggerId = mu->triggerIdCollection().nominal();
   if ( !StMuTriggerIdCollection::isEmpty( triggerId ) ) triggerIdCollection->setNominal( new StTriggerId( triggerId ) );
   ev->setTriggerIdCollection( triggerIdCollection );
-    
+
   
+
   DEBUGVALUE2(timer.elapsedTime());
   return ev;
 }
