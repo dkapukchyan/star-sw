@@ -668,23 +668,23 @@ int StFwdClosureMaker::Make() {
             LOG_INFO << "Adding FTT point" << endm;
             fttPlaneMap[plane_id] = 1;
             auto spoint = new genfit::SpacepointMeasurement(rhc, hitCov3, 0, i+4, nullptr);
-            if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
+            if ( spoints.size() < (mNumFttToUse + nPointsBeforeAddingFtt) )
                 spoints.push_back(spoint);
         } else if ( kPoint != mFttMode ){
             if ( volume_id % 2 == 0 ){
                 LOG_INFO << "Adding Ftt vStrip" << endm;
                 auto spoint = new genfit::SpacepointMeasurement(rhc, vStripCov3, 0, i+4, nullptr);
-                if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
+                if ( spoints.size() < (mNumFttToUse + nPointsBeforeAddingFtt) )
                     spoints.push_back(spoint);
             } else {
                 LOG_INFO << "Adding Ftt hStrip" << endm;
                 auto spoint = new genfit::SpacepointMeasurement(rhc, hStripCov3, 0, i+4, nullptr);
-                if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
+                if ( spoints.size() < (mNumFttToUse + nPointsBeforeAddingFtt) )
                     spoints.push_back(spoint);
             }
         }
 
-        if ( (spoints.size() - nPointsBeforeAddingFtt) >= mNumFttToUse ){
+        if ( (spoints.size() >= (mNumFttToUse + nPointsBeforeAddingFtt) ){
             LOG_INFO << "Reached max FTT hits, breaking" << endm;
             break;
         }
@@ -804,3 +804,4 @@ int StFwdClosureMaker::Make() {
 void StFwdClosureMaker::Clear(const Option_t *opts) {
     return;
 }
+
