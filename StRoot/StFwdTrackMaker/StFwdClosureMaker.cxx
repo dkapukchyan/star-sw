@@ -630,7 +630,7 @@ int StFwdClosureMaker::Make() {
     int nstg = g2t_stg_hits->GetNRows();
 
     LOG_DEBUG << "This event has " << nstg << " stg hits in geant/g2t_stg_hit " << endm;
-    int nFttHits = 0;
+    //int nFttHits = 0;
     if (mNumFttToUse == 0) {
         LOG_INFO << "Not using FTT hits, skipping" << endm;
         nstg = 0;
@@ -683,13 +683,12 @@ int StFwdClosureMaker::Make() {
                     spoints.push_back(spoint);
             }
         }
-
-        if ( (spoints.size() >= (mNumFttToUse + nPointsBeforeAddingFtt) ){
+        if ( spoints.size() >= (mNumFttToUse + nPointsBeforeAddingFtt) ){
             LOG_INFO << "Reached max FTT hits, breaking" << endm;
             break;
         }
             
-        nFttHits++;
+        //nFttHits++;
     }
 
     float ptCurve = 9999.0;

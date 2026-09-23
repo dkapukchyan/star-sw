@@ -2064,7 +2064,7 @@ class ForwardTrackMaker {
             static double fstDiskZ[3];
             static bool fstDiskZReady = false;
             if (!fstDiskZReady) {
-                for (int d = 0; d < 3; d++) {
+                for (unsigned int d = 0; d < 3; d++) {
                     double z = 0;
                     for (size_t is = d * 36; is < d * 36 + 36; is++)
                         z += mTrackFitter->mFstSensorPlanes[is]->getO().Z();
