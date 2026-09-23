@@ -201,4 +201,205 @@ Int_t StFwdAnaFstRun22Qa::DoMake(StFwdAnaData* anadata)
   return kStOk;
 }
 
+void StFwdAnaFstRun22Qa::Paint_FstRawHitStrip_rVphi(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(6,6); //kFstNumSensor=3*36
+  for( int i=36*disk; i<36*disk+36; ++i ){
+    TVirtualPad* pad = canvas->cd(i-36*disk+1);
+    pad->SetLogz();
+    if( mH2S_FstRawHitStrip_rVphi[i] ){ mH2S_FstRawHitStrip_rVphi[i]->Draw("colz"); }
+  }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHitStripMean_rVphi(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(6,6); //kFstNumSensor=3*36
+  for( int i=36*disk; i<36*disk+36; i++ ){
+    TVirtualPad* pad = canvas->cd(i-36*disk+1);
+    pad->SetLogz();
+    if( mH2S_FstHitStripMean_rVphi[i] ){ mH2S_FstHitStripMean_rVphi[i]->Draw("colz"); }
+  }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_rVphi(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_rVphi[disk] ){ mH2S_FstHit_rVphi[disk]->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_apvVgeoid(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_apvVgeoid[disk] ){ mH2S_FstHit_apvVgeoid[disk]->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHitGlobal_yVx(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHitGlobal_yVx[disk] ){ mH2S_FstHitGlobal_yVx[disk]->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHitGlobal_rVphi(TCanvas* canvas, int disk, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHitGlobal_rVphi[disk] ){ mH2S_FstHitGlobal_rVphi[disk]->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstRawHit_adcVgeoid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(3,3);
+  for( int i=0; i<kFstNumTimeBins; i++ ){
+    TVirtualPad* pad = canvas->cd(i+1);
+    pad->SetLogz();
+    if( mH2S_FstRawHit_adcVgeoid[i] ){ mH2S_FstRawHit_adcVgeoid[i]->Draw("colz"); }
+  }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstRawHit_adcerrVgeoid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstRawHit_adcerrVgeoid ){ mH2S_FstRawHit_adcerrVgeoid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstRawHit_maxtbVapv(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstRawHit_maxtbVapv ){ mH2S_FstRawHit_maxtbVapv->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_adcVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_adcVid ){ mH2S_FstHit_adcVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_adcerrVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_adcerrVid ){ mH2S_FstHit_adcerrVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_maxtbVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_maxtbVid ){ mH2S_FstHit_maxtbVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_Fst_nrawhitsVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_Fst_nrawhitsVid ){ mH2S_Fst_nrawhitsVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_Fst_nhitsVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_Fst_nhitsVid ){ mH2S_Fst_nhitsVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_nrawhitsVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_nrawhitsVid ){ mH2S_FstHit_nrawhitsVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_nrawhitsrVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_nrawhitsrVid ){ mH2S_FstHit_nrawhitsrVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::Paint_FstHit_nrawhitsphiVid(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  TVirtualPad* pad = canvas->cd();
+  pad->SetLogz();
+  if( mH2S_FstHit_nrawhitsphiVid ){ mH2S_FstHit_nrawhitsphiVid->Draw("colz"); }
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::PaintFstRawHitQa(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(2,2);
+
+  canvas->cd(1);
+  if( mH2S_FstRawHit_adcerrVgeoid ){ mH2S_FstRawHit_adcerrVgeoid->Draw("colz"); }
+  canvas->cd(2);
+  if( mH2S_FstRawHit_maxtbVapv ){ mH2S_FstRawHit_maxtbVapv->Draw("colz"); }
+  canvas->cd(3);
+  if( mH2S_Fst_nrawhitsVid ){ mH2S_Fst_nrawhitsVid->Draw("colz"); }
+
+  canvas->Print(savename);
+}
+
+void StFwdAnaFstRun22Qa::PaintFstHitQa(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(3,3);
+
+  canvas->cd(1);
+  if( mH2S_FstHit_adcVid ){ mH2S_FstHit_adcVid->Draw("colz"); }
+  canvas->cd(2);
+  if( mH2S_FstHit_adcerrVid ){ mH2S_FstHit_adcerrVid->Draw("colz"); }
+  canvas->cd(3);
+  if( mH2S_FstHit_maxtbVid ){ mH2S_FstHit_maxtbVid->Draw("colz"); }
+
+  canvas->cd(4);
+  if( mH2S_Fst_nhitsVid ){ mH2S_Fst_nhitsVid->Draw("colz"); }
+
+  canvas->cd(5);
+  if( mH2S_FstHit_nrawhitsVid ){ mH2S_FstHit_nrawhitsVid->Draw("colz"); }
+  canvas->cd(6);
+  if( mH2S_FstHit_nrawhitsrVid ){ mH2S_FstHit_nrawhitsrVid->Draw("colz"); }
+  canvas->cd(7);
+  if( mH2S_FstHit_nrawhitsphiVid ){ mH2S_FstHit_nrawhitsphiVid->Draw("colz"); }
+
+  canvas->Print(savename);
+}
 

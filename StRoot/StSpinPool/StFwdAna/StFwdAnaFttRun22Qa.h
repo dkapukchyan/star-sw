@@ -10,6 +10,7 @@
 
   LOG
   @[July 27, 2026] > First instance
+  @[August 17, 2026] > Added various paint functions for the QA histograms
 */
 
 #ifndef STFWDANA_STFWDANAFTTRUN22QA_HH
@@ -33,6 +34,13 @@ class StFwdAnaFttRun22Qa : public StFwdAnaVirtual
   
   virtual UInt_t LoadHists(TFile* file, HistManager* histman, StFwdAnaData* anadata);
   virtual Int_t DoMake(StFwdAnaData* anadata);
+
+  void Paint_RawHitAdc(TCanvas* canvas, int quad, int plane, const char* savename) const;
+  void Paint_RawHitBcid(TCanvas* canvas, int quad, int plane, const char* savename) const;
+  void Paint_RawHitDBcid(TCanvas* canvas, int quad, int plane, const char* savename) const;
+  void Paint_RawHitTb(TCanvas* canvas, int quad, int plane, const char* savename) const;
+  void Paint_RawHitTime(TCanvas* canvas, int quad, int plane, const char* savename) const;
+  void Paint_RawHitNchs(TCanvas* canvas, const char* savename) const;
 
 protected:
   TH1* mH2S_FttRawHit_adcVch[StFttDb::nVMM];        ///< raw hit adc vs. channel for every hardware "vmm_id" from StFttDb

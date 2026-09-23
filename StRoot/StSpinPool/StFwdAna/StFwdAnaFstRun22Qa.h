@@ -11,6 +11,7 @@
   LOG
   @[July 27, 2026] > First instance that mostly copied from #StFstQAMaker
   @[August 14, 2026] > Added two boolean flags #mRawHitOn, and #mHitOn which can be used to toggle QA for FST Raw Hits and/or FST Hits. The main reason is because MuDst trees don't contain FST Raw Hit information by default so it helps to save on number of histograms generated. Also changed name of histograms to include "Fst" since looking at the ROOT file of histograms, both FST and FTT use the same "RawHit" and "Hit" style of classes so it was hard to distinguish at a first glance which histograms are coming from FST QA and which from FTT QA.
+  @[August 15, 2026] > Added various paint functions for the QA histograms
 */
 
 #ifndef STFWDANA_STFWDANAFSTRUN22QA_HH
@@ -38,6 +39,27 @@ class StFwdAnaFstRun22Qa : public StFwdAnaVirtual
   void setRawHitQa(bool val){ mRawHitOn = val; }
   void setHitQa(bool val){ mHitOn = val; }
 
+  void Paint_FstRawHitStrip_rVphi  (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstHitStripMean_rVphi (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstHit_rVphi          (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstHit_apvVgeoid      (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstHitGlobal_yVx      (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstHitGlobal_rVphi    (TCanvas* canvas, int disk, const char* savename) const;
+  void Paint_FstRawHit_adcVgeoid   (TCanvas* canvas, const char* savename) const;
+  void Paint_FstRawHit_adcerrVgeoid(TCanvas* canvas, const char* savename) const;
+  void Paint_FstRawHit_maxtbVapv   (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_adcVid         (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_adcerrVid      (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_maxtbVid       (TCanvas* canvas, const char* savename) const;
+  void Paint_Fst_nrawhitsVid       (TCanvas* canvas, const char* savename) const;
+  void Paint_Fst_nhitsVid          (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_nrawhitsVid    (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_nrawhitsrVid   (TCanvas* canvas, const char* savename) const;
+  void Paint_FstHit_nrawhitsphiVid (TCanvas* canvas, const char* savename) const;
+
+  void PaintFstRawHitQa(TCanvas* canvas, const char* savename="FstRawHitQa.png") const;
+  void PaintFstHitQa(TCanvas* canvas, const char* savename="FstHitQa.png") const;
+  
 protected:
   bool mRawHitOn = false;                        ///< Flag to turn on/off QA histograms for FST raw hits. Since these aren't normally stored in MuDsts it is off by default. Idea is to keep number of histograms smaller if no data present. Since there is no way to check before histogram creation if data contains FST Raw Hits; using a boolean flag
   bool mHitOn = true;                            ///< Flag to turn on/off QA histograms for FST hits. Since these are "highest" level of FST reconstruction. Keep on by default

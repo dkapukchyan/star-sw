@@ -100,4 +100,81 @@ Int_t StFwdAnaFttRun22Qa::DoMake(StFwdAnaData* anadata)
   return kStOk;
 }
 
+void StFwdAnaFttRun22Qa::Paint_RawHitAdc(TCanvas* canvas, int plane, int quad, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(5,5);
+
+  int planequadkey = StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*quad + StFttDb::nQuadPerPlane*StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*plane; //Unpacking vmm_id() to match input "plane", "quad" to correct array index, There are 24 VMMs per quad so plot one vmm per quad per plane on each pad (there are 6 fobs per quad and 4 vmms per fob so a total of 24 vmms per quad). Counting starts from 0
+  for( int ipad=0; ipad<24; ++ipad){
+    canvas->cd(ipad+1);
+    if( mH2S_FttRawHit_adcVch[planequadkey+ipad] ){ mH2S_FttRawHit_adcVch[planequadkey+ipad]->Draw("colz"); }
+  }
+
+  canvas->Print(savename);    
+}
+
+void StFwdAnaFttRun22Qa::Paint_RawHitBcid(TCanvas* canvas, int plane, int quad, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(5,5);
+
+  int planequadkey = StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*quad + StFttDb::nQuadPerPlane*StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*plane; //Unpacking vmm_id() to match input "plane", "quad" to correct array index, There are 24 VMMs per quad so plot one vmm per quad per plane on each pad (there are 6 fobs per quad and 4 vmms per fob so a total of 24 vmms per quad). Counting starts from 0
+  for( int ipad=0; ipad<24; ++ipad){
+    canvas->cd(ipad+1);
+    if( mH2S_FttRawHit_bcidVch[planequadkey+ipad] ){ mH2S_FttRawHit_bcidVch[planequadkey+ipad]->Draw("colz"); }
+  }
+
+  canvas->Print(savename);    
+}
+
+void StFwdAnaFttRun22Qa::Paint_RawHitDBcid(TCanvas* canvas, int plane, int quad, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(5,5);
+
+  int planequadkey = StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*quad + StFttDb::nQuadPerPlane*StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*plane; //Unpacking vmm_id() to match input "plane", "quad" to correct array index, There are 24 VMMs per quad so plot one vmm per quad per plane on each pad (there are 6 fobs per quad and 4 vmms per fob so a total of 24 vmms per quad). Counting starts from 0 so [0-24]
+  for( int ipad=0; ipad<24; ++ipad){
+    canvas->cd(ipad+1);
+    if( mH2S_FttRawHit_dbcidVch[planequadkey+ipad] ){ mH2S_FttRawHit_dbcidVch[planequadkey+ipad]->Draw("colz"); }
+  }
+
+  canvas->Print(savename);    
+}
+
+void StFwdAnaFttRun22Qa::Paint_RawHitTb(TCanvas* canvas, int plane, int quad, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(5,5);
+
+  int planequadkey = StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*quad + StFttDb::nQuadPerPlane*StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*plane; //Unpacking vmm_id() to match input "plane", "quad" to correct array index, There are 24 VMMs per quad so plot one vmm per quad per plane on each pad (there are 6 fobs per quad and 4 vmms per fob so a total of 24 vmms per quad). Counting starts from 0
+  for( int ipad=0; ipad<24; ++ipad){
+    canvas->cd(ipad+1);
+    if( mH2S_FttRawHit_tbVch[planequadkey+ipad] ){ mH2S_FttRawHit_tbVch[planequadkey+ipad]->Draw("colz"); }
+  }
+
+  canvas->Print(savename);    
+}
+
+void StFwdAnaFttRun22Qa::Paint_RawHitTime(TCanvas* canvas, int plane, int quad, const char* savename) const
+{
+  canvas->Clear();
+  canvas->Divide(5,5);
+
+  int planequadkey = StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*quad + StFttDb::nQuadPerPlane*StFttDb::nFobPerQuad*StFttDb::nVMMPerFob*plane; //Unpacking vmm_id() to match input "plane", "quad" to correct array index, There are 24 VMMs per quad so plot one vmm per quad per plane on each pad (there are 6 fobs per quad and 4 vmms per fob so a total of 24 vmms per quad). Counting starts from 0
+  for( int ipad=0; ipad<24; ++ipad){
+    canvas->cd(ipad+1);
+    if( mH2S_FttRawHit_timeVch[planequadkey+ipad] ){ mH2S_FttRawHit_timeVch[planequadkey+ipad]->Draw("colz"); }
+  }
+
+  canvas->Print(savename);    
+}
+
+void StFwdAnaFttRun22Qa::Paint_RawHitNchs(TCanvas* canvas, const char* savename) const
+{
+  canvas->Clear();
+  //canvas->cd();
+  if( mH2S_FttRawHit_nchsVvmm ){ mH2S_FttRawHit_nchsVvmm->Draw("colz"); }
+  canvas->Print(savename);
+}
 
